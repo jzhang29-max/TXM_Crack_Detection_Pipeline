@@ -1,0 +1,28 @@
+# Regeneratable feature/ground-truth cache -- rebuild with:
+#   python3 code/build_dataset.py
+# (2GB+, and reconstructable from the raw TXM images + Ilastik exports on
+# Desktop, which live outside this repo anyway)
+dataset_cache/
+
+# Regeneratable prediction cache -- the paint tool recomputes and
+# repopulates this automatically whenever the model file changes
+# (paint_common.py's auto-invalidation). Not meaningful to version.
+paint/predicted_cache/
+
+# Generated output images/overlays/stats from apply_pixel_model.py,
+# retrain_and_deploy.py, and the various verification workflows this
+# session. All regeneratable by re-running those scripts against the
+# committed models + corrections.
+results/
+
+# Superseded experimental model (Random Forest, replaced by the
+# HistGradientBoosting models) -- 570MB, over GitHub's 100MB per-file
+# limit, would fail to push.
+models/pixel_rf.joblib
+
+# Python
+code/__pycache__/
+*.pyc
+
+# OS
+.DS_Store
