@@ -37,7 +37,7 @@ Usage:
 
 --force deploys the candidate regardless of gate results (for a case
 you've reviewed yourself and want to push through anyway). Without it, a
-failing gate leaves the candidate at models/pixel_hgb_candidate.joblib and
+failing gate leaves the candidate at models/pixel_model_candidate.joblib and
 changes nothing in production.
 """
 
@@ -52,7 +52,6 @@ import time
 import joblib
 import numpy as np
 from skimage.measure import label
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -65,7 +64,7 @@ import tifffile
 
 PROJECT_DIR = rc.PROJECT_DIR
 DATASET_CACHE_DIR = rc.DATASET_CACHE_DIR
-CANDIDATE_PATH = os.path.join(PROJECT_DIR, "models", "pixel_hgb_candidate.joblib")
+CANDIDATE_PATH = os.path.join(PROJECT_DIR, "models", "pixel_model_candidate.joblib")
 REPORT_PATH = os.path.join(PROJECT_DIR, "results", "deploy_gate_report.json")
 
 # Thresholds -- see module docstring for what real incident each one guards.
@@ -93,8 +92,14 @@ def train_candidate(correction_weight):
 
     print(f"Training on {len(y)} pixels...")
     t0 = time.time()
-    clf = HistGradientBoostingClassifier(**rc.HGB_PARAMS)
-    clf.fit(X, y, sample_weight=sample_weight)
+    # Delegates to retrain_with_corrections.build_classifier() rather than
+    # constructing a classifier here -- that module is the single source of
+    # truth for "what architecture is current champion" (see its
+    # module-level comment for why: this exact duplication used to be a
+    # real risk of the automated retrain loop silently drifting back to a
+    # superseded architecture).
+    clf = rc.build_classifier()
+    rc.fit_with_sample_weight(clf, X, y, sample_weight)
     print(f"  fit time: {time.time() - t0:.1f}s")
 
     joblib.dump(clf, CANDIDATE_PATH)

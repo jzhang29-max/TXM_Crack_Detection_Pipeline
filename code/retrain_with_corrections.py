@@ -63,6 +63,9 @@ import sys
 import numpy as np
 import joblib
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_sample_weight
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -74,9 +77,27 @@ import tifffile
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATASET_CACHE_DIR = os.path.join(PROJECT_DIR, "dataset_cache")
 
-# Same hyperparameters as the winning variant from the original model
-# comparison (results/pixel_hgb_results.json) -- see that file / the
-# project README for how this was chosen.
+# --- Current champion architecture: MLPClassifier (neural network) -----
+# Switched from HistGradientBoostingClassifier after
+# evaluate_mlp_production_candidate.py showed a consistent, gate-passing
+# accuracy improvement on the REAL production recipe (bootstrap=100k +
+# corrections=30k/class/image across all 12 images): mean IoU vs corrected
+# ground truth 0.778 vs 0.742 (+0.036) across all 4 GT images, with zero
+# border/spontaneous-artifact/degenerate-output flags. See
+# results/mlp_candidate_gate_report.json and benchmark_figures/fig_l_* for
+# the evidence. build_classifier() below is the SINGLE place this project
+# decides which architecture to train -- retrain_and_deploy.py calls this
+# same function rather than constructing a classifier itself, specifically
+# so the automated retrain loop can't silently drift back to a different
+# architecture than whatever this file says is current.
+MLP_PARAMS = dict(
+    hidden_layer_sizes=(64, 32), alpha=1e-4, max_iter=300,
+    early_stopping=True, random_state=0,
+)
+
+# Previous champion (kept for reference/rollback only -- build_classifier()
+# below no longer constructs this). Was the winning variant from the
+# original model comparison, results/pixel_hgb_results.json.
 HGB_PARAMS = dict(
     max_iter=300, max_depth=8, learning_rate=0.1,
     class_weight="balanced", random_state=0,
@@ -84,6 +105,30 @@ HGB_PARAMS = dict(
 
 BOOTSTRAP_N_PER_CLASS_PER_IMAGE = 100000
 CORRECTION_N_PER_CLASS_PER_IMAGE = 30000
+
+
+def build_classifier():
+    """Single source of truth for "what model architecture do we currently
+    train" -- both this module's main() and retrain_and_deploy.py's
+    train_candidate() call this instead of constructing a classifier
+    inline, so there is exactly one place to change if the champion
+    architecture changes again."""
+    return Pipeline([("scaler", StandardScaler()), ("mlp", MLPClassifier(**MLP_PARAMS))])
+
+
+def fit_with_sample_weight(clf, X, y, sample_weight):
+    """Fits clf on (X, y, sample_weight), routing the weight to the right
+    step if clf is a Pipeline (the current MLP champion) or passing it
+    directly if clf is a plain estimator (the previous HGB champion) --
+    keeps callers architecture-agnostic. Verified against this project's
+    installed sklearn (1.7.2): MLPClassifier.fit genuinely uses
+    sample_weight in its loss computation, not just accepts and ignores it."""
+    if isinstance(clf, Pipeline):
+        final_step_name = clf.steps[-1][0]
+        clf.fit(X, y, **{f"{final_step_name}__sample_weight": sample_weight})
+    else:
+        clf.fit(X, y, sample_weight=sample_weight)
+    return clf
 
 
 def load_bootstrap_samples(rng):
@@ -182,7 +227,7 @@ def main():
     ap.add_argument("--correction-weight", type=float, default=1.0,
                      help="sample-weight multiplier for human-corrected pixels relative to bootstrapped Ilastik pixels "
                           "(1.0 = equal footing; see module docstring for why higher values caused a real regression)")
-    ap.add_argument("--out", default=os.path.join(PROJECT_DIR, "models", "pixel_hgb_retrained.joblib"),
+    ap.add_argument("--out", default=os.path.join(PROJECT_DIR, "models", "pixel_model_retrained.joblib"),
                      help="output path for the retrained model (never overwrites pixel_hgb_final.joblib by default)")
     args = ap.parse_args()
 
@@ -203,9 +248,11 @@ def main():
     y = np.concatenate(y_boot + y_corr, axis=0)
     base_weight = np.concatenate(w_boot + w_corr, axis=0)
 
-    # class_weight='balanced' on the classifier itself handles crack/background
-    # imbalance; multiply in the correction emphasis on top of that rather than
-    # picking one or the other.
+    # class_weight='balanced' handles crack/background imbalance; multiply in
+    # the correction emphasis on top of that rather than picking one or the
+    # other. (The MLP champion has no built-in class_weight param the way
+    # the tree-ensemble champions did, so this balanced-weight computation
+    # is what actually supplies that half of the behavior now.)
     class_weight = compute_sample_weight("balanced", y)
     sample_weight = class_weight * base_weight
 
@@ -214,8 +261,8 @@ def main():
     print(f"\nTraining on {n_total} pixels total ({n_correction_px} from human corrections, "
           f"weighted {args.correction_weight}x)...")
 
-    clf = HistGradientBoostingClassifier(**HGB_PARAMS)
-    clf.fit(X, y, sample_weight=sample_weight)
+    clf = build_classifier()
+    fit_with_sample_weight(clf, X, y, sample_weight)
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     joblib.dump(clf, args.out)
