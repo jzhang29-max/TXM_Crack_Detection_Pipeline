@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "txm-paint-tool",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["code/paint_server.py"],
+      "port": 8766
+    }
+  ]
+}
