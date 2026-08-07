@@ -62,7 +62,7 @@ def main():
              thumbs=[("Normalized image", s["img01"], None),
                      (f"{s['feature_name']} (1 of 17)", s["feature_map"], "viridis")]),
         dict(key="C", title="ML Prediction", icon="classifier",
-             subtitle="HistGradientBoosting classifier, per-pixel crack probability",
+             subtitle="MLP neural network classifier, per-pixel crack probability",
              thumbs=[(f"{s['feature_name']} feature", s["feature_map"], "viridis"),
                      ("Predicted probability", s["prob_map"], "inferno")]),
         dict(key="D", title="Post-processing", icon="magnifier",
@@ -193,7 +193,7 @@ def main():
     doc_spacing = (CARD_W - 40) / 2
     c_docs = [
         (mcx - doc_spacing, "17-D feature\nstack (.npy)", "table"),
-        (mcx + doc_spacing, "Trained HGB\nmodel (.joblib)", "model"),
+        (mcx + doc_spacing, "Trained MLP\nmodel (.joblib)", "model"),
     ]
     for x, label, glyph in c_docs:
         draw_document(svg, x, doc_y, doc_size, label, glyph)
@@ -259,8 +259,10 @@ def main():
     caption = (
         f"Figure 1. Automated crack-detection pipeline for transmission X-ray microscopy (TXM) images. A raw "
         f"float32 tile is percentile-normalized (A) and described by 17 multi-scale features per pixel -- "
-        f"intensity-trend, gradient, Laplacian, and texture at radii from 2 to 64px (B) -- which a "
-        f"HistGradientBoosting classifier converts into a per-pixel crack probability (C). Post-processing (D) "
+        f"intensity-trend, gradient, Laplacian, and texture at radii from 2 to 64px (B) -- which an MLP neural "
+        f"network classifier (chosen over RandomForest/ExtraTrees/HistGradientBoosting by benchmarked accuracy on "
+        f"the real production training recipe, see benchmark_figures/) converts into a per-pixel crack "
+        f"probability (C). Post-processing (D) "
         f"applies hysteresis thresholding restricted to grow only from already-shape-validated regions (never "
         f"spontaneously creating a new one), fills small interior holes, rejects ring/dust artifacts by topology "
         f"and eccentricity, and blanks a border margin, producing the final mask, overlay, and stats. A human can "
