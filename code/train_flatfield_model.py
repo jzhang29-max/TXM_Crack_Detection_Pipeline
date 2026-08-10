@@ -73,6 +73,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--correction-weight", type=float, default=1.0)
     ap.add_argument("--out", default=OUT_PATH)
+    ap.add_argument("--crack-cap", type=int, default=CORRECTION_N,
+                     help="max force-crack pixels per corrected image. Must be tuned TOGETHER with "
+                          "--neg-cap: once ~50 images carry positive labels, leaving this at 30000 while "
+                          "capping negatives lower inverts the balance (measured: 72.6%% crack), which "
+                          "swings the model back toward over-prediction just as the opposite imbalance "
+                          "(27.5%% crack) did in v2.")
     ap.add_argument("--neg-cap", type=int, default=CORRECTION_N,
                      help="max force-not-crack pixels to take per corrected image. Matters because the "
                           "auto-written off-specimen corrections are negative-ONLY: at the default 30000 "
@@ -120,7 +126,7 @@ def main():
         flat = np.asarray(feats).reshape(-1, feats.shape[-1])
         fc = corr.reshape(-1)
         ci, bi = np.flatnonzero(fc == 1), np.flatnonzero(fc == 2)
-        nc, nb = min(CORRECTION_N, len(ci)), min(args.neg_cap, len(bi))
+        nc, nb = min(args.crack_cap, len(ci)), min(args.neg_cap, len(bi))
         parts = []
         if nc: parts.append(rng.choice(ci, nc, replace=False))
         if nb: parts.append(rng.choice(bi, nb, replace=False))
