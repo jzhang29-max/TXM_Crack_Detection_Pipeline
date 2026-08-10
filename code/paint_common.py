@@ -51,8 +51,28 @@ from txm_features import robust_normalize
 import joblib
 
 PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_hgb_final.joblib")
-PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache")
+# --- Which model + which input the paint tool serves -------------------
+# USE_FLATFIELD switches the tool to the flatfielded pipeline: flatfielded
+# input images AND the flatfielded-trained model. Both must move together --
+# serving raw pixels to a flatfielded-trained model (or vice versa) is an
+# input-distribution mismatch that produces worse results than either
+# combination alone, which is precisely the trap the raw-trained model fell
+# into on the new specimen groups (raw median brightness varies 2.6x across
+# them, so "broad dark = crack" misfired and an UNDAMAGED specimen came out
+# at 41% crack).
+#
+# Correction files stay valid across the switch: flatfielding is a per-pixel
+# intensity correction and moves nothing geometrically, so a mask drawn on
+# the raw image is still pixel-aligned to the flatfielded one. Shapes are
+# asserted in get_state rather than assumed.
+USE_FLATFIELD = os.environ.get("TXM_PAINT_RAW", "") == ""   # set TXM_PAINT_RAW=1 to go back to raw
+
+if USE_FLATFIELD:
+    MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_flatfield_final.joblib")
+    PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache_flatfield")
+else:
+    MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_hgb_final.joblib")
+    PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache")
 CORRECTIONS_DIR = os.path.join(PROJECT_DIR, "paint", "corrections")
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "results", "corrected")
 
@@ -199,6 +219,19 @@ def get_state(name):
         img01 = np.load(img_path)
     else:
         path = _find_path(name)
+        if USE_FLATFIELD:
+            # Serve the FLATFIELDED image, matching what the flatfielded
+            # model was trained on. Fall back to raw only if this image has
+            # no flatfielded counterpart, and say so rather than silently
+            # feeding mismatched input to the model.
+            import build_flatfield_dataset as _bf
+            ffp = _bf.flatfield_path_for(path)
+            if ffp is None:
+                print(f"[paint_common] WARNING: no flatfielded counterpart for {name} -- "
+                      f"falling back to RAW input, which mismatches the flatfielded model. "
+                      f"Predictions for this image will be unreliable.")
+            else:
+                path = ffp
         raw = tifffile.imread(path).astype(np.float64)
         img01 = robust_normalize(raw, 1.0, 99.0)
         model = get_model()
