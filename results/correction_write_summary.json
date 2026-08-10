@@ -1,0 +1,570 @@
+[
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.18324187477706647,
+    "offspec_area": 0.12462054952011309,
+    "forced_not_crack": 1314418,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.19346045782745233,
+    "offspec_area": 0.1293609053930417,
+    "forced_not_crack": 1035999,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.19059197206166673,
+    "offspec_area": 0.1358484241749519,
+    "forced_not_crack": 1092397,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7809531354950259,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.22089633894325592,
+    "offspec_area": 0.08848055846126299,
+    "forced_not_crack": 860527,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.2249709806585575,
+    "offspec_area": 0.08526703964436186,
+    "forced_not_crack": 793739,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.26910024857719994,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7823778411785801,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.17235847446779232,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7327561337921168,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7155662653875015,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7828698755390947,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.6526219703535783,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.8122903169263713,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.42579985287349087,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.8195400629211191,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.7779454220523337,
+    "offspec_area": 0.00870378791357915,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.6884129532677234,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.4498829029539038,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.19303539496039163,
+    "offspec_area": 0.007027773747571145,
+    "forced_not_crack": 56659,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.6280606994185741,
+    "offspec_area": 0.00887475544380196,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.3027283492545399,
+    "offspec_area": 0.21927976383891307,
+    "forced_not_crack": 4303752,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.35350960168053225,
+    "offspec_area": 0.06169572717775758,
+    "forced_not_crack": 1786000,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.31609735402012934,
+    "offspec_area": 0.23968411702274497,
+    "forced_not_crack": 7164822,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.2382831641000376,
+    "offspec_area": 0.15761697557559878,
+    "forced_not_crack": 1765241,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.2576722828520505,
+    "offspec_area": 0.16812485549809622,
+    "forced_not_crack": 1772736,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "pred_area": 0.19276534947322857,
+    "offspec_area": 0.11895317704998917,
+    "forced_not_crack": 1279948,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.30579949027193143,
+    "offspec_area": 0.2298882238976675,
+    "forced_not_crack": 2997481,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.26024103634495954,
+    "offspec_area": 0.2036347748010168,
+    "forced_not_crack": 3284551,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.251260906870741,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 413151
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.20002505973257365,
+    "offspec_area": 0.1514149665019009,
+    "forced_not_crack": 2352394,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.19238498874159918,
+    "offspec_area": 0.1359043059568738,
+    "forced_not_crack": 2072828,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.269464215416109,
+    "offspec_area": 0.2479566569561452,
+    "forced_not_crack": 3280171,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.2817046818229579,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 585945
+  },
+  {
+    "name": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.26915225223459854,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 528314
+  },
+  {
+    "name": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.28422785398031064,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 591949
+  },
+  {
+    "name": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.30191104811273783,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 672981
+  },
+  {
+    "name": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.3221512185619958,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 483956
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.3016829650290825,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 660314
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.3132000706884407,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 431450
+  },
+  {
+    "name": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.2069288387168973,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 526225
+  },
+  {
+    "name": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.28591277071570653,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 531717
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.20861138123427247,
+    "offspec_area": 0.047787807262938894,
+    "forced_not_crack": 1058131,
+    "preexisting_corrected": 7165475
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "pred_area": 0.3851168896112014,
+    "offspec_area": 0.007147393424178022,
+    "forced_not_crack": 8597,
+    "preexisting_corrected": 602631
+  },
+  {
+    "name": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.26663035132634116,
+    "offspec_area": 0.2675404756297611,
+    "forced_not_crack": 3209546,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.13001402240509563,
+    "offspec_area": 0.114680134276061,
+    "forced_not_crack": 1413387,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.05752523748486986,
+    "offspec_area": 0.027427409637727503,
+    "forced_not_crack": 585652,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.32375474715720165,
+    "offspec_area": 0.008774090526870122,
+    "forced_not_crack": 22687,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.10295630439146983,
+    "offspec_area": 0.05955680795679244,
+    "forced_not_crack": 1274730,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.09535069235554094,
+    "offspec_area": 0.009550594505484403,
+    "forced_not_crack": 25800,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.6791128214728137,
+    "offspec_area": 0.012756618189369365,
+    "forced_not_crack": 36914,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.09019316947592713,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.10971738332159782,
+    "offspec_area": 0.030925759904969097,
+    "forced_not_crack": 98755,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.13035981271639913,
+    "offspec_area": 0.07573545763709269,
+    "forced_not_crack": 1684121,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.21622903382280925,
+    "offspec_area": 0.0681314621911344,
+    "forced_not_crack": 228361,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.4384977122299391,
+    "offspec_area": 0.372613518678356,
+    "forced_not_crack": 4464665,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "pred_area": 0.20123170928305686,
+    "offspec_area": 0.19060533464884272,
+    "forced_not_crack": 2188965,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.3769331783869984,
+    "offspec_area": 0.3454797187186233,
+    "forced_not_crack": 6911602,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.29075047445064917,
+    "offspec_area": 0.12810053624518658,
+    "forced_not_crack": 2507308,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.3525999621576485,
+    "offspec_area": 0.010607754962843116,
+    "forced_not_crack": 36550,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.31418293889630255,
+    "offspec_area": 0.19187173761086448,
+    "forced_not_crack": 3702312,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.26885152139098606,
+    "offspec_area": 0.05160291830981546,
+    "forced_not_crack": 390303,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.3369407877065853,
+    "offspec_area": 0.040623498204742155,
+    "forced_not_crack": 362602,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.27379580741222576,
+    "offspec_area": 0.05119577327363694,
+    "forced_not_crack": 488018,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.2700874272842319,
+    "offspec_area": 0.0757182970026278,
+    "forced_not_crack": 678284,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.2833065824217276,
+    "offspec_area": 0.10362665032063373,
+    "forced_not_crack": 964183,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.22737650966223452,
+    "offspec_area": 0.07042226445556482,
+    "forced_not_crack": 873803,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.20272674421558473,
+    "offspec_area": 0.0,
+    "forced_not_crack": 0,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.2323348615737095,
+    "offspec_area": 0.09999768277328945,
+    "forced_not_crack": 1926562,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.29125088793424214,
+    "offspec_area": 0.1827056779416584,
+    "forced_not_crack": 3780900,
+    "preexisting_corrected": 0
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "pred_area": 0.31214579378685786,
+    "offspec_area": 0.2061500660226775,
+    "forced_not_crack": 4165341,
+    "preexisting_corrected": 0
+  }
+]

@@ -59,11 +59,27 @@ OUTPUT_DIR = os.path.join(PROJECT_DIR, "results", "corrected")
 for d in (PREDICTED_CACHE_DIR, CORRECTIONS_DIR, OUTPUT_DIR):
     os.makedirs(d, exist_ok=True)
 
-# Folders to offer in the image picker. Add more here as needed.
+# Folders to offer in the image picker, searched RECURSIVELY (the dataset
+# is organized one subfolder per specimen type).
+#
+# Points at the RAW images, deliberately, not the flatfielded ones:
+# measured directly on 338_13 (the one specimen present in both sets), the
+# production model scores IoU 0.789 on raw vs 0.421 on flatfielded, and
+# over-predicts crack area 28% -> 52% on flatfielded. That's expected
+# rather than a bug -- the single most important feature group is
+# large-radius smoothed intensity (~41% of total importance, i.e. "is this
+# pixel inside a broad dark region"), and flatfielding's whole purpose is
+# to remove broad illumination trends, so it erases what those features
+# encode. A flatfielded-trained model is a separate, legitimate option
+# (it may well fix LARGE's vignetting artifact), but it needs its own
+# training run -- the current model cannot be pointed at flatfielded data.
+#
+# Correcting on raw loses nothing either way: corrections are pixel masks
+# and the flatfielded images are pixel-identical in shape, so any
+# correction made here is equally valid ground truth for training a
+# flatfielded model later.
 SOURCE_DIRS = [
-    "/Users/jiamingzhang/Desktop/260618_b2_333_75_to_339_06",
-    "/Users/jiamingzhang/Desktop/260618_b2_340_to_343_75",
-    "/Users/jiamingzhang/Desktop/260618_b2_343_75_LARGE",
+    "/Users/jiamingzhang/Desktop/TXM DATA",
 ]
 EXCLUDE_SUBSTRINGS = ("Result of", "Probabilities", "gaussian")
 
@@ -123,22 +139,27 @@ def get_model():
 
 
 def list_images():
-    """Returns [{name, path}] for every eligible raw TIFF across SOURCE_DIRS."""
+    """Returns [{name, path, group}] for every eligible raw TIFF found
+    RECURSIVELY under SOURCE_DIRS. `group` is the immediate subfolder name
+    (the specimen type, e.g. "B2 316L H Tension"), used to label images in
+    the picker -- the dataset is organized one subfolder per specimen, and
+    the filenames alone don't say which specimen they belong to."""
     out = []
     seen = set()
     for d in SOURCE_DIRS:
         if not os.path.isdir(d):
             continue
-        for fn in sorted(os.listdir(d)):
-            if not fn.lower().endswith(".tif"):
-                continue
+        for path in sorted(glob.glob(os.path.join(d, "**", "*.tif"), recursive=True)):
+            fn = os.path.basename(path)
             if any(s in fn for s in EXCLUDE_SUBSTRINGS):
                 continue
             name = os.path.splitext(fn)[0]
             if name in seen:
                 continue
             seen.add(name)
-            out.append({"name": name, "path": os.path.join(d, fn)})
+            rel = os.path.relpath(os.path.dirname(path), d)
+            out.append({"name": name, "path": path,
+                        "group": "" if rel == "." else rel})
     return out
 
 

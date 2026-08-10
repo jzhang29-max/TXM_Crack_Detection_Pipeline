@@ -26,3 +26,11 @@ code/__pycache__/
 
 # OS
 .DS_Store
+
+# Flatfielded feature caches -- large and fully regeneratable:
+#   python3 code/build_flatfield_dataset.py   (dataset_cache_flatfield/)
+#   python3 code/train_flatfield_model.py     (paint/flatfield_featcache/, built on demand)
+#   python3 code/apply_flatfield_all.py       (paint/flatfield_predcache/)
+dataset_cache_flatfield/
+paint/flatfield_featcache/
+paint/flatfield_predcache/

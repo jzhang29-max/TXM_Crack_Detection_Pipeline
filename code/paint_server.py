@@ -49,13 +49,28 @@ def index():
 
 @app.route("/api/images")
 def api_images():
+    """Lists images for the picker WITHOUT forcing a prediction for each.
+
+    This used to call region_stats() on every image, which computes a full
+    prediction (feature stack + inference + post-processing) as a side
+    effect. That was ~tolerable with 12 images; with 71 -- one of which
+    takes ~30s alone -- it meant minutes of hanging on every single page
+    load, before the user could even pick an image. Now stats are reported
+    only for images whose prediction is ALREADY cached, and computed
+    on demand when an image is actually opened."""
     out = []
     for info in pc.list_images():
-        try:
-            stats = pc.region_stats(info["name"])
-        except Exception as e:
-            stats = {"n_regions": -1, "area_fraction": 0.0}
-        out.append({"name": info["name"], **stats})
+        mask_path, img_path = pc._cache_paths(info["name"])
+        cached = os.path.exists(mask_path) and os.path.exists(img_path)
+        entry = {"name": info["name"], "group": info.get("group", ""), "cached": cached}
+        if cached:
+            try:
+                entry.update(pc.region_stats(info["name"]))
+            except Exception:
+                entry.update({"n_regions": -1, "area_fraction": 0.0})
+        else:
+            entry.update({"n_regions": None, "area_fraction": None})
+        out.append(entry)
     return jsonify(out)
 
 

@@ -95,11 +95,30 @@ async function loadImageList(keepCurrent) {
   const sel = document.getElementById('imageSelect');
   const previousSelection = keepCurrent ? currentImage : null;
   sel.innerHTML = '';
+  // Group images by specimen type (the dataset is one subfolder per
+  // specimen and the filenames alone don't say which is which), and show
+  // "not yet predicted" rather than "null regions" for images whose
+  // prediction hasn't been computed yet -- /api/images no longer forces a
+  // prediction for all 71 images just to build this list.
+  const groups = new Map();
   for (const info of images) {
-    const opt = document.createElement('option');
-    opt.value = info.name;
-    opt.textContent = info.name + '  (' + info.n_regions + ' regions, ' + (info.area_fraction * 100).toFixed(1) + '%)';
-    sel.appendChild(opt);
+    const g = info.group || '(ungrouped)';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(info);
+  }
+  for (const [groupName, groupImages] of groups) {
+    const og = document.createElement('optgroup');
+    og.label = groupName + '  (' + groupImages.length + ')';
+    for (const info of groupImages) {
+      const opt = document.createElement('option');
+      opt.value = info.name;
+      const stats = info.cached
+        ? '  (' + info.n_regions + ' regions, ' + (info.area_fraction * 100).toFixed(1) + '%)'
+        : '  (not yet predicted)';
+      opt.textContent = info.name + stats;
+      og.appendChild(opt);
+    }
+    sel.appendChild(og);
   }
   if (previousSelection) {
     sel.value = previousSelection;
