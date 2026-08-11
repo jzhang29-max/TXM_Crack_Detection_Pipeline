@@ -62,11 +62,19 @@ MIN_SKEL_LEN   = 45     # px of skeleton. A crack is a connected elongated PATH;
                         # independently proposed exactly this gate. One measured that 84%
                         # of predicted regions have aspect ratio < 2 and only 2% exceed 4,
                         # median region 34px -- the model emits blobs, not traces.
-MIN_ELONGATION = 2.0    # major/minor axis, applied as AND with the skeleton gate.
-                        # First attempt used OR at 2.6 and removed essentially NOTHING
-                        # (logged "curv -0.0%" on all 71, areas unchanged) -- the OR let
-                        # any modestly elongated texture blob through. A crack must satisfy
-                        # BOTH: long enough to be a path, and thin enough to be a trace.
+MIN_ELONGATION = 2.6    # major/minor axis, applied as OR with the skeleton gate.
+                        # HISTORY -- both settings were measured against ground truth:
+                        #   OR  @2.6: gate removes ~nothing ("curv -0.0%"), mean IoU 0.524
+                        #   AND @2.0: gate DESTROYS real cracks. Mean IoU collapsed to
+                        #             0.197 and recall on 336_25 went 0.617 -> 0.016, i.e.
+                        #             98% of true crack pixels deleted. Group areas fell 8x,
+                        #             which LOOKS like artifact removal but was crack removal.
+                        # Reverted to OR. The lesson: judge a suppression by RECALL against
+                        # ground truth, never by how much area it removes -- an
+                        # over-aggressive filter and a good one both reduce area.
+                        # A curvilinearity gate may still be right in principle, but it
+                        # needs a threshold derived from the actual skeleton-length
+                        # distribution of TRUE crack components, not a guessed 45px.
 KEEP_ECC       = 0.90   # elongated components are protected from phase rejection
 PHASE_BINS     = 8      # intra-tile phase grid resolution
 PHASE_EXCESS   = 2.5    # a phase cell holding >2.5x its expected share is artifact-locked
@@ -206,7 +214,7 @@ def main():
             skel_len = int(skeletonize(r.image).sum())
             minor = max(r.minor_axis_length, 1e-6)
             elong = r.major_axis_length / minor
-            if skel_len >= MIN_SKEL_LEN and elong >= MIN_ELONGATION:
+            if skel_len >= MIN_SKEL_LEN or elong >= MIN_ELONGATION:
                 keep[lab == r.label] = True
             else:
                 n_texture_dropped += r.area

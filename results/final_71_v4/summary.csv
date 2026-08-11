@@ -1,0 +1,72 @@
+name,group,area_fraction,n_regions,prev_area_fraction
+Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.02064,25,0.04411
+Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00421,21,0.06694
+Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00937,9,0.03300
+Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00259,2,0.04933
+Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.01268,20,0.01619
+Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.03326,34,0.10284
+Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.24441,48,0.29642
+Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00106,4,0.59665
+Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.11296,82,0.18784
+Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00419,11,0.57721
+Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.02171,23,0.04143
+Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00362,10,0.00467
+Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00846,7,0.00555
+Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00047,2,0.58897
+Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.06427,18,0.44886
+Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00015,2,0.63259
+Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00134,4,0.00570
+Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00438,8,0.59595
+Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.05239,38,0.46186
+Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.18499,24,0.20557
+Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.01171,16,0.59482
+Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.02146,29,0.03135
+Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00147,16,0.24833
+Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00526,21,0.01183
+Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00838,15,0.02574
+Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.00490,21,0.00979
+Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim,AM 316LH Fatigue,0.01544,24,0.04481
+Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim,B2 316L H Tension,0.01760,32,0.06376
+Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim,B2 316L H Tension,0.00078,9,0.00908
+Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.11012,6,0.28983
+Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.00006,1,0.01201
+Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.00554,17,0.03187
+Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim,B2 316L H Tension,0.00000,0,0.00233
+Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.00941,6,0.23424
+Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.01330,8,0.22174
+Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.07848,10,0.24858
+Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.03000,5,0.25914
+Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.00402,3,0.29093
+Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.03151,10,0.28312
+Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.04110,17,0.30999
+Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.02857,7,0.39369
+Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.04169,11,0.32882
+Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.14720,62,0.20675
+Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B2 316L H Tension,0.04901,6,0.42384
+Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00014,2,0.00040
+Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00079,6,0.00208
+Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00139,13,0.00410
+Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00201,1,0.00363
+Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00248,18,0.00464
+Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00220,2,0.00902
+Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00269,2,0.00237
+Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00898,5,0.01526
+Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.01073,5,0.01678
+Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00227,5,0.00438
+Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.05553,9,0.06696
+Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00098,4,0.00084
+Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim,B3 316L Amb Tension,0.00139,9,0.00142
+Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.01394,25,0.02609
+Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.01784,42,0.02378
+Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.02461,20,0.07835
+Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.02402,34,0.02013
+Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00620,21,0.00981
+Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.01497,20,0.03078
+Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00189,15,0.00262
+Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00305,8,0.00190
+Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00373,8,0.00263
+Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00092,12,0.00106
+Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00067,7,0.00135
+Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.02451,65,0.01689
+Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.00449,17,0.00398
+Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim,Wrought 316L H Fatigue,0.01260,20,0.01047
