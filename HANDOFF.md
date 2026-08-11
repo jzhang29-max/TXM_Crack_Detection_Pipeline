@@ -42,9 +42,29 @@ felt worse before any metric here did.
 never treat an area reduction as improvement. An over-aggressive filter and a
 good one both reduce area; only RECALL against ground truth separates them.
 
-**Current best model:** `models/pixel_hgb_final.joblib` — the ORIGINAL raw MLP,
-mean IoU 0.779. The paint tool defaults to raw again
-(`TXM_PAINT_FLATFIELD=1` opts into the flatfielded pipeline).
+**Current best model:** `models/pixel_hgb_final.joblib` = **raw_v4**, the raw
+model retrained on the accumulated correction labels with class balance
+controlled (`--neg-cap 2000`, 43.9% crack). The ORIGINAL is preserved at
+`models/pixel_ORIG_raw_backup.joblib`.
+
+| model | mean IoU | recall | crack-free false positive |
+|---|---|---|---|
+| ORIG raw | 0.779 | 0.884 | 31.22% |
+| raw_v2 (24% crack) | 0.649 | 0.808 | 4.67% |
+| raw_v3 (38% crack) | 0.744 | 0.858 | 5.58% |
+| **raw_v4 (44% crack)** | **0.773** | **0.881** | **7.43%** |
+
+v4 holds ORIG's accuracy (IoU within 0.006, recall within 0.003) while cutting
+false crack on the six owner-confirmed crack-free specimens by **4.2x**. On
+`333_75_um_zoom` it beats ORIG outright (0.755 vs 0.735).
+
+Why this worked when three earlier attempts did not: it learns from the OWNER'S
+VERIFIED LABELS rather than from my inference about image properties. The three
+failures — flatfielding, geometric masking, the curvilinearity gate — were all
+guesses at what a crack looks like. This one only uses judgments the owner had
+already made. The tuning knob that mattered was class balance, nothing clever.
+
+The paint tool defaults to raw (`TXM_PAINT_FLATFIELD=1` opts into flatfielded).
 
 **The trade-off is real and unresolved.** Raw is much better where ground truth
 exists (all B2) and floods badly on AM/Wrought (up to 40-70% of frame, 41% on
