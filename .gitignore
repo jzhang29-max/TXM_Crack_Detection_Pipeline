@@ -51,3 +51,12 @@ results/final_71_v2/*_overlay.png
 # Paint tool prediction cache for the flatfielded pipeline -- regenerated
 # automatically on demand (paint_common auto-invalidates on model change).
 paint/predicted_cache_flatfield/
+
+# Same policy for the raw-model outputs: masks/stats/summaries/montages tracked,
+# large overlays excluded (regenerate with build_final_outputs_raw.py).
+!results/final_71_raw/
+!results/final_71_raw/*_crack_mask.png
+!results/final_71_raw/*_stats.csv
+!results/final_71_raw/summary.*
+!results/final_71_raw/_montage_*.png
+results/final_71_raw/*_overlay.png
