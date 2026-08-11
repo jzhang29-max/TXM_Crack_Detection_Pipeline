@@ -12,17 +12,51 @@ B2 316L H Tension 17, B3 316L Amb Tension 13, Wrought 316L H Fatigue 14).
 Raw images live outside the repo under `~/Desktop/TXM DATA/<group>/`, with
 flatfielded counterparts at `~/Desktop/TXM DATA processed/flatfielded/<group>/`.
 
-**Pipeline runs on FLATFIELDED input.** This was measured, not assumed:
-raw median brightness varies 2.6x across specimen groups (Wrought 0.575 vs
-B2 1.518), and the raw-trained model's dominant rule was "broad dark region
-= crack", so it flooded darker specimens. Moving to flatfielded input cut
-over-prediction by 40.0pp on Wrought and 24.0pp on AM with no regression on
-B2. Flatfielding also removes the mosaic tile-grid pattern and the broad
-illumination gradient.
+### CORRECTION — the flatfielded switch was a REGRESSION. Pipeline is back on RAW.
 
-**Current best model:** `models/pixel_flatfield_clean.joblib` (MLP + StandardScaler).
+Measured on the 4 Ilastik ground-truth images (the only pixel-level truth
+that exists), IoU and recall:
 
-**Current best outputs:** `results/final_71_v2/` — all 71 B&W masks, stats
+| model | input | mean IoU | LARGE recall |
+|---|---|---|---|
+| **ORIG raw MLP** — `models/pixel_hgb_final.joblib` | raw | **0.779** | **0.94** |
+| ORIG raw HGB | raw | 0.764 | 0.94 |
+| flatfield MLP | flatfielded | 0.610 | 0.65 |
+| flatfield HGB | flatfielded | 0.607 | 0.64 |
+| flatfield MLP + geometric post-proc (`final_71_v2`) | flatfielded | 0.524 | — |
+
+The raw model is better on EVERY ground-truth image. Switching to flatfielded
+cost 0.17 IoU, and the geometric/curvilinearity post-processing cost a further
+0.086 on top of that.
+
+**How the mistake happened, so it is not repeated:** flatfielded was adopted on
+the strength of the new specimen groups — Wrought over-prediction 68.7%->28.7%,
+an undamaged specimen 41%->1.3%. That evidence is real, but it only measures
+FALSE POSITIVES. IoU against ground truth was never checked before committing
+to the switch, and "no regression on B2" was asserted from predicted AREA being
+similar — a much weaker test, since area can stay constant while the mask moves
+to the wrong pixels. That is exactly what happened. The owner noticed the model
+felt worse before any metric here did.
+
+**General lesson:** never accept a change on a false-positive metric alone, and
+never treat an area reduction as improvement. An over-aggressive filter and a
+good one both reduce area; only RECALL against ground truth separates them.
+
+**Current best model:** `models/pixel_hgb_final.joblib` — the ORIGINAL raw MLP,
+mean IoU 0.779. The paint tool defaults to raw again
+(`TXM_PAINT_FLATFIELD=1` opts into the flatfielded pipeline).
+
+**The trade-off is real and unresolved.** Raw is much better where ground truth
+exists (all B2) and floods badly on AM/Wrought (up to 40-70% of frame, 41% on
+an undamaged specimen). Flatfielded is sane on those groups but measurably
+worse where verifiable. Ground truth only exists for B2, so raw wins on
+evidence. The AM/Wrought flooding is a LABELLING gap — the model has never seen
+an AM or Wrought crack — and cannot be fixed by preprocessing; three attempts
+to do so all made things worse.
+
+**Current best outputs:** `results/final_71_raw/` — from the ORIG raw model,
+with each group labelled by whether it is VERIFIED against ground truth (B2, B3)
+or KNOWN TO FLOOD (AM, Wrought). Superseded: `final_71_v2/` — all 71 B&W masks, stats
 CSVs, summaries and montages are COMMITTED (4MB). Overlays are gitignored
 (558MB) but are a pure rendering of mask+image, regenerated in seconds (§5).
 
