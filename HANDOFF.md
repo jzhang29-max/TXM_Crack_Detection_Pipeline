@@ -22,8 +22,21 @@ illumination gradient.
 
 **Current best model:** `models/pixel_flatfield_clean.joblib` (MLP + StandardScaler).
 
-**Current best outputs:** `results/final_71_v2/` — B&W masks are committed;
-overlays are not (558MB) but regenerate in seconds, see §5.
+**Current best outputs:** `results/final_71_v2/` — all 71 B&W masks, stats
+CSVs, summaries and montages are COMMITTED (4MB). Overlays are gitignored
+(558MB) but are a pure rendering of mask+image, regenerated in seconds (§5).
+
+Per-group median predicted crack area, `final_71` -> `final_71_v2`:
+
+| group | n | final_71 | final_71_v2 |
+|---|---|---|---|
+| AM 316LH Fatigue | 27 | 18.9% | **6.7%** |
+| B2 316L H Tension | 17 | 31.4% | **24.9%** |
+| B3 316L Amb Tension | 13 | 1.0% | **0.4%** |
+| Wrought 316L H Fatigue | 14 | 1.9% | **1.0%** |
+
+`final_71_v2` has NOT been re-audited — the 87% figure in §2 was measured on
+`final_71`. Whether these suppressions moved it is unmeasured (see §8 step 2).
 
 ---
 

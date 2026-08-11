@@ -47,3 +47,7 @@ paint/flatfield_predcache/
 !results/final_71_v2/summary.*
 !results/final_71_v2/_montage_*.png
 results/final_71_v2/*_overlay.png
+
+# Paint tool prediction cache for the flatfielded pipeline -- regenerated
+# automatically on demand (paint_common auto-invalidates on model change).
+paint/predicted_cache_flatfield/
