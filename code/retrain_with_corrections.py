@@ -227,6 +227,14 @@ def main():
     ap.add_argument("--correction-weight", type=float, default=1.0,
                      help="sample-weight multiplier for human-corrected pixels relative to bootstrapped Ilastik pixels "
                           "(1.0 = equal footing; see module docstring for why higher values caused a real regression)")
+    ap.add_argument("--neg-cap", type=int, default=CORRECTION_N_PER_CLASS_PER_IMAGE,
+                     help="max force-not-crack px per corrected image. MUST be tuned to keep the "
+                          "training set near 50%% crack. At the default 30000 across 71 images the "
+                          "corrections are ~2.4M px and almost all not-crack, dropping the set to ~24%% "
+                          "crack; class_weight='balanced' then upweights crack ~3.2x and the model "
+                          "OVER-predicts -- measured: recall rose on 3 of 4 ground-truth images while "
+                          "IoU fell 0.779 -> 0.649 because predicted area grew 25.9->28.7, 27.1->32.2, "
+                          "28.5->33.5%%. Lower this until the printed crack fraction is near 50%%.")
     ap.add_argument("--out", default=os.path.join(PROJECT_DIR, "models", "pixel_model_retrained.joblib"),
                      help="output path for the retrained model (never overwrites pixel_hgb_final.joblib by default)")
     args = ap.parse_args()
@@ -237,7 +245,8 @@ def main():
     X_boot, y_boot, w_boot = load_bootstrap_samples(rng)
 
     print("Loading human correction samples (paint/corrections/)...")
-    X_corr, y_corr, w_corr = load_correction_samples(args.correction_weight, rng)
+    X_corr, y_corr, w_corr = load_correction_samples(args.correction_weight, rng,
+                                                     max_per_class_per_image=args.neg_cap)
 
     if not X_corr:
         print("\nNo corrections found yet -- nothing to add. Open the paint tool, make some "
@@ -259,7 +268,8 @@ def main():
     n_total = len(y)
     n_correction_px = sum(len(w) for w in w_corr)
     print(f"\nTraining on {n_total} pixels total ({n_correction_px} from human corrections, "
-          f"weighted {args.correction_weight}x)...")
+          f"weighted {args.correction_weight}x) -- {y.mean()*100:.1f}% crack "
+          f"{'[OK, near balanced]' if 0.42 <= y.mean() <= 0.58 else '[WARNING: imbalanced, expect over/under-prediction]'}")
 
     clf = build_classifier()
     fit_with_sample_weight(clf, X, y, sample_weight)
