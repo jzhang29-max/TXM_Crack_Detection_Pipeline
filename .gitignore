@@ -60,3 +60,11 @@ paint/predicted_cache_flatfield/
 !results/final_71_raw/summary.*
 !results/final_71_raw/_montage_*.png
 results/final_71_raw/*_overlay.png
+
+# Per-group outputs: masks/stats/summaries/montages tracked, overlays excluded.
+!results/final_71_pergroup/
+!results/final_71_pergroup/*_crack_mask.png
+!results/final_71_pergroup/*_stats.csv
+!results/final_71_pergroup/summary.*
+!results/final_71_pergroup/_montage_*.png
+results/final_71_pergroup/*_overlay.png

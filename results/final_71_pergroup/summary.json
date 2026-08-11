@@ -1,0 +1,570 @@
+[
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.03487948006563648,
+    "n_regions": 138,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.07204670074923963,
+    "n_regions": 172,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.018240918610417614,
+    "n_regions": 50,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.7026425109825485,
+    "n_regions": 44,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.02210976910059492,
+    "n_regions": 63,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.053418254695752135,
+    "n_regions": 162,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.384868732870513,
+    "n_regions": 351,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.729064207223792,
+    "n_regions": 42,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.1592453021519542,
+    "n_regions": 330,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.6754636784826032,
+    "n_regions": 97,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.03136438311513506,
+    "n_regions": 52,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.008581831492732419,
+    "n_regions": 28,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.008907802559523358,
+    "n_regions": 15,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.7269299774365662,
+    "n_regions": 52,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.5612486870729299,
+    "n_regions": 136,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.7811961114402325,
+    "n_regions": 13,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.7443605143402948,
+    "n_regions": 49,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.6767700724971702,
+    "n_regions": 97,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.5034197852333011,
+    "n_regions": 241,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.22625021896983838,
+    "n_regions": 76,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.6304937663954078,
+    "n_regions": 121,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.0322659566303829,
+    "n_regions": 95,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.2213679591318545,
+    "n_regions": 100,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.030044054612512125,
+    "n_regions": 126,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.024939598227574526,
+    "n_regions": 88,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.01693620844564241,
+    "n_regions": 81,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "AM 316LH Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.048016415351062394,
+    "n_regions": 123,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.14120826547378015,
+    "n_regions": 252,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.11512690588336486,
+    "n_regions": 282,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.2608556557171752,
+    "n_regions": 17,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.1003178180754522,
+    "n_regions": 347,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.11801233459993028,
+    "n_regions": 314,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.06075427131721912,
+    "n_regions": 160,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.27979678090108223,
+    "n_regions": 33,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.28497220223781783,
+    "n_regions": 31,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.2828013955651823,
+    "n_regions": 34,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.30101050529419465,
+    "n_regions": 29,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.3120682558383928,
+    "n_regions": 25,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.2625930571340742,
+    "n_regions": 35,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.2812237562941336,
+    "n_regions": 31,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.28947395432897827,
+    "n_regions": 31,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.29013633376729264,
+    "n_regions": 25,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.18453246102641563,
+    "n_regions": 136,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B2 316L H Tension",
+    "input": "raw",
+    "area_fraction": 0.3084755594449306,
+    "n_regions": 22,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.03187451777724095,
+    "n_regions": 26,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.038096888231168045,
+    "n_regions": 42,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.014199987854717721,
+    "n_regions": 74,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.057588931285695796,
+    "n_regions": 43,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.015925050861632064,
+    "n_regions": 97,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.06744146615746505,
+    "n_regions": 34,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.06148018916273089,
+    "n_regions": 40,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.06332469344100553,
+    "n_regions": 41,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.08123050567363307,
+    "n_regions": 46,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.015967817259925278,
+    "n_regions": 104,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.10477711083753423,
+    "n_regions": 63,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.03332339178594095,
+    "n_regions": 33,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "B3 316L Amb Tension",
+    "input": "raw",
+    "area_fraction": 0.030869705895923992,
+    "n_regions": 25,
+    "verified_vs_gt": true
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.020614746474150784,
+    "n_regions": 60,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.047104222230342226,
+    "n_regions": 177,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.05157402655082828,
+    "n_regions": 57,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.03569568888041613,
+    "n_regions": 81,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.02139573615004905,
+    "n_regions": 46,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.026797568767401466,
+    "n_regions": 63,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.0182000390594665,
+    "n_regions": 19,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.022716624345141993,
+    "n_regions": 19,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.022623632591474915,
+    "n_regions": 16,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.019158793406022227,
+    "n_regions": 13,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.02127846119566235,
+    "n_regions": 17,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.07618553587087275,
+    "n_regions": 256,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.01221084623725021,
+    "n_regions": 47,
+    "verified_vs_gt": false
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "group": "Wrought 316L H Fatigue",
+    "input": "flatfielded",
+    "area_fraction": 0.01922208759975714,
+    "n_regions": 55,
+    "verified_vs_gt": false
+  }
+]

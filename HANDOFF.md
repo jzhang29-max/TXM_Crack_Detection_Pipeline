@@ -66,7 +66,21 @@ already made. The tuning knob that mattered was class balance, nothing clever.
 
 The paint tool defaults to raw (`TXM_PAINT_FLATFIELD=1` opts into flatfielded).
 
-### The raw-vs-flatfielded trade-off, now diagnosed precisely
+### RESOLVED by per-group selection. Measurement note first:
+
+Flatfielding DOES suppress the tile grid -- ~10x, measured over SPECIMEN PIXELS
+ONLY (wrought_800 0.943->0.088, wrought_900 0.947->0.071, b2_338_13
+0.858->0.097). Measuring the column profile over the WHOLE frame instead gives
+a misleading ~0.96, because the dark off-specimen band dominates it; that error
+briefly made it look as though flatfielding did nothing. A separate false alarm:
+raw-vs-flatfielded pixel correlation is only 0.27, which is EXPECTED for a
+ratio-based high-pass and is NOT evidence of geometric misalignment.
+
+What the owner observed as "grid still marked" in flatfielded Wrought results is
+the EDGE TEXTURE BAND, which a high-pass amplifies -- a different and narrower
+problem than the tile grid.
+
+### The trade-off itself, and why per-group is the answer
 
 v4 on RAW input cut predicted area a lot on the problem groups (AM 59.4% ->
 11.5%, Wrought 68.7% -> 23.6%, B3 20.9% -> 3.8%) while HOLDING B2 at 28.0%.
@@ -104,7 +118,18 @@ evidence. The AM/Wrought flooding is a LABELLING gap — the model has never see
 an AM or Wrought crack — and cannot be fixed by preprocessing; three attempts
 to do so all made things worse.
 
-**Current best outputs:** `results/final_71_raw/` — from the ORIG raw model,
+**Current best outputs:** `results/final_71_pergroup/` — PER-GROUP input and
+model, which resolves the raw-vs-flatfielded trade-off instead of compromising:
+
+| groups | input | model | median area | regions | trust |
+|---|---|---|---|---|---|
+| B2, B3 | raw | raw_v4 | 28.0% / 3.8% | 33 / 42 | VERIFIED, IoU 0.773 |
+| AM, Wrought | flatfielded | flatfield HGB | 15.9% / 2.2% | 95 / 51 | no GT exists |
+
+Wrought improved from 23.6% area / 204 regions (raw, tracing tile seams) to
+2.2% / 51. AM fragmentation halved (188 -> 95 regions). B2/B3 unchanged.
+
+Superseded: `final_71_raw/`, `final_71_v2/` — from the ORIG raw model,
 with each group labelled by whether it is VERIFIED against ground truth (B2, B3)
 or KNOWN TO FLOOD (AM, Wrought). Superseded: `final_71_v2/` — all 71 B&W masks, stats
 CSVs, summaries and montages are COMMITTED (4MB). Overlays are gitignored
