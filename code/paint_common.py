@@ -71,14 +71,51 @@ PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # originally adopted on false-positive evidence from the new specimen groups,
 # which is real but does not measure IoU. Set TXM_PAINT_FLATFIELD=1 to use the
 # flatfielded pipeline for the AM/Wrought groups, where raw floods badly.
-USE_FLATFIELD = os.environ.get("TXM_PAINT_FLATFIELD", "") != ""
+# PER-GROUP selection. Neither input serves every specimen group, measured:
+#   B2/B3 need RAW -- ~41% of feature importance is large-radius smoothed
+#     intensity ("is this pixel in a broad dark region"), and flatfielding
+#     removes exactly that broad-trend signal. Cost of using flatfielded here:
+#     IoU 0.779 -> 0.610 on the 4 ground-truth images.
+#   AM/Wrought need FLATFIELDED -- the mosaic tile grid is their dominant
+#     failure mode and flatfielding suppresses it ~10x inside the specimen
+#     (periodicity 0.943 -> 0.088). On raw they trace the seams: Wrought median
+#     predicted area 23.6% with 204 regions vs 2.2% / 51 on flatfielded.
+# Serving each group its better prediction matters for MARKUP specifically: it
+# is the difference between correcting a clean starting mask and hand-erasing
+# grid artifacts across 27 AM and 14 Wrought frames.
+FLATFIELD_GROUPS = {"AM 316LH Fatigue", "Wrought 316L H Fatigue"}
+RAW_MODEL_PATH  = os.path.join(PROJECT_DIR, "models", "pixel_hgb_final.joblib")
+FLAT_MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_flatfield_hgb.joblib")
 
-if USE_FLATFIELD:
-    MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_flatfield_final.joblib")
-    PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache_flatfield")
-else:
-    MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_hgb_final.joblib")
-    PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache")
+# Single-model override, for reproducing an old result or A/B-ing a candidate.
+_FORCE = os.environ.get("TXM_PAINT_MODEL", "")
+USE_FLATFIELD = False              # retained: some callers still read this
+MODEL_PATH = RAW_MODEL_PATH if not _FORCE else os.path.join(PROJECT_DIR, "models", _FORCE)
+PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache_pergroup")
+
+
+def _group_of(name):
+    for info in list_images():
+        if info["name"] == name:
+            return info.get("group", "?")
+    return "?"
+
+
+def uses_flatfield(name):
+    """True if this image's group is served the flatfielded input+model."""
+    return (not _FORCE) and _group_of(name) in FLATFIELD_GROUPS
+
+
+def model_for(name):
+    """The model appropriate to this image's specimen group."""
+    global _models
+    path = MODEL_PATH if not uses_flatfield(name) else FLAT_MODEL_PATH
+    if path not in _models:
+        _models[path] = joblib.load(path)
+    return _models[path]
+
+
+_models = {}
 CORRECTIONS_DIR = os.path.join(PROJECT_DIR, "paint", "corrections")
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "results", "corrected")
 
@@ -225,7 +262,7 @@ def get_state(name):
         img01 = np.load(img_path)
     else:
         path = _find_path(name)
-        if USE_FLATFIELD:
+        if uses_flatfield(name):
             # Serve the FLATFIELDED image, matching what the flatfielded
             # model was trained on. Fall back to raw only if this image has
             # no flatfielded counterpart, and say so rather than silently
@@ -240,7 +277,7 @@ def get_state(name):
                 path = ffp
         raw = tifffile.imread(path).astype(np.float64)
         img01 = robust_normalize(raw, 1.0, 99.0)
-        model = get_model()
+        model = model_for(name)
         prob_map = predict_probability_map(model, img01)
         predicted_mask = postprocess_mask(prob_map)
         np.save(mask_path, predicted_mask)
