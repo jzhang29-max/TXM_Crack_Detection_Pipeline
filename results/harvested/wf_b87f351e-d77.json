@@ -1,0 +1,650 @@
+{
+ "run": "wf_b87f351e-d77",
+ "agents_started": 20,
+ "agents_completed": 8,
+ "findings": [
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/11.png",
+   "fraction_of_red_that_is_false_positive": 0.93,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The model is not segmenting cracks at all - it is segmenting \"high local texture variance,\" and the wedge suppression is now a hard axis-aligned box that deletes the single best crack in the frame. Quantitatively: red = 28.6% of the frame and 80% of that mass is ONE connected amorphous blob (63,422 of 78,900 px, ~23% of frame). Mean panel-1 intensity inside red (136.6) is indistinguishable from outside (140.3), while local std inside red is ~2x outside (30.6 vs 16.0) - proof the classifier keys on deformation mottling / relief texture, not on dark thin linear voids. The mask boundary meanders through texture and never traces a line; it is blobby, isotropic, and 19% of it sits on genuinely bland matrix (local sd below the frame median). Simultaneously the suppression over-fires: the four largest near-black elongated features - x277-377/y306-325 (the 100-px central dark crack trace), x383-437/y301-320, x594-619/y206-224, x541-592/y220-232 - have EXACTLY 0.000 red coverage. A straight vertical mask edge at column 598 spanning 147 rows, plus straight horizontal edges around the central dark trace, confirms rectangular box suppression rather than a learned decision. The most unambiguous crack in the image is at native x~500-620, y~190-250: a classic open crack with a dark void core and bright phase-contrast fringes, propagating LEFT from the mid-dark uniform wedge/notch that intrudes at the right frame edge, tapering to a crack tip, with 2-3 converging branches. That is textbook crack-from-notch-tip and it sits in a clean rectangular hole in the mask surrounded by a sea of red on featureless matrix. So the wedge rim itself is no longer being traced (suppression works on the wedge), but the box swallowed the crack emanating from the wedge tip - the exact structure the specimen owner cares about. Only incidental fragments of the crack network get red (x467-500/y203-221, x537-585/y193-201, x423-462/y350-362, x245-271/y307-316 are covered, but only because the giant blob happens to sweep over them, not because they were traced). Net effect: precision and recall fail at the same time, and the suppression is now actively harmful. Fix direction: replace area-thresholded texture/variance response with an anisotropy-gated ridge/valley detector (require elongation and dark-core polarity), and replace the rectangular wedge box with a tight morphological mask of the wedge body only, dilated by a few px, so cracks emanating from the notch tip survive."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/07.png",
+   "fraction_of_red_that_is_false_positive": 0.85,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is anti-localised with respect to the cracks: it blanket-fills the deformed high-relief material AROUND the damage while leaving the actual dark crack traces as unpainted corridors. Measured on the 620x618 panel, red = 22.3% of frame (85.4k px) with 89% of it in just two blobs (rows 141-345 x cols 89-584, and rows 325-561 x cols 36-584). The strongest thin dark-line pixels (top-2% black-tophat) are enriched inside red by only 1.94x over chance, 57% of them lie OUTSIDE red, and only 3.9% of red pixels are dark-line; meanwhile local std inside red is 29.8 vs 19.0 outside - i.e. the model is segmenting \"textured/deformed zone\", not \"crack\". Concretely: the single most convincing crack in panel 2, a long sharp dark line running left from the wedge tip at ~(row 300, col 560) through (row 330, col 470) to (row 355, col 405), is a clean unpainted hole straight through the middle of the red; and in the lower band the sharp black/white striated crack zone at rows ~415-450, cols 40-300 is largely unpainted while the smooth mottled material 30-60 px BELOW it is solidly red. True positives exist (the lens-shaped opening at rows 72-100, cols 358-410 is correctly covered) but the faint hairline continuing from its right tip diagonally down to ~(470,150) is missed. Wedge suppression is working - the large dark wedge at cols ~582-620, rows ~285-320 is excluded and its rim is not traced - but it is implemented as an abrupt rectangular cut (straight mask boundary at col 582, plus 20-26 px straight rectilinear boundary runs elsewhere), which also chops legitimate structure. Minor extra FPs on round ring/crescent artifact clusters (rows 178-216 x cols 227-273; rows 499-519 x cols 550-576). No off-specimen field or specimen edge exists in this crop, so neither contributes."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/02.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Gross dilation: the prediction is a solid blanket over the two broad deformation-relief / surface-topography bands rather than a trace of the crack itself. Red covers 29.5% of the frame, but only 13% of red pixels are actual dark line pixels and 24% of red sits on texture blander than the global median gradient, so per-pixel precision is roughly 0.2 and the real hairline crack (the thin branching dark trace running from the wedge mouth at ~(614,272) down-left through (430,310) to ~(250,380), plus the thin trace along the top margin of the lower band) is buried inside a mass of ~8x-too-large area. Two secondary problems compound it: (1) the wedge suppression is a crude axis-aligned rectangular hole punched only over the wedge's black core, so red still wraps the wedge rim, its bright/dark phase fringes, and its whole tapering tail, and runs up to a hard vertical wall at x=581; (2) the mask is hard-clipped by a ~34 px rectangular border exclusion (column counts jump 0 to 122 at x=34 and 175 to 0 at x=581), which means the classifier is still firing on the edge/boundary strip and is only being masked out by a geometric rule, not by having learned it. A smaller residual: the isolated vertical blob chains at x~500 and x~575-600 in the lower right follow straight seam/edge lines, not cracks. Positive notes: the regularly scattered ring/crescent reference artifacts in the top right are correctly left unpainted, and the real crack is not missed."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/09.png",
+   "fraction_of_red_that_is_false_positive": 0.88,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The suppression is inverted in effect: it punches holes out of the dark wedge/band CORES (only 37% of the strong dark features are red, and there is a clean rectangular hole over the darkest part of the lower band at panel x~250-375, y~475-560) while red blankets everything AROUND the wedge - 76% of the red sits within 25 px of the wedge/band complex and 65% of it is >12 px from any real feature, i.e. a 15-90 px thick halo over plain mottled matrix. The result is one 87k-px blob covering 26% of the frame with median width ~16 px, which is topologically nothing like a crack (real cracks here are a few px wide). It also shows hard rectilinear patch edges on the right (straight boundary at x~590 plus rectangular corners), so part of the decision is tile-quantised rather than feature-driven. Net effect: the one clearly real thin crack in the frame - the ~2-3 px dark/bright-paired near-vertical hairline at x~305-312 running y~352 to y~435 and bridging the upper band to the lower band - is captured only incidentally, in two disconnected blobs with a ~20 px gap at y~366-386 and no coverage below y~425, so it would not survive as a connected trace. Secondary FPs: small isolated red spots sitting on round pore/inclusion rings and dash-shaped inclusions in the upper half (e.g. y140-162/x266-289, y194-223/x244-282, y303-336/x460-509) and a blob over a mottled texture patch at bottom right."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/10.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "No thinness/filament prior at all: 27% of the frame is a SINGLE 103,648-px amoeba that blankets the whole deformed/mottled zone including plainly featureless matrix (71% red at y300-340, x380-470) instead of tracing lines. It is also anti-correlated with the real linear evidence - the mask punches a hole along the darkest linear core of the lower band (only 35% red at y450-470, x60-200) while filling both flanks, and it paints the dark wedge tip 90.5% red (x95-175, y243-264) plus 42% of the right-edge dark rim (y180-198), so the wedge suppression is only cosmetic. The one genuine feature - 3-4 faint parallel hairlines at x293-312, y350-437 bridging the upper band into the lower one - is caught only ~50%, and only as incidental blob overspill. Straight axis-aligned mask clips (dead-straight edge at x=581, boundary runs of 23-31 px) additionally point to tile/patch-boundary artifacts in post-processing."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/08.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a coarse region fill, not a thin-structure trace, and it is mislocalised relative to the damage it is supposed to follow. Red covers 25.0% of the frame in 48 components (90% of the area in just 5 blobs), yet only ~2.6% of the frame is red-on-actual-structure: 77% of red pixels lie more than 6 px from any high-contrast structure core, and 56% lie more than 15 px away. Worst case is the lower damage band (panel x 60-400, y 410-500): overlaying the darkest pixels shows red forms a HALO around it - the smooth matrix above and below the band is solid red while the band's own dark core and bright striated flanks are left completely unmarked (red fraction inside the two largest dark cores at x[142,230] y[449,475] and x[297,365] y[436,459] is 0.00). Same inversion logic elsewhere: the big right-hand blob (x 400-600, y 140-330) fills the featureless mottled interior of a raised lobe, and the centre blob (x 120-400, y 200-340) traces a lobe outline rather than a crack. Secondary signature: several red boundaries are axis-aligned and clipped to mosaic tile seams - a straight vertical cut at x approx 585, a rectangular patch at x 440-585 / y 345-400, and a straight horizontal cut at y approx 400 and at the bottom-right blob - so tile-level intensity offsets are still driving part of the mask. The genuinely thin crack in the frame (a few-pixel-wide vertical filament at x approx 297, y 358-403, hanging down from the upper band into the material near frame centre, clear in panel 2 and faintly in panel 1) is only about half covered: red touches its top junction, drops out over the middle ~40%, then a small isolated blob picks up the lower half and the dark tip. Good news: the wedge suppression is working - the dark tongue entering the right edge (x 563-619, y 302-331) has zero red inside it and zero within a 12 px rim, so the rim is no longer traced. The risk is that the same darkness-based suppression is now also deleting the dark cores of real cracks, which is exactly the halo pattern seen on the lower band."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/05.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The edge suppression is a fixed-width exclusion band (~8-14 px) but the local-contrast ringing from the hard bright->black step extends ~20 px, so the model now fires in a halo RING just OUTSIDE the exclusion zone instead of on the rim itself. Measured: 100% of the 1055 red pixels lie 8.2-20.0 px from a zero-valued (black) region (median 15 px; left cluster min 14 px, right cluster min 8 px), while only 9% of the bright field is within 22 px of black, and not one red pixel sits in the interior (>20 px from any edge). The suppression displaced the false positives rather than removing them; it needs to be distance-graded/widened to the full ringing radius, or keyed to \"step edge present within N px\" rather than \"on the edge\"."
+  }
+ ],
+ "all_results": [
+  {
+   "records": [
+    {
+     "file": "00.png",
+     "name": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.06376312309944651,
+     "regions": 258
+    },
+    {
+     "file": "01.png",
+     "name": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.00908060935072501,
+     "regions": 58
+    },
+    {
+     "file": "02.png",
+     "name": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.2898265213843772,
+     "regions": 26
+    },
+    {
+     "file": "03.png",
+     "name": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.012005412602119347,
+     "regions": 76
+    },
+    {
+     "file": "04.png",
+     "name": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.031867839397053434,
+     "regions": 101
+    },
+    {
+     "file": "05.png",
+     "name": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.0023251450017059026,
+     "regions": 25
+    },
+    {
+     "file": "06.png",
+     "name": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.2342394249752526,
+     "regions": 30
+    },
+    {
+     "file": "07.png",
+     "name": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.2217431408391957,
+     "regions": 34
+    },
+    {
+     "file": "08.png",
+     "name": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.24857685406469168,
+     "regions": 49
+    },
+    {
+     "file": "09.png",
+     "name": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.25914166947689576,
+     "regions": 23
+    },
+    {
+     "file": "10.png",
+     "name": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.290925578348768,
+     "regions": 26
+    },
+    {
+     "file": "11.png",
+     "name": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.2831205917822444,
+     "regions": 59
+    },
+    {
+     "file": "12.png",
+     "name": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.3099862356663008,
+     "regions": 60
+    },
+    {
+     "file": "13.png",
+     "name": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.3936916879321261,
+     "regions": 109
+    },
+    {
+     "file": "14.png",
+     "name": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.3288173875121572,
+     "regions": 45
+    },
+    {
+     "file": "15.png",
+     "name": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.2067484072851426,
+     "regions": 302
+    },
+    {
+     "file": "16.png",
+     "name": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B2 316L H Tension",
+     "area": 0.42384248031003874,
+     "regions": 64
+    },
+    {
+     "file": "17.png",
+     "name": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.0004034154346268216,
+     "regions": 4
+    },
+    {
+     "file": "18.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.044107358588818764,
+     "regions": 182
+    },
+    {
+     "file": "19.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.06693788868351426,
+     "regions": 146
+    },
+    {
+     "file": "20.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.03299979652797818,
+     "regions": 47
+    },
+    {
+     "file": "21.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.04933199812573826,
+     "regions": 77
+    },
+    {
+     "file": "22.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.016194074106982988,
+     "regions": 44
+    },
+    {
+     "file": "23.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.10283772934975939,
+     "regions": 195
+    },
+    {
+     "file": "24.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.2964217896278744,
+     "regions": 402
+    },
+    {
+     "file": "25.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.5966545670594932,
+     "regions": 134
+    },
+    {
+     "file": "26.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.1878447818157148,
+     "regions": 312
+    },
+    {
+     "file": "27.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.577209331265675,
+     "regions": 161
+    },
+    {
+     "file": "28.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.0414287148638207,
+     "regions": 53
+    },
+    {
+     "file": "29.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.004668875053470707,
+     "regions": 40
+    },
+    {
+     "file": "30.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.005554650480133156,
+     "regions": 13
+    },
+    {
+     "file": "31.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.5889661905756076,
+     "regions": 143
+    },
+    {
+     "file": "32.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.44885573734377643,
+     "regions": 203
+    },
+    {
+     "file": "33.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.6325890232746212,
+     "regions": 81
+    },
+    {
+     "file": "34.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.005700766499237041,
+     "regions": 56
+    },
+    {
+     "file": "35.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.5959543982682167,
+     "regions": 118
+    },
+    {
+     "file": "36.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.4618625856607037,
+     "regions": 209
+    },
+    {
+     "file": "37.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.20556544195699242,
+     "regions": 323
+    },
+    {
+     "file": "38.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.5948207493587041,
+     "regions": 136
+    },
+    {
+     "file": "39.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.03135160530139622,
+     "regions": 110
+    },
+    {
+     "file": "40.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.24833010867695943,
+     "regions": 108
+    },
+    {
+     "file": "41.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.011834608762715823,
+     "regions": 96
+    },
+    {
+     "file": "42.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.025742197627360765,
+     "regions": 83
+    },
+    {
+     "file": "43.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.009785888419654014,
+     "regions": 59
+    },
+    {
+     "file": "44.png",
+     "name": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "AM 316LH Fatigue",
+     "area": 0.04480531175696926,
+     "regions": 162
+    },
+    {
+     "file": "45.png",
+     "name": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.00208454671453561,
+     "regions": 17
+    },
+    {
+     "file": "46.png",
+     "name": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.004099761828956,
+     "regions": 24
+    },
+    {
+     "file": "47.png",
+     "name": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.0036253516805973235,
+     "regions": 7
+    },
+    {
+     "file": "48.png",
+     "name": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.004642911489038482,
+     "regions": 31
+    },
+    {
+     "file": "49.png",
+     "name": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.009020743599145701,
+     "regions": 7
+    },
+    {
+     "file": "50.png",
+     "name": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.0023693931182492117,
+     "regions": 5
+    },
+    {
+     "file": "51.png",
+     "name": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.015255662739505692,
+     "regions": 11
+    },
+    {
+     "file": "52.png",
+     "name": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.016780802657933785,
+     "regions": 5
+    },
+    {
+     "file": "53.png",
+     "name": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.004384733683677519,
+     "regions": 16
+    },
+    {
+     "file": "54.png",
+     "name": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.06695755462456983,
+     "regions": 22
+    },
+    {
+     "file": "55.png",
+     "name": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.0008423603749250377,
+     "regions": 10
+    },
+    {
+     "file": "56.png",
+     "name": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "B3 316L Amb Tension",
+     "area": 0.001420562163800288,
+     "regions": 11
+    },
+    {
+     "file": "57.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.02609373533773356,
+     "regions": 36
+    },
+    {
+     "file": "58.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.023777296915667566,
+     "regions": 48
+    },
+    {
+     "file": "59.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.078345110915479,
+     "regions": 73
+    },
+    {
+     "file": "60.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.020129905498515756,
+     "regions": 44
+    },
+    {
+     "file": "61.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.009806350794333996,
+     "regions": 51
+    },
+    {
+     "file": "62.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.030782029708504716,
+     "regions": 86
+    },
+    {
+     "file": "63.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.0026188295846241026,
+     "regions": 36
+    },
+    {
+     "file": "64.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.0019029773995938905,
+     "regions": 14
+    },
+    {
+     "file": "65.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.0026292908336476802,
+     "regions": 11
+    },
+    {
+     "file": "66.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.001062290364942745,
+     "regions": 17
+    },
+    {
+     "file": "67.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.0013473682988132504,
+     "regions": 14
+    },
+    {
+     "file": "68.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.016886936455997332,
+     "regions": 48
+    },
+    {
+     "file": "69.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.00397697245066941,
+     "regions": 26
+    },
+    {
+     "file": "70.png",
+     "name": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+     "group": "Wrought 316L H Fatigue",
+     "area": 0.010474060305457833,
+     "regions": 31
+    }
+   ]
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/11.png",
+   "fraction_of_red_that_is_false_positive": 0.93,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The model is not segmenting cracks at all - it is segmenting \"high local texture variance,\" and the wedge suppression is now a hard axis-aligned box that deletes the single best crack in the frame. Quantitatively: red = 28.6% of the frame and 80% of that mass is ONE connected amorphous blob (63,422 of 78,900 px, ~23% of frame). Mean panel-1 intensity inside red (136.6) is indistinguishable from outside (140.3), while local std inside red is ~2x outside (30.6 vs 16.0) - proof the classifier keys on deformation mottling / relief texture, not on dark thin linear voids. The mask boundary meanders through texture and never traces a line; it is blobby, isotropic, and 19% of it sits on genuinely bland matrix (local sd below the frame median). Simultaneously the suppression over-fires: the four largest near-black elongated features - x277-377/y306-325 (the 100-px central dark crack trace), x383-437/y301-320, x594-619/y206-224, x541-592/y220-232 - have EXACTLY 0.000 red coverage. A straight vertical mask edge at column 598 spanning 147 rows, plus straight horizontal edges around the central dark trace, confirms rectangular box suppression rather than a learned decision. The most unambiguous crack in the image is at native x~500-620, y~190-250: a classic open crack with a dark void core and bright phase-contrast fringes, propagating LEFT from the mid-dark uniform wedge/notch that intrudes at the right frame edge, tapering to a crack tip, with 2-3 converging branches. That is textbook crack-from-notch-tip and it sits in a clean rectangular hole in the mask surrounded by a sea of red on featureless matrix. So the wedge rim itself is no longer being traced (suppression works on the wedge), but the box swallowed the crack emanating from the wedge tip - the exact structure the specimen owner cares about. Only incidental fragments of the crack network get red (x467-500/y203-221, x537-585/y193-201, x423-462/y350-362, x245-271/y307-316 are covered, but only because the giant blob happens to sweep over them, not because they were traced). Net effect: precision and recall fail at the same time, and the suppression is now actively harmful. Fix direction: replace area-thresholded texture/variance response with an anisotropy-gated ridge/valley detector (require elongation and dark-core polarity), and replace the rectangular wedge box with a tight morphological mask of the wedge body only, dilated by a few px, so cracks emanating from the notch tip survive."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/07.png",
+   "fraction_of_red_that_is_false_positive": 0.85,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is anti-localised with respect to the cracks: it blanket-fills the deformed high-relief material AROUND the damage while leaving the actual dark crack traces as unpainted corridors. Measured on the 620x618 panel, red = 22.3% of frame (85.4k px) with 89% of it in just two blobs (rows 141-345 x cols 89-584, and rows 325-561 x cols 36-584). The strongest thin dark-line pixels (top-2% black-tophat) are enriched inside red by only 1.94x over chance, 57% of them lie OUTSIDE red, and only 3.9% of red pixels are dark-line; meanwhile local std inside red is 29.8 vs 19.0 outside - i.e. the model is segmenting \"textured/deformed zone\", not \"crack\". Concretely: the single most convincing crack in panel 2, a long sharp dark line running left from the wedge tip at ~(row 300, col 560) through (row 330, col 470) to (row 355, col 405), is a clean unpainted hole straight through the middle of the red; and in the lower band the sharp black/white striated crack zone at rows ~415-450, cols 40-300 is largely unpainted while the smooth mottled material 30-60 px BELOW it is solidly red. True positives exist (the lens-shaped opening at rows 72-100, cols 358-410 is correctly covered) but the faint hairline continuing from its right tip diagonally down to ~(470,150) is missed. Wedge suppression is working - the large dark wedge at cols ~582-620, rows ~285-320 is excluded and its rim is not traced - but it is implemented as an abrupt rectangular cut (straight mask boundary at col 582, plus 20-26 px straight rectilinear boundary runs elsewhere), which also chops legitimate structure. Minor extra FPs on round ring/crescent artifact clusters (rows 178-216 x cols 227-273; rows 499-519 x cols 550-576). No off-specimen field or specimen edge exists in this crop, so neither contributes."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/02.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Gross dilation: the prediction is a solid blanket over the two broad deformation-relief / surface-topography bands rather than a trace of the crack itself. Red covers 29.5% of the frame, but only 13% of red pixels are actual dark line pixels and 24% of red sits on texture blander than the global median gradient, so per-pixel precision is roughly 0.2 and the real hairline crack (the thin branching dark trace running from the wedge mouth at ~(614,272) down-left through (430,310) to ~(250,380), plus the thin trace along the top margin of the lower band) is buried inside a mass of ~8x-too-large area. Two secondary problems compound it: (1) the wedge suppression is a crude axis-aligned rectangular hole punched only over the wedge's black core, so red still wraps the wedge rim, its bright/dark phase fringes, and its whole tapering tail, and runs up to a hard vertical wall at x=581; (2) the mask is hard-clipped by a ~34 px rectangular border exclusion (column counts jump 0 to 122 at x=34 and 175 to 0 at x=581), which means the classifier is still firing on the edge/boundary strip and is only being masked out by a geometric rule, not by having learned it. A smaller residual: the isolated vertical blob chains at x~500 and x~575-600 in the lower right follow straight seam/edge lines, not cracks. Positive notes: the regularly scattered ring/crescent reference artifacts in the top right are correctly left unpainted, and the real crack is not missed."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/09.png",
+   "fraction_of_red_that_is_false_positive": 0.88,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The suppression is inverted in effect: it punches holes out of the dark wedge/band CORES (only 37% of the strong dark features are red, and there is a clean rectangular hole over the darkest part of the lower band at panel x~250-375, y~475-560) while red blankets everything AROUND the wedge - 76% of the red sits within 25 px of the wedge/band complex and 65% of it is >12 px from any real feature, i.e. a 15-90 px thick halo over plain mottled matrix. The result is one 87k-px blob covering 26% of the frame with median width ~16 px, which is topologically nothing like a crack (real cracks here are a few px wide). It also shows hard rectilinear patch edges on the right (straight boundary at x~590 plus rectangular corners), so part of the decision is tile-quantised rather than feature-driven. Net effect: the one clearly real thin crack in the frame - the ~2-3 px dark/bright-paired near-vertical hairline at x~305-312 running y~352 to y~435 and bridging the upper band to the lower band - is captured only incidentally, in two disconnected blobs with a ~20 px gap at y~366-386 and no coverage below y~425, so it would not survive as a connected trace. Secondary FPs: small isolated red spots sitting on round pore/inclusion rings and dash-shaped inclusions in the upper half (e.g. y140-162/x266-289, y194-223/x244-282, y303-336/x460-509) and a blob over a mottled texture patch at bottom right."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/10.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "No thinness/filament prior at all: 27% of the frame is a SINGLE 103,648-px amoeba that blankets the whole deformed/mottled zone including plainly featureless matrix (71% red at y300-340, x380-470) instead of tracing lines. It is also anti-correlated with the real linear evidence - the mask punches a hole along the darkest linear core of the lower band (only 35% red at y450-470, x60-200) while filling both flanks, and it paints the dark wedge tip 90.5% red (x95-175, y243-264) plus 42% of the right-edge dark rim (y180-198), so the wedge suppression is only cosmetic. The one genuine feature - 3-4 faint parallel hairlines at x293-312, y350-437 bridging the upper band into the lower one - is caught only ~50%, and only as incidental blob overspill. Straight axis-aligned mask clips (dead-straight edge at x=581, boundary runs of 23-31 px) additionally point to tile/patch-boundary artifacts in post-processing."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/08.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a coarse region fill, not a thin-structure trace, and it is mislocalised relative to the damage it is supposed to follow. Red covers 25.0% of the frame in 48 components (90% of the area in just 5 blobs), yet only ~2.6% of the frame is red-on-actual-structure: 77% of red pixels lie more than 6 px from any high-contrast structure core, and 56% lie more than 15 px away. Worst case is the lower damage band (panel x 60-400, y 410-500): overlaying the darkest pixels shows red forms a HALO around it - the smooth matrix above and below the band is solid red while the band's own dark core and bright striated flanks are left completely unmarked (red fraction inside the two largest dark cores at x[142,230] y[449,475] and x[297,365] y[436,459] is 0.00). Same inversion logic elsewhere: the big right-hand blob (x 400-600, y 140-330) fills the featureless mottled interior of a raised lobe, and the centre blob (x 120-400, y 200-340) traces a lobe outline rather than a crack. Secondary signature: several red boundaries are axis-aligned and clipped to mosaic tile seams - a straight vertical cut at x approx 585, a rectangular patch at x 440-585 / y 345-400, and a straight horizontal cut at y approx 400 and at the bottom-right blob - so tile-level intensity offsets are still driving part of the mask. The genuinely thin crack in the frame (a few-pixel-wide vertical filament at x approx 297, y 358-403, hanging down from the upper band into the material near frame centre, clear in panel 2 and faintly in panel 1) is only about half covered: red touches its top junction, drops out over the middle ~40%, then a small isolated blob picks up the lower half and the dark tip. Good news: the wedge suppression is working - the dark tongue entering the right edge (x 563-619, y 302-331) has zero red inside it and zero within a 12 px rim, so the rim is no longer traced. The risk is that the same darkness-based suppression is now also deleting the dark cores of real cracks, which is exactly the halo pattern seen on the lower band."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/05.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The edge suppression is a fixed-width exclusion band (~8-14 px) but the local-contrast ringing from the hard bright->black step extends ~20 px, so the model now fires in a halo RING just OUTSIDE the exclusion zone instead of on the rim itself. Measured: 100% of the 1055 red pixels lie 8.2-20.0 px from a zero-valued (black) region (median 15 px; left cluster min 14 px, right cluster min 8 px), while only 9% of the bright field is within 22 px of black, and not one red pixel sits in the interior (>20 px from any edge). The suppression displaced the false positives rather than removing them; it needs to be distance-graded/widened to the full ringing radius, or keyed to \"step edge present within N px\" rather than \"on the edge\"."
+  }
+ ]
+}
