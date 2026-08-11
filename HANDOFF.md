@@ -66,6 +66,36 @@ already made. The tuning knob that mattered was class balance, nothing clever.
 
 The paint tool defaults to raw (`TXM_PAINT_FLATFIELD=1` opts into flatfielded).
 
+### The raw-vs-flatfielded trade-off, now diagnosed precisely
+
+v4 on RAW input cut predicted area a lot on the problem groups (AM 59.4% ->
+11.5%, Wrought 68.7% -> 23.6%, B3 20.9% -> 3.8%) while HOLDING B2 at 28.0%.
+But inspection of `_montage_Wrought_316L_H_Fatigue.png` shows what remains is
+largely the model tracing the MOSAIC TILE-GRID SEAMS, and region counts rose
+(Wrought 120 -> 204), i.e. it fragmented along the grid rather than finding
+cracks. Wrought and AM are still NOT usable.
+
+The mechanism is now clear and it is structural, not a tuning problem:
+
+| input | tile grid | B2 accuracy |
+|---|---|---|
+| raw | PRESENT -> AM/Wrought trace the seams | good (IoU 0.773-0.779) |
+| flatfielded | REMOVED -> AM/Wrought behave | bad (IoU 0.610, -0.169) |
+
+Flatfielding removes the grid, which is exactly what AM/Wrought need, but it
+also removes the broad intensity trends that the largest-radius smoothed
+features encode -- and those are ~41% of total feature importance and what B2
+detection relies on. So no single input choice serves both groups.
+
+Plausible resolutions, none yet tested:
+  - per-group input: raw for B2/B3, flatfielded for AM/Wrought, with a
+    separately trained model for each. Two models, selected by specimen group.
+  - a milder flat-field (larger sigma) that removes the tile grid while
+    preserving more of the broad trend -- flatfield.py's sigma_y/sigma_x are
+    tunable and were themselves chosen by measurement.
+  - explicit tile-seam suppression on raw input, using the measured tile pitch
+    (autocorrelation gives ~112px and ~84px on different images).
+
 **The trade-off is real and unresolved.** Raw is much better where ground truth
 exists (all B2) and floods badly on AM/Wrought (up to 40-70% of frame, 41% on
 an undamaged specimen). Flatfielded is sane on those groups but measurably
