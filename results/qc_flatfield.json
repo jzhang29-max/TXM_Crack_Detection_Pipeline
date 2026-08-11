@@ -1,0 +1,570 @@
+[
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9423819184303284,
+    "iqr": 0.013796031475067139,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9475893378257751,
+    "iqr": 0.014373287558555603,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9548093974590302,
+    "iqr": 0.014295816421508789,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5285825133323669,
+    "iqr": 0.22183221578598022,
+    "reason": "IQR 0.222 > 0.1 (tile-grid texture not flattened); median brightness 0.529 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9185018539428711,
+    "iqr": 0.017588257789611816,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9386851787567139,
+    "iqr": 0.016301274299621582,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5751696825027466,
+    "iqr": 0.16708317399024963,
+    "reason": "IQR 0.167 > 0.1 (tile-grid texture not flattened); median brightness 0.575 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5197264552116394,
+    "iqr": 0.19323912262916565,
+    "reason": "IQR 0.193 > 0.1 (tile-grid texture not flattened); median brightness 0.520 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9476170539855957,
+    "iqr": 0.0162203311920166,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5357605814933777,
+    "iqr": 0.19640004634857178,
+    "reason": "IQR 0.196 > 0.1 (tile-grid texture not flattened); median brightness 0.536 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9104479551315308,
+    "iqr": 0.0294036865234375,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8844910264015198,
+    "iqr": 0.03851038217544556,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8441850543022156,
+    "iqr": 0.051426589488983154,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5234071016311646,
+    "iqr": 0.19803568720817566,
+    "reason": "IQR 0.198 > 0.1 (tile-grid texture not flattened); median brightness 0.523 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5967509150505066,
+    "iqr": 0.13101446628570557,
+    "reason": "IQR 0.131 > 0.1 (tile-grid texture not flattened); median brightness 0.597 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5106304287910461,
+    "iqr": 0.19531989097595215,
+    "reason": "IQR 0.195 > 0.1 (tile-grid texture not flattened); median brightness 0.511 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5447064638137817,
+    "iqr": 0.21446582674980164,
+    "reason": "IQR 0.214 > 0.1 (tile-grid texture not flattened); median brightness 0.545 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5479975342750549,
+    "iqr": 0.20485499501228333,
+    "reason": "IQR 0.205 > 0.1 (tile-grid texture not flattened); median brightness 0.548 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5601648092269897,
+    "iqr": 0.19672277569770813,
+    "reason": "IQR 0.197 > 0.1 (tile-grid texture not flattened); median brightness 0.560 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7373695969581604,
+    "iqr": 0.08284062147140503,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5501054525375366,
+    "iqr": 0.19322732090950012,
+    "reason": "IQR 0.193 > 0.1 (tile-grid texture not flattened); median brightness 0.550 < 0.7 (specimen not normalised bright)",
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9334459900856018,
+    "iqr": 0.015835165977478027,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9376385807991028,
+    "iqr": 0.017417848110198975,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7825774550437927,
+    "iqr": 0.01397562026977539,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9322004318237305,
+    "iqr": 0.014563202857971191,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9218040704727173,
+    "iqr": 0.01511240005493164,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9421956539154053,
+    "iqr": 0.013999521732330322,
+    "reason": null,
+    "group": "AM 316LH Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9528048038482666,
+    "iqr": 0.017492830753326416,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9613401889801025,
+    "iqr": 0.016550183296203613,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.6224209070205688,
+    "iqr": 0.1383926272392273,
+    "reason": "IQR 0.138 > 0.1 (tile-grid texture not flattened); median brightness 0.622 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9605563282966614,
+    "iqr": 0.014332950115203857,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9569082856178284,
+    "iqr": 0.014207899570465088,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.96435546875,
+    "iqr": 0.01595526933670044,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5662698745727539,
+    "iqr": 0.17378471046686172,
+    "reason": "IQR 0.174 > 0.1 (tile-grid texture not flattened); median brightness 0.566 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5749173164367676,
+    "iqr": 0.1628723442554474,
+    "reason": "IQR 0.163 > 0.1 (tile-grid texture not flattened); median brightness 0.575 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5642812848091125,
+    "iqr": 0.16262850165367126,
+    "reason": "IQR 0.163 > 0.1 (tile-grid texture not flattened); median brightness 0.564 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5622207522392273,
+    "iqr": 0.16393563151359558,
+    "reason": "IQR 0.164 > 0.1 (tile-grid texture not flattened); median brightness 0.562 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5604819655418396,
+    "iqr": 0.16110704839229584,
+    "reason": "IQR 0.161 > 0.1 (tile-grid texture not flattened); median brightness 0.560 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.555607795715332,
+    "iqr": 0.16640770435333252,
+    "reason": "IQR 0.166 > 0.1 (tile-grid texture not flattened); median brightness 0.556 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.5964750647544861,
+    "iqr": 0.14158475399017334,
+    "reason": "IQR 0.142 > 0.1 (tile-grid texture not flattened); median brightness 0.596 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.6544665694236755,
+    "iqr": 0.12355601787567139,
+    "reason": "IQR 0.124 > 0.1 (tile-grid texture not flattened); median brightness 0.654 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": false,
+    "brightness": 0.6203269362449646,
+    "iqr": 0.13613660633563995,
+    "reason": "IQR 0.136 > 0.1 (tile-grid texture not flattened); median brightness 0.620 < 0.7 (specimen not normalised bright)",
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9489439725875854,
+    "iqr": 0.015425145626068115,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7322250604629517,
+    "iqr": 0.08911126852035522,
+    "reason": null,
+    "group": "B2 316L H Tension"
+  },
+  {
+    "name": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9667070508003235,
+    "iqr": 0.007387220859527588,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9684438705444336,
+    "iqr": 0.008727431297302246,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.980017364025116,
+    "iqr": 0.007839620113372803,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8160260319709778,
+    "iqr": 0.06292182207107544,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.975098729133606,
+    "iqr": 0.008986830711364746,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.771515429019928,
+    "iqr": 0.08639150857925415,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8306587934494019,
+    "iqr": 0.07016485929489136,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9696457386016846,
+    "iqr": 0.011043131351470947,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9654738903045654,
+    "iqr": 0.011808514595031738,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9714778065681458,
+    "iqr": 0.008921802043914795,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9556738138198853,
+    "iqr": 0.013740777969360352,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7947612404823303,
+    "iqr": 0.009764790534973145,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9592239856719971,
+    "iqr": 0.008208930492401123,
+    "reason": null,
+    "group": "B3 316L Amb Tension"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9567365050315857,
+    "iqr": 0.013693034648895264,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7098353505134583,
+    "iqr": 0.01900845766067505,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9217744469642639,
+    "iqr": 0.02229970693588257,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7544637322425842,
+    "iqr": 0.020146608352661133,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.9029057919979095,
+    "iqr": 0.022186994552612305,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.914053201675415,
+    "iqr": 0.02234184741973877,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8975005745887756,
+    "iqr": 0.021761715412139893,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8874791264533997,
+    "iqr": 0.021590590476989746,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8781797885894775,
+    "iqr": 0.021713852882385254,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8904080986976624,
+    "iqr": 0.019230246543884277,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8730503916740417,
+    "iqr": 0.018634438514709473,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.7118756175041199,
+    "iqr": 0.01606273651123047,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.833203911781311,
+    "iqr": 0.019715726375579834,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  },
+  {
+    "name": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim",
+    "ok": true,
+    "brightness": 0.8056817650794983,
+    "iqr": 0.020837858319282532,
+    "reason": null,
+    "group": "Wrought 316L H Fatigue"
+  }
+]
