@@ -42,18 +42,31 @@ import joblib, numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 from skimage.measure import label, regionprops
+from skimage.morphology import skeletonize
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paint_common as pc
 from apply_pixel_model import postprocess_mask, predict_probability_map
 
 PREDCACHE = os.path.join(pc.PROJECT_DIR, "paint", "flatfield_predcache")
-OUT = os.path.join(pc.PROJECT_DIR, "results", "final_71_v2")
-OLD = os.path.join(pc.PROJECT_DIR, "results", "final_71")
+OUT = os.path.join(pc.PROJECT_DIR, "results", "final_71_v4")
+OLD = os.path.join(pc.PROJECT_DIR, "results", "final_71_v2")
 
 BRIGHT_MIN     = 0.30   # flatfielded specimen is bright; below this is empty field / deep feature
 BOUNDARY_INSET = 30     # audit-specified: drop this far INSIDE the specimen boundary
 FRAME_BORDER   = 20     # audit-specified: drop this close to the frame edge
 MIN_KEEP_AREA  = 150    # below this a component is noise
+MIN_SKEL_LEN   = 45     # px of skeleton. A crack is a connected elongated PATH; surface
+                        # texture is a blob. The v2 re-audit found texture/microstructure
+                        # became the dominant false positive on 22 of 49 images once the
+                        # wedge and rim classes were suppressed, and several auditors
+                        # independently proposed exactly this gate. One measured that 84%
+                        # of predicted regions have aspect ratio < 2 and only 2% exceed 4,
+                        # median region 34px -- the model emits blobs, not traces.
+MIN_ELONGATION = 2.0    # major/minor axis, applied as AND with the skeleton gate.
+                        # First attempt used OR at 2.6 and removed essentially NOTHING
+                        # (logged "curv -0.0%" on all 71, areas unchanged) -- the OR let
+                        # any modestly elongated texture blob through. A crack must satisfy
+                        # BOTH: long enough to be a path, and thin enough to be a trace.
 KEEP_ECC       = 0.90   # elongated components are protected from phase rejection
 PHASE_BINS     = 8      # intra-tile phase grid resolution
 PHASE_EXCESS   = 2.5    # a phase cell holding >2.5x its expected share is artifact-locked
@@ -157,7 +170,7 @@ def reject_tile_phase(pred, img01, allowed):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default=os.path.join(pc.PROJECT_DIR, "models", "pixel_flatfield_clean.joblib"))
+    ap.add_argument("--model", default=os.path.join(pc.PROJECT_DIR, "models", "pixel_flatfield_hgb.joblib"))
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     model = joblib.load(args.model)
@@ -178,11 +191,25 @@ def main():
         geo = raw & allowed
         final, n_phase = reject_tile_phase(geo, img01, allowed)
         final = ndi.binary_opening(final, np.ones((3, 3)))
+
+        # Curvilinearity gate: keep a component only if it looks like a PATH.
+        # Skeleton length is the primary test because it is what actually
+        # separates a crack (long thin connected trace) from a texture blob of
+        # the same area. Elongation is accepted as an alternative so a short but
+        # clearly linear segment is not discarded.
         lab = label(final, connectivity=2)
         keep = np.zeros_like(final)
+        n_texture_dropped = 0
         for r in regionprops(lab):
-            if r.area >= MIN_KEEP_AREA:
+            if r.area < MIN_KEEP_AREA:
+                continue
+            skel_len = int(skeletonize(r.image).sum())
+            minor = max(r.minor_axis_length, 1e-6)
+            elong = r.major_axis_length / minor
+            if skel_len >= MIN_SKEL_LEN and elong >= MIN_ELONGATION:
                 keep[lab == r.label] = True
+            else:
+                n_texture_dropped += r.area
         final = keep
         lab = label(final, connectivity=2)
 
@@ -200,9 +227,10 @@ def main():
                          raw_area=float(raw.mean()), after_geo=float(geo.mean()),
                          removed_by_geometry=float((raw & ~allowed).mean()),
                          removed_by_tile_phase_px=n_phase,
+                         removed_by_curvilinearity_px=int(n_texture_dropped),
                          prev_area=old.get(nm, {}).get("area_fraction")))
         pv = old.get(nm, {}).get("area_fraction")
-        print(f"  [{time.time()-t0:5.1f}s] raw {raw.mean()*100:5.1f}% -> geo {geo.mean()*100:5.1f}% -> final "
+        print(f"  [{time.time()-t0:5.1f}s] raw {raw.mean()*100:5.1f}% -> geo {geo.mean()*100:5.1f}% -> curv -{n_texture_dropped/final.size*100:4.1f}% -> final "
               f"{final.mean()*100:5.1f}% ({lab.max():4d}rg)" + (f"  was {pv*100:5.1f}%" if pv else "") +
               f"  [{grp[:18]:18s}] {nm[:34]}")
         del img01, raw, allowed, geo, final, ov, lab
@@ -235,7 +263,7 @@ def main():
             ax.set_xticks([]); ax.set_yticks([])
             ax.set_title(f"{r['name'].split('_idx')[0][-26:]}\n{r['area_fraction']*100:.1f}%, {r['n_regions']}rg", fontsize=6)
         for k in range(len(rs), rws*cols): axes[k//cols, k%cols].axis("off")
-        fig.suptitle(f"{g} -- FINAL v2 ({len(rs)} images)", fontsize=12)
+        fig.suptitle(f"{g} -- FINAL v4 HGB ({len(rs)} images)", fontsize=12)
         fig.tight_layout(rect=[0,0,1,0.97])
         fig.savefig(os.path.join(OUT, f"_montage_{g.replace(' ','_')}.png"), dpi=110, bbox_inches="tight")
         plt.close(fig)
