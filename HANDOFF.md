@@ -60,9 +60,36 @@ So the model usually *finds* the crack but buries it in ~6x more false
 positive. **This is a precision problem, not primarily a recall problem.**
 Raw audit data: `results/qc50_audit_cleanmodel.json`.
 
-`final_71_v2` applies two audit-specified suppressions and is better, but has
-NOT been re-audited. Do not quote any crack area fraction as a measurement
-without spot-checking the overlay.
+### `final_71_v2` HAS now been re-audited — 49 images, same rubric
+
+| metric | `final_71` | `final_71_v2` | |
+|---|---|---|---|
+| median FP **fraction** | 0.87 | 0.90 | flat/worse |
+| median ABSOLUTE FP area of frame | 14.49% | **6.68%** | **-54%** |
+| crack marked `fully` | 10 | **15** | better |
+| crack marked `not_at_all` | 6 | **3** | better |
+| verdict `mostly_false_positive` | 19 | **12** | better |
+| dominant FP = dark wedge | 17 | **7** | better |
+| dominant FP = specimen edge rim | 17 | **12** | better |
+| dominant FP = surface texture | 6 | **22** | now the top problem |
+| wedge rim still traced | — | 29/49 | only partly fixed |
+
+**The FP fraction is a misleading metric here and I over-weighted it.** It is a
+ratio, and the true crack is genuinely tiny, so it stays near 0.9 even when
+things improve. Absolute false-positive area is the meaningful number and it
+fell 54%. Crack coverage improved at the same time (more `fully`, fewer
+`not_at_all`), so this was not a case of removing true and false positives
+proportionally.
+
+What actually changed: the wedge, edge-rim and off-specimen classes were
+substantially suppressed, and **surface texture / microstructure is now the
+dominant residual (22 of 49, up from 6)** — not because it got worse, but
+because the classes above it were removed. That is the next target. The wedge
+rim is still traced on 29 of 49 images, so the size-based exclusion helped
+(dominance 17 -> 7) but did not solve it.
+
+Still true: do not quote any crack area fraction as a measurement without
+spot-checking the overlay. Raw data: `results/harvested/wf_b87f351e-d77.json`.
 
 ---
 
@@ -148,7 +175,7 @@ Run IDs and script paths for the audit runs so far:
 
 | run | purpose | started/completed |
 |---|---|---|
-| `wf_b87f351e-d77` | re-audit of `final_71_v2` (the open question in §2) | in flight |
+| `wf_b87f351e-d77` | re-audit of `final_71_v2` — ANSWERED §2 | 73/50 |
 | `wf_d6f09f17-513` | audit of `final_71` -> the 87% figure | 61/47 |
 | `wf_d18a107b-66e` | audit of v1 flatfielded predictions | 94/41 |
 | `wf_a8077edb-b3a` | first 71-image review (raw predictions) | 64/24 |
@@ -244,10 +271,19 @@ non-IoU axes** — switching is worth testing but was not done.
    training pixel currently comes from the 12 B2 images, so the model has no
    example of AM or Wrought crack morphology. No amount of false-positive
    removal fixes this.
-2. **Re-audit `final_71_v2`** the same way `final_71` was audited, to measure
-   whether the geometric + tile-phase suppressions actually moved the 87%
-   false-positive figure. Sheet builder and workflow pattern are in git history.
-3. **Test HistGradientBoosting** as a replacement for the deployed MLP (§7).
+2. ~~Re-audit `final_71_v2`~~ **DONE** — see §2. Absolute FP area fell 54%;
+   surface texture is now the dominant residual (22 of 49 images).
+3. **Attack surface texture / microstructure**, now the top false-positive
+   class. Several auditors converged on the same fix independently: require a
+   minimum SKELETON LENGTH and curvilinearity before emitting a detection.
+   Measured supporting evidence from one audit: 84% of predicted regions have
+   aspect ratio < 2 and only 2% exceed 4, median region 34 px — i.e. the model
+   emits blobs, not curvilinear traces, while a real crack is a connected
+   elongated path. A length/elongation gate on the final mask would remove
+   most texture blobs without touching a genuine hairline.
+4. **Test HistGradientBoosting** as a replacement for the deployed MLP (§7).
+   `models/pixel_flatfield_hgb.joblib` is already trained (12.7s fit) and
+   committed, but NOT yet evaluated head-to-head.
 4. **Tile-phase rejection is under-exploited.** Two agents proved the
    reference artifacts are mosaic-tile-locked by autocorrelating the
    prediction mask — periods ~112px and ~84px, 90.5% of interior red in the

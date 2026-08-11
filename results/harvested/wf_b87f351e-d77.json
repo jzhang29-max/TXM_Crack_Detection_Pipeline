@@ -1,7 +1,7 @@
 {
  "run": "wf_b87f351e-d77",
- "agents_started": 20,
- "agents_completed": 8,
+ "agents_started": 73,
+ "agents_completed": 50,
  "findings": [
   {
    "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/11.png",
@@ -72,6 +72,427 @@
    "real_crack_is_marked": "no_crack_present",
    "wedge_rim_still_traced": true,
    "biggest_remaining_problem": "The edge suppression is a fixed-width exclusion band (~8-14 px) but the local-contrast ringing from the hard bright->black step extends ~20 px, so the model now fires in a halo RING just OUTSIDE the exclusion zone instead of on the rim itself. Measured: 100% of the 1055 red pixels lie 8.2-20.0 px from a zero-valued (black) region (median 15 px; left cluster min 14 px, right cluster min 8 px), while only 9% of the bright field is within 22 px of black, and not one red pixel sits in the interior (>20 px from any edge). The suppression displaced the false positives rather than removing them; it needs to be distance-graded/widened to the full ringing radius, or keyed to \"step edge present within N px\" rather than \"on the edge\"."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/04.png",
+   "fraction_of_red_that_is_false_positive": 0.25,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Two coupled problems, both about WHERE the red sits rather than whether cracks were found. (1) Edge/seam artifact family, ~16% of red area. A ragged vertical red column sits at x~18-30 running y~150-440, immediately inboard of the dead black frame column at x~5-10; panel 2 shows nothing crack-like there, and it runs perpendicular to every real crack in the frame, so it is a pure frame/mosaic-seam false positive (6.6% of red, ~6 components). On the right, 18% of red lies within 18px of the specimen boundary at x>470, and roughly half of that is spill onto the bright/dark boundary halo and onto the dark flank of the edge step/notch at x~480-515, y~200-235 rather than onto crack. The rim suppression is largely working - only 1.0% of red is within 3px of the boundary and 2.6% within 6px, so the classic thin-rim outline trace is gone - but red still bleeds up the notch flank as a diagonal arm, so the wedge/step is not fully suppressed. (2) Systematic blob fattening. Red regions are 2-4x wider than the actual few-pixel dark crack lines, and on branching cracks (the Y-branch at x399-486/y261-286, area 1195px, and the one at x203-258/y108-129) the red fills the solid triangle between the two arms instead of tracing them. 50% of red pixels sit on the top-5% local-contrast fringe and 90% are within 2px of one, so the dilation is only ~2px per side, but that is enough to destroy crack width, opening and branching morphology for any quantitative use. Recall is not the problem: a ridge/dark-line filter over panel 2 found 38 elongated interior features >=30px and every single one inside the specimen core is covered by red (coverage 0.85-1.00); the only uncovered dark lines are at x=5-9 (the frame bar) and a 42x4 vertical line at x=509 (boundary rim), both correctly left alone. Real cracks are unambiguously present and correctly identified: sharp, thin, dark, phase-fringed, branching, all oriented near-horizontal (consistent with a vertical tensile axis), including a genuine crack emanating leftward from the notch root at y~218 and a faint hairline at x525-555/y~29 that only shows in panel 2 and is marked. Fix priority: mask the left frame/dead-column strip and widen the boundary-halo exclusion by ~10px on the right, then reduce the morphological closing/dilation so branch arms stay separate."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/00.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "reference or calibration artifact",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The detector is locked onto a per-tile repeating fixed-pattern artifact, not onto cracks. Measured directly on the red mask: shifting it by 112 px in x gives IoU 0.23 and by 110 px in y gives IoU 0.16, while half-period shifts (56 px, 55 px) give 0.05 and 0.02 - so the predictions are periodic at exactly the mosaic tile pitch. Side-by-side high-pass patches at x = 48, 160, 272, 384 (same y) show the IDENTICAL motif (a fan of parallel diagonal hatch strokes plus a ring/crescent) replicated at each lattice node. Every feature I chased as a possible hairline turned out to be one of these clones: the \"branching hook\" at panel-2 (180, 485), the convincing-looking faint diagonal that appears to run inward from the notch at (419, 261) -> (358, 294), and the streak at (150, 420). All are lattice members, so there is no crack in this frame and ~all 23,385 red pixels / 260 regions are false positive. Morphology confirms the model is a dark-blob detector rather than a curvilinear detector: 84% of regions have aspect ratio < 2, only 2% exceed 4, median region size 34 px, and no red or image structure anywhere forms a connected elongated path (longest dark ridge found by a multi-scale Sato filter in the specimen interior is ~40 px, and it is a lattice clone). Secondary problems: (a) the wedge/edge rim suppression is only partial - 18% of red area lies within 40 px of the right specimen/wedge boundary and an elongated strip hugs the rim contour for a 42-row continuous run at rows 16-58 plus 23-25 row runs at 548-571 and 576-601, i.e. 28% of all image rows have red within 22 px inside that boundary; (b) a solid vertical red line at x = 16-25 spanning 77% of image height tracks the left frame/tile edge (19% of red area); (c) 34% of interior red sits in the 14% of rows nearest the tile seam rows 115/226/332/441/551, a 2.4x enrichment. Net effect: the false-positive noise floor (6.4% of frame) is dense enough at the exact scale of a real microcrack that a genuine faint hairline could not be distinguished from it, so this output is not usable as-is. Fix priority: suppress tile-periodic fixed-pattern features (median across tiles, or a per-tile-phase feature the classifier can reject), add an elongation/curvilinearity gate before the final dilation, and extend the rim suppression to the frame border and to the top/bottom corners where the boundary meets the frame."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/06.png",
+   "fraction_of_red_that_is_false_positive": 0.78,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The prediction is an area fill, not a crack trace. Red is 23.4% of the frame but 89% of it sits in only 2 amorphous blobs (44,182 px at x92-590/y147-358 and 35,503 px at x42-590/y311-535), whereas a multiscale dark-ridge (valley) detector finds only ~3.2% of the frame (12,215 px) of genuine thin elongated filaments. Allowing a generous +/-3-5 px tolerance around every filament still leaves 70-79% of red unexplained; ~1/3 of red pixels (27% even after 6 px erosion of the mask core) lie on matrix whose local 7x7 std is below the frame's 60th percentile, i.e. visibly featureless. Consequences: (1) the mask engulfs the rough deformation-band texture and the smooth matrix flanking it instead of the few-pixel dark lines inside it; (2) the wedge is not suppressed - the sharp dark wedge tip near x100-235/y245-280 is solid red including its rim, and along the large bright wedge at x420-590/y255-320 the red boundary hugs the wedge's upper dark rim and fills everything above it, with axis-aligned rectangular blocks over the lower rim; (3) suppression appears inverted in places - a clean axis-aligned rectangular hole (~x117-237, y430-472) has been carved out of the lower blob exactly over the crispest continuous dark crack line in the lower band, while the surrounding matrix stays painted; (4) despite the 7x area inflation recall on the filaments is only 54%, and the entire branching thin-line network at x420-590/y505-570 (bottom right, ridge fraction 0.073/0.037 in those grid cells) is completely unpainted. There is also clear tile/patch blockiness: a 103-px perfectly straight vertical mask edge at x=589 plus several 23-28 px straight edges at rows 303/336/365/417/434/470 and cols 41/116/454."
+  },
+  {
+   "files": "[]",
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/01.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The edge/rim suppression is not working on either boundary, and there is no crack in this frame for the model to have found, so the output is essentially all noise. Quantitatively: 43.3% of the red is four long vertical strips at x=12-21 pinned ~10 px inside the black field-of-view border at x=0-2 (also the x=19 mosaic seam) on completely featureless bright material; another 30.2% is a broken chain of 16 blobs hugging the right specimen/dark-notch boundary, sitting squarely on the bright rim and its dark transition band (largest single blob, 234 px at x=491-505, y=76-108, is entirely on that rim); the remaining 26.5% is 33 tiny blobs dropped onto individual short bipolar surface-relief arcs in the interior. Multi-scale ridge filtering of panel 2 inside the eroded specimen returns nothing with skeleton length above 30 px, and the one sinuous hairline candidate (x=385-445, y=28-48) resolves at 14x into the same dark-plus-bright relief signature as the ~100 uniformly distributed, commonly oriented texture arcs elsewhere. Priority fix is a hard geometric veto: reject any pixel within ~25 px of the specimen mask boundary or of the frame/mosaic-seam lines (grid period ~81 px, seams at x=19+81k, y=60+81k), then require a minimum skeleton length and monopolar (purely dark) profile before emitting anything, which would zero out this frame as it should."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/03.png",
+   "fraction_of_red_that_is_false_positive": 0.88,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "round pore / inclusion / dust speck",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Two thirds of the red (2600 of 3931 px, ~44 blobs) sits on the ubiquitous population of discrete LENS/CIGAR-shaped objects with a dark core flanked by bright bands (elongated inclusions or relief scratches, ~20-40 px long x 8-16 px wide, aspect only 2-5:1, blunt rounded ends, isolated and scattered uniformly over the whole field, including far from centre). Dozens of visually identical objects are left unmarked, so the classifier is effectively scoring \"locally high-contrast elongated blob\", not \"thin connected line\". Because these FPs are elongated, a circularity/round-pore filter will not remove them - the discriminator that works here is WIDTH and CONNECTED LENGTH: the one true crack is 1-2 px wide with a 100 px continuous ridge (aspect ~27:1, ridge-elongation 27 in a Hessian test), while every FP has aspect <8 and ridge length <40 px. A min-length/max-width (or eigenvalue-ratio) gate on the connected component would delete ~85% of the red while keeping the crack intact."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/15.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The output behaves as a generic low-contrast-texture threshold rather than a crack detector: 20% of the frame is red across 313 blobs, but only ~10% of that red is anywhere near the one real hairline (x 105-345, y 160-210), while ~36% is scattered mottling/ring-artifact blobs in featureless bulk, ~33% is thick bands hugging the dark wedge rim (the suppression stopped interior infill but not rim tracing), and ~22% is a hard convolution/padding halo along the top and left frame edges (rows and columns 12-30 are 45-80% red). Even where the crack is covered, it is swallowed by a ~40-px-wide blob, so no usable crack width, length, or branching geometry can be recovered from this mask."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/12.png",
+   "fraction_of_red_that_is_false_positive": 0.78,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The dark-feature suppression has inverted the prediction at the one place that matters: it punches a hard, tile-aligned red-free hole straight through the strongest real crack (panel-2/3 coords x=191-400, y=294-369 - only 28% of that dark crack core is red), while the model blankets the surrounding bland matrix with 31% red. The wedge rim itself is no longer traced (a rectangular suppression box cleanly excludes both the right-edge notch at x=573-620, y=204-228 and its bright rim), so the suppression fixed the rim artifact but is now over-firing onto genuine wide/open crack. Combined with a blob-shaped classifier output (one 69.5k-px component = 80% of all red, only 24% of red lies within 4 px of any dark linear feature, vs a plausible true crack area of ~4-6% of frame), the result is a damage-zone blob detector rather than a crack tracer: it neither delineates the thin faint branches (e.g. the sharp hairline at x~368 running y=310 up to a clear T-junction at y~250, and the thin lines trailing left from the notch tip at y~195-215) nor stays off texture, calibration crescents (x~490-560/y~240-300, x~500-570/y~420-490), elongated pores (x~170-200/y~130-165), and the frame border strips."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/13.png",
+   "fraction_of_red_that_is_false_positive": 0.87,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The output is a texture/contrast blanket, not a crack tracing: 39.3% of the frame in 109 amorphous blobs whose boundaries bear no relation to any linear feature. Measured against a strict thin-dark-line (Hessian valley) filter set to the top 3% of ridge response, only 21% of red pixels lie within 2 px of any line-like structure, and red covers just 57% of that line content -- barely above the 39% a random mask of the same area would achieve. So the model is not even buying recall with its enormous area; it is filling whichever mosaic tiles have grainier texture (red masses in the upper-left, mid-left and upper-right sit on plain mottling with no linear feature at all, and the mask terminates along perfectly straight vertical/horizontal tile seams at panel x~33, x~600 and several horizontal cuts). Meanwhile genuine thin features are dropped: a long sharp dark line at roughly panel coords x 240-300, y 175-195 falls just outside a red blob whose interior is featureless texture. On the wedge: the suppression does carve holes over the dark cores (the lower-centre blocky wedge near x 250-400, y 285-320 and the right-edge notch near x 555-625, y 185-215 are left grey), but the carve-outs are straight-edged bounding cuts and red still hugs both silhouettes pixel-tight, covers their bright halos and the dark streak extensions running left and right of the notch tip -- so the rim is still effectively being delineated, just as the boundary of a bulk region rather than a thin trace. Fix priority: enforce elongation/width and skeleton-continuity constraints on candidate regions and drop area-dominant blobs before any further threshold tuning; a 39% mask cannot be salvaged by suppressing individual artifacts."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/14.png",
+   "fraction_of_red_that_is_false_positive": 0.7,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is region-level, not crack-level: 82% of all red is ONE amorphous component covering 27% of the frame (bbox y80-420, x123-594, solidity 0.59), and only 25% of red pixels sit within 2 px of a strong ridge (44% within 4 px), so ~70% of the red is dilated deformation-zone mottling / microstructure texture around the cracks rather than the cracks themselves. Worse, the suppression inverts locally: the two most crack-like features are punched OUT as holes while the surrounding matrix is painted - (a) the elongated tapering crack running left from the notch tip (approx x440-580, y185-215) is left unpainted as a white carve-out, and (b) the open central crack / dark lens (approx x255-350, y280-315) sits in a blocky rectangular carve-out with red packed hard against every side. Net effect: nothing crack-shaped is delineated - a real branching crack network IS clearly present in panel 2 (best seen at x120-340/y240-380 and x20-180/y110-260) and ~72% of the strongest ridge pixels fall inside red, but only incidentally, because the blob swallows the entire damage band. Secondary FPs: isolated blobs on quiet upper-frame matrix / faint mottling (x175-260/y70-155, x395-465/y27-50) and one blob abutting a scattered ring-crescent reference artifact near x290/y75. Encouraging: red never lands on off-specimen black, only 1.3% of red is on lowest-quartile flat matrix, no mosaic-seam or specimen-edge tracing, and the wedge/notch rim is clean - red stops at a hard vertical cut at x~592 and never reaches the dark wedge, so that suppression works."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/16.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is inverted at the feature level: the dark-feature suppression that was added for the wedge is not wedge-specific, so it also vetoes the genuine crack, while the classifier floods the featureless matrix. Measured: red covers 43.1% of the frame, but the central dark crack core (connected dark component at y280-302, x239-321, clearly a branching crack in panel 2) is only 0.4% red, and its 1-8 px rim only 3-10% red \u2014 i.e. the one unambiguous crack in the image is punched OUT of the mask while the smooth matrix around it is painted in. Only 24.6% of red pixels sit on any local structure at all (|p1 - median15| > 18), and only 6.7% sit on an elongated linear feature; ~75% of red is on flat mottled matrix. The mask also has a hard rectangular envelope (red switches on abruptly at x=32, off at x=600, on at y=26) with its densest columns (65-71% red) hugging the left specimen-edge/valid-region boundary, so a valid-region/edge-rim artifact is being learned as crack. Net effect: the suppression fixed the wedge rim (1-8 px band around the wedge is 1-4% red vs 43% globally, well below chance, and the wedge interior is 0.0% red) but at the cost of deleting the true positive, and the underlying pixel classifier has essentially no crack specificity \u2014 it is thresholding low-frequency shading, not linear structure. Fix direction: make the dark/wedge veto shape-aware (reject only large low-elongation saturated-dark blobs contiguous with the frame edge, not thin elongated dark ridges), and add an elongation/ridge-response gate to the positive class so 42% of a frame cannot be labelled crack."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/22.png",
+   "fraction_of_red_that_is_false_positive": 0.69,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "One contiguous 1664-px blob (51% of ALL red, ~74% of all false positive area) in the bright granular/mottled thin corner just inside the specimen edge and below the notch (panel coords x 40-87, y 194-274; ~7-14% of width, 67-95% of height). It is fat and amoeba-shaped with no elongated structure in panel 2 at that location - pure microstructure/mottling plus round pores in a thinned notch-flank region. Fixing this one region would cut total false positive area by three quarters. Close second: the red on the genuine crack stops dead at x=341, so the entire upper-right branch of the crack (panel 2, x 343-425, y 75-115) is missed, and the covered part is broken into 4 disjoint segments instead of one connected trace. Third: the wedge suppression only converted the rim trace from a solid line into a dotted arc (~18 small components, ~17% of red) that still follows the notch boundary from y=12 to y=220."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/17.png",
+   "fraction_of_red_that_is_false_positive": 1,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "All four red regions (206 px total, 0.053% of the 625x625 frame) sit directly on the specimen outline's phase-contrast fringe, not inside the material: red at y22-34/x497-504, y134-151/x451-460, y254-263/x426-428, y366-385/x425-428 versus a measured specimen-to-empty-field boundary at x=504 (y=28), 459 (y=140), 430 (y=258), 427 (y=375) - i.e. every blob is within 0-4 px of the bright/dark edge fringe. Notably, three of the four coincide with abrupt lateral STEP discontinuities in the outline (measured edge jumps at y=144, 265, 479), which are mosaic-tile stitching misregistrations that locally double/kink the edge fringe; the model fires exactly there. So the existing wedge/rim suppression is not covering the specimen-boundary fringe when tile seams jog it. There is no dark wedge/notch in this frame at all - the dark area is the uniform off-specimen field (value 0 out to the right frame border, containing two regularly spaced small calibration rings at x~590, y~190 and y~410), so the wedge suppression is untested here rather than failing. Interior verdict: panel 2 (and 4x/5x local-contrast and Sato ridge maps of the interior with a 14 px edge erosion) shows only dust/inclusion clusters, small round pores and mottling - the largest dark ridge component is a 43x11 px blob at x161-204, y115-126 with no elongated connected structure anywhere. The only linear features are pin-thin, perfectly straight lines that fan symmetrically up-left and down-left from the edge jog points and terminate at the boundary; their straightness, symmetry and origin at tile corners mark them as stitching/streak artifacts, not cracks. I do not see a real crack in this frame, so this is a precision leak on a near-empty frame rather than a miss - net effect is small in area but the model's entire positive class here is wrong. Recommended fix: extend the rim suppression to the full specimen/field boundary transition (dilate the outline mask by ~8-12 px and reject candidates whose orientation is parallel to the local boundary), which would zero this frame out."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/19.png",
+   "fraction_of_red_that_is_false_positive": 0.75,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/boundary suppression is still failing: a long, continuous, boundary-parallel red band runs just inside the bright rim of the left dark notch/wedge (largest non-crack component, ~1700 px, spanning roughly y=14-125 at x=103-158 in panel coordinates, plus more of the same at y=209-272 and y=291-321), and it is joined by a \"picture-frame\" of speckle clutter hugging the top and bottom periphery. Quantitatively, of the 13,292 red pixels (6.3% of the frame, 139 connected components): ~19% sit in the left rim/notch band, ~16% in a top peripheral band (y<45), ~19% in a bottom peripheral band (y>285), and ~5% in off-specimen/right-edge/interior specks - i.e. ~60% of the red is plainly off-target, on featureless material or pure edge/vignette transition where panel 2 shows nothing linear. Only one red component (41.7% of red, y=121-207, x=128-367) is on the genuine feature, and even there it is over-dilated roughly 4-5x the true hairline width (crack is 2-4 px; red streak is 10-20 px), so any crack-width, area, or region-count metric derived from this mask will be badly biased. The good news: the real crack is unambiguous in panel 2 - a branching hairline network emanating from the notch at mid-height, fanning into up/down branches near the mouth and consolidating into a single trunk that runs right to about x=370, and the red covers that trunk end-to-end with its tip terminating within a few pixels of where the crack fades out. Priority fix is a rim/periphery exclusion (distance-from-boundary and top/bottom FOV bands), not sensitivity."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/18.png",
+   "fraction_of_red_that_is_false_positive": 0.73,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/notch-rim suppression is still failing: red forms a thick, near-continuous vertical stripe immediately inside the scalloped dark wedge boundary (panel-3 x~70-200) spanning the full frame height (y 14-112, 191-213, 228-280, 339-413), and these are the largest single blobs in the frame (~5,250 px, 39.8% of all red, incl. the 1,477 px and 979 px components). Interior wedge/off-specimen black is correctly left unpainted (only 1 red px on dark pixels), so the suppression only clipped the dark core, not the bright transition rim; downstream this rim stripe will be read as a long vertical \"crack\" parallel to the notch and dwarfs the one real crack. Secondary inflation: top-edge band (y<58, 10.8%) and bottom-edge noise band (y>376, 10.6%) plus a hit on nearly every regularly spaced crescent/reference artifact on the ~95x92 px grid (~12%, blobs at x=245/338/433/529 by y=54/149/241/332) - together these account for the 182-region count. The one genuine crack (branching bundle from the notch root at x~128,y~170 running right to a tip at x~345) is well covered end-to-end apart from a ~20 px gap at x 200-218, but the red is dilated ~2-3x wider than the hairlines and represents only 26.5% of the painted area."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/21.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is anti-correlated with the evidence: it is responding to local texture variance rather than to dark linear ridges. 67 components, all compact (median aspect ratio 1.35 for components >=30 px; none exceed ~2), scattered fairly uniformly over the specimen interior on featureless speckle/mottle - at 6x zoom there is no dark line, ridge, or linear feature under any of them. A single 5650-px amoeba blob in the upper-centre-left is 51% of the total red mass and sits on a coarse-texture patch bounded by one of the periodic bright diagonal streaks. Meanwhile the one genuinely crack-like feature in the frame - a dark, thin (2-4 px), continuous, forking hairline at the bottom-left, panel-local x=0-130, y=310-322, extending as fainter branches up-right to about x=170, y=295 - carries ZERO red. An independent multiscale Hessian dark-ridge filter over the frame returns exactly one elongated component (aspect 7.8, area 177 px, at x=1-71, y=312-321), i.e. that hairline and nothing else, so it is both the only crack candidate present and a complete miss. Net effect: ~5% of frame painted, essentially 0% recall on the actual crack. Fixing this needs a shape/anisotropy gate (reject blobs below an elongation threshold) plus a feature that keys on dark ridge polarity, not variance."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/27.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is a near-blanket fill of grain speckle (measured 58.3% of frame; only 0.17% of red lies off-specimen, so essentially all of it is on-material texture), and the anti-wedge suppression is inverted onto the one unambiguous real crack: the wide-open branching crack running from the left edge to frame centre is punched out as a clean grey HOLE in the red, so the darkest crack-core pixels have LOWER red coverage (34% at grey<40, 41% at <55, 50% at <70) than the frame average of 58%. The model is anti-correlated with the true crack while red blobs are organised by the 4x4 mosaic tile grid (solid red along seams, grey islands inside tiles), i.e. it is thresholding per-tile contrast rather than detecting linear features. The upper crack-tip fan of hairline branches is only \"covered\" incidentally because its whole tile is red, not because it was detected."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/23.png",
+   "fraction_of_red_that_is_false_positive": 0.65,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A solid periodic red band along the top of the frame consumes 43.5% of the entire mask on blank material. It is not one blob but six near-identical scalloped blocks separated by gaps at a strict ~81 px period, i.e. the mosaic tile grid: each tile's top row is flagged. Panel 2 shows nothing there but texture (same mean grey as the interior, only noisier: std 3.0 vs 2.0, the usual fewer-overlapping-projections edge effect), so the model is firing on elevated high-frequency noise at the mosaic boundary. The same periodic signature drives ~115 scattered interior specks that sit on small rings/crescents and faint diagonal seams recurring at the same ~85 px pitch, plus a similar clump on the right image border (3.9%). Secondary, and directly relevant to the suppression that was added: red still hugs the dark wedge/specimen boundary over roughly half its length (a large patch at y~10-90 that merges into the top band, and another at y~190-245, plus flecks inside the dark region) - 10.3% of red sits at x<105. Net effect: the true crack occupies ~2% of the frame but the mask paints 10.3%, and 190 of 195 predicted regions are spurious. The good news is the detection itself is right: the crack from the notch mouth at x~78 running right and branching, with the upper-right fan, is covered essentially end to end by two components (x 105-354 and x 355-428) that track the ridge bundle closely, only missing the diffuse tip beyond x~430 and catching the faint upper hairline at y~65-85 only in fragments. Fixing the frame/tile-edge and rim geometry - not the crack model - would take this from 65% FP to near-clean."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/25.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a near-uniform blanket over the entire specimen (60.2% of frame, 65.8% of specimen, 134 regions) that is statistically uncorrelated with the image: mean local std inside red 31.53 vs 31.69 outside, mean intensity 130.5 vs 132.1. It carries no localization information. Its only structure is the mosaic tile lattice (near-solid 88-93% red along tile seams, dipping to 40-50% at tile centres); the rest indiscriminately paints ordinary surface texture/microstructure, plus the regularly scattered crescent/reference artifacts and the straight bright diagonal detector streaks. A real crack IS clearly present and obvious in panel 2 (also visible in panel 1): a branching, multi-strand fatigue crack entering from the left edge at y~290 and propagating up-right into the material to about (270,175) in panel coords. Even with a generous 11x11 dilation around it, only 2.9% of red pixels fall on or near that crack, so ~97% of red is false positive. Worse: the wedge/notch suppression is misfiring. Red no longer follows a wedge rim, but there is a hard-edged RECTANGULAR carve-out (right edge at x~145, y~262-300) with 0% red directly on the thickest dark crack strand near the notch mouth, deleting ~44% of the true crack's dark pixels; the upper branches are \"covered\" only incidentally by the blanket. So suppression is being applied to the real crack rather than to an artifact. Net: the mask is simultaneously uninformative everywhere and actively wrong at the one place that matters. This image should fail QC. Fixes needed: recalibrate the decision threshold (the classifier is saturating positive), add mosaic-seam handling, and replace the dark-blob bounding-box wedge suppression with a shape test (branching multi-strand hairlines propagating inward = crack, keep it)."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/20.png",
+   "fraction_of_red_that_is_false_positive": 0.35,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Roughly a third of the red is spent on non-crack structure clustered where the model should be silent, and it comes in two flavours. (1) Boundary-transition rim: a 591 px vertical band at panel-2 coords x 88-115 / y 14-77 hugs the bright specimen edge rim above the notch, and a ~450 px cluster of 8-10 fragments at x 81-119 / y 205-270 sits directly on the lower edge rim and the round bump on it, plus a 197 px blob at x 97-114 / y 302-319. Nothing crack-like exists at any of these locations in panel 2 - only the rim halo. (2) Reference/calibration artifacts: panel 2 contains a regularly repeating S-curl marker every ~95 px along the top strip, and red lands squarely on several of them (280 px at x 126-146 / y 14-38, 122 px at x 321-334 / y 14-27, 118 px at x 511-523 / y 14-28, plus ~10 specks). Together these two categories are ~1900 of 6499 red pixels and account for roughly 30 of the 47 reported regions, so region count is badly inflated even though the crack itself is found. Secondary issues: the notch-mouth detection (x 112-190) is a filled 1600 px blob that bridges the material between the individual crack branches rather than tracing each few-pixel-wide line, inflating crack area ~2x there; and a genuine faint crack branch is largely missed - a thin, wavy, sub-parallel set of dark lines running from the notch-mouth diagonal at x~230 / y~110 up-right to x~300-400 / y~78-95, of which only one 83 px fragment at x 323-339 / y 81-88 plus three small specks at x 172-205 / y 119-140 are marked (~25% coverage). On the positive side the wedge suppression is holding: red begins only to the right of the wedge's bright halo and no red follows the wedge's dark arrowhead contour (panel-2 x 62-105, y 95-125), and the main crack trunk from the notch mouth out to the true tip at x~395 / y~142 is tightly and correctly traced, terminating exactly where the dark line fades."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/31.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is a blanket fill of the specimen interior, not a crack segmentation: red occupies 60.5% of the frame as one inset rectangle (x 26-605, y 20-458 in panel coords, hard straight edges = a border-exclusion rule, not feature response), with the only gaps being regularly spaced gray holes centered inside the mosaic tiles. Essentially all of that red sits on ordinary microstructure/texture mottling, so ~97% of red is false positive. Worse, the response is anti-correlated with the real crack at its most certain point: panel 2 shows an unambiguous branching fatigue crack entering the left edge at mid-height, running right as a wide open trunk to x~0.55, then kinking up and propagating as tapering branched hairlines to the top-right corner. The wedge/dark-feature suppression punches a clean, boxy hole exactly over the widest, highest-contrast trunk segment (roughly x 100-330, y 145-190), and the crack's left-edge entry and its upper extension past y~20 fall outside the inset rectangle, so they are unpainted too. The thin distal branches in the top-right are inside red only incidentally because everything there is red. Net effect: the one feature that should be marked is the one region explicitly excluded, so the suppression is now removing real crack rather than the notch rim (no red follows any wedge rim, and off-specimen field, the boundary rim, and the tile seams outside the inset rectangle are correctly clean). Fix direction: the suppression must be gated on shape/connectivity (a tapering, branching, frame-spanning ridge network is a crack, not a notch) and the bulk-texture response needs a far higher threshold plus per-tile contrast normalization so tile-to-tile gain differences stop driving the mask."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/24.png",
+   "fraction_of_red_that_is_false_positive": 0.87,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Precision collapse: red is behaving like a local-contrast threshold rather than a crack detector. Measured red density inside the specimen rises monotonically with panel-2 local texture std (0.07 in the lowest-contrast decile -> 0.62 -> 0.90 in the top decile), so every high-contrast mottling patch, every diagonal mosaic seam bar, and every regularly repeated ring/reference-artifact cluster (red blobs recur at the ~93 px tile pitch, confirmed by autocorrelation peak 0.29 at lag 93) gets flooded. Result: 31.2% of the panel is red in 332 blobs, but only 13% of red pixels lie inside a generous 13 px band around the traced crack (38% within 25 px), so the one genuine, unambiguous crack is indistinguishable from the background flood and the mask is unusable for crack length/area measurement without a far more aggressive texture/tile suppression and an elongation-connectivity constraint."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/28.png",
+   "fraction_of_red_that_is_false_positive": 0.5,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A tall red band running the FULL frame height along the left specimen/notch silhouette (panel-3 coords x~14-80, y~17-321) accounts for roughly half of all predicted area. Pixel-by-pixel it tracks the dark edge/wedge transition as it moves in and out (red x 14-33 at y=20, 46-59 at y=140, 66-79 at y=170, 52-74 at the notch mouth y=200, 15-33 at y=290) and sits on the bright halo immediately inboard of the dark silhouette - i.e. the edge/wedge-rim suppression is not firing on this frame. Secondary problem: the genuine upper-right crack branch (the multi-strand fan visible in panel 2 from ~x=395,y=150 up to ~x=470,y=85) is almost entirely missed, only two 3-px dashes near its tip are red, so the model spends area on the rim while dropping a real branch."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/29.png",
+   "fraction_of_red_that_is_false_positive": 0.34,
+   "overall_verdict": "under_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Red stops dead at the crack's elbow (panel x~378): the entire, and most conspicuous, upper-right arm of the crack (x~380-490, y~150 rising to y~50 in panel coords, a multi-strand high-contrast trace in panel 2) is left completely unlabelled, so roughly a third to a half of the real crack length is missed while a third of the red budget is spent on the notch/wedge clutter instead."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/30.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model has the crack and the artifact exactly backwards. A large, unambiguous, notch-initiated branching fatigue crack runs from the left notch root (x~35, y~145) all the way across the frame to the right edge (x~610, y~65) with a horizontal lower branch and an upper diagonal branch plus hairline tips \u2014 it is obvious even in panel 1 and razor-sharp in panel 2 \u2014 yet only 19 red pixels (two ~10 px specks at x=314-319,y=160-163 and x=351-357,y=149-154, both correctly landing on the dark crack line) touch it, i.e. roughly 1-2% of its length. Meanwhile 1319 of 1338 red pixels (98.6%) form four elongated vertical streaks/blobs at x=12-44, y=50-216 that hug the left specimen boundary transition band and the dark notch-mouth structures, extending left into the striped mosaic/off-specimen edge zone. The wedge suppression is only partially effective: the darkest wedge tip (y~128-146) is now clean, but red still flanks it immediately above and below along the same dark rim, so the rim is still being traced. Net effect: near-zero recall on a textbook crack combined with a high-confidence, crack-shaped (vertical, elongated) edge-rim false positive \u2014 the suppression needs to cover the whole boundary transition band, not just the wedge core, and the model needs to fire on the low-amplitude interior hairline traces it is currently ignoring."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/32.png",
+   "fraction_of_red_that_is_false_positive": 0.93,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a blanket threshold on speckle texture that is locked to the mosaic tile grid: red mask column/row profiles dip to ~0.02-0.15 with a ~97 px period in both axes, so red fills every tile interior, traces the horizontal seam lines, and repeats the same 45-degree stitch-streak motif tile after tile. There IS a genuine branching fatigue crack (left notch root at ~y=0.72H, sweeping right and up to ~(0.78W, 0.44H) with branches), and it is covered - but it accounts for only ~2-6% of the frame while red covers 45%, so the crack is buried under roughly 15x its own area of tile/texture false positive and nothing about the output is measurable. The wedge/notch rim suppression is working (red stops on a clean vertical cut outside the left rim ringing, and off-specimen field is clean), so the fix needed is not more edge suppression but a per-tile contrast/noise normalisation plus an elongation-and-connectivity requirement to reject the isotropic tile-interior blobs."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/36.png",
+   "fraction_of_red_that_is_false_positive": 0.92,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask has collapsed into a texture detector rather than a crack detector: red fills 47% of the frame (55% of the specimen interior) as amorphous blobs whose density is essentially uniform everywhere (per-block red fraction 0.29-0.83 across a 4x6 grid, including the entire right half where panel 2 shows nothing but mosaic seams and calibration crescents). Measured against the crack's dark core, only ~5% of red pixels lie within 5 px of the crack and ~10% within 15 px, so precision is roughly 0.08 - the genuine multi-strand branching crack in the left-centre is captured (99.5% of its core is red) but is completely buried in background fill and carries no signal above it. There is also a residual mosaic-tile periodicity in the red column density (peaks every ~100-110 px), suggesting per-tile intensity/contrast is driving the response. Note the specimen boundary rim and off-specimen field are correctly excluded (red stops at a clean rectangular inset), and there is no dark wedge/notch in this frame, so the wedge suppression cannot be evaluated here but nothing wedge-like is being traced. Fix needed is a large increase in decision threshold plus an elongation/ridge-shape (linearity, eccentricity, skeleton-length) constraint and per-tile contrast normalisation, not more edge masking."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/35.png",
+   "fraction_of_red_that_is_false_positive": 0.96,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is not a crack trace at all - it is a near-total flood of the specimen interior (measured 61.6% of the frame red, ~153,500 px), and its spatial structure is periodic with the mosaic tile grid rather than with any crack. Column/row profiles of the red mask peak at ~0.95-1.00 on regularly spaced seam lines every ~112 px (cols) / ~120 px (rows) and dip to 0.3-0.5 in tile interiors, leaving a regular 5x3 array of grey holes - i.e. the model is firing on tile seams, the flat-field diamond/criss-cross artifact lines and ordinary microstructure mottling, not on crack morphology. There IS one unambiguous real crack: a branching bundle of thin dark filaments entering at the lower-left and propagating up-right toward the centre (roughly (0,395) to (250,190) in panel coords), obvious in panel 1 and panel 2. A generous dilated envelope around it is only ~0.9-3% of the frame, so ~96% of the red is false positive; the crack is 'covered' only incidentally by the blanket, with no delineation, and ~1/3 of its strongest filaments (the tail near the lower-left corner) actually fall OUTSIDE the hard rectangular border inset of the mask (~20 px in from each edge), so even the one true positive is clipped. No dark wedge/notch exists in this field of view, so the wedge suppression cannot be evaluated here - nothing rim-like is being traced. Fix priority: the model needs an elongation/ridge-linearity constraint plus explicit tile-seam and periodic-artifact rejection; area-based thresholding at this operating point makes the output unusable."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a near-total blanket: red fills essentially the whole specimen interior (63.8% of the frame measured, one giant blob inset ~22 px from the borders with tile-periodic unpainted holes), so it is painting ordinary matrix texture/mottling rather than any linear feature. The one genuine crack \u2014 the multi-strand, branching hairline bundle running from the lower-left up-right into the centre, clearly visible in both panel 1 and panel 2 \u2014 is only \"covered\" incidentally by that blanket (about 60% of its dark pixels fall inside red; its outermost lower-left segment falls in the unpainted border inset), and a generous 3-px envelope around it accounts for just ~2.3% of all red pixels. Output therefore carries essentially zero discriminative information on this frame; the classifier's decision boundary has collapsed onto matrix speckle for this specimen group. Secondary notes: no discrete dark wedge/notch exists in this frame and red is not selectively following any rim (the suppression is not the problem here); the repeated diagonal streaks and chevrons that look crack-like are fixed-pattern mosaic artifacts \u2014 autocorrelation of panel 2 shows a sharp 111-px horizontal repeat, so they recur identically in every tile and must not be learned as cracks. Diagnostic overlays written to /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33_diag.png (green = crack pixels inside red, blue = crack pixels missed, magenta = mask outline) and /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33_LL_p1.png."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/38.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a texture-driven blanket, not a crack trace: red floods ~60% of the frame as amorphous blobs whose boundaries track local mottling brightness (bright speckled patches left gray, everything else red), so it carries essentially zero localization information. This frame contains one of the clearest, strongest cracks in the whole set \u2014 a multi-strand branching fatigue crack entering at the left edge near y~300 and propagating up-right to about (330,90) with fainter branches fanning to (480,150), obvious even in panel 1 \u2014 yet the mask does not follow it at all; the crack is merely engulfed by the flood. Measured: the strong dark-ridge skeleton of the crack occupies only ~0.6-0.9% of the frame (generously ~2-4% including all faint branches and full bundle width), while red covers 60.4%; only 2-3% of red pixels lie within 8 px of a detected crack ridge. Also note the ~25 px unlabeled margin at the left edge leaves the crack trunk's entry segment unmarked, and the regular oval reference/calibration artifacts (three horizontal rows) and the faint diagonal seam lines are swallowed by the blanket rather than suppressed. Wedge suppression cannot be assessed here (no dark wedge or off-specimen field in this interior crop); the border rim itself is not traced."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/26.png",
+   "fraction_of_red_that_is_false_positive": 0.73,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The detector finds the real crack completely, but it also floods whole mosaic tiles along the frame borders: red starts on a dead-straight horizontal line at y~14 and blankets the full-width top band (25% of all red), plus three solid tile-corner blocks against a straight vertical seam at x~613 on the right (10.5%), with diagonal block edges tracking the mosaic seams exactly. Combined with a continuous red ribbon still hugging the notch/specimen boundary contour from y~14 down to y~300 (wedge suppression is clearly not firing here, 10% of red) and scattered hits on the periodic reference-glyph/seam lattice in the lower half (21%), only ~25% of the 20.5%-of-frame red lies on or near the actual crack. All the dominant FP masses are purely geometric (axis-aligned tile boundaries, frame-edge bands, a smooth boundary contour) and should be suppressible without touching the crack, which would cut red area by roughly two thirds."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/34.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The model has degenerated into a speckle detector: all 53 red components (1,765 px, 0.72% of frame) are small compact blobs (6-154 px, median 28 px, aspect ratio <= 2.8) sitting on isolated dark/bright dots in the surface-texture mottling, with not one elongated or connected trace anywhere. Precision on this frame is effectively zero, and because there is no genuine crack here it also yields no recall signal - so the 56 reported \"regions\" are pure noise that a reviewer must clear by hand. Two structural notes: (1) about 10 of 53 blobs (~15% of red area) hug the left/right specimen boundary rim (x<30 or x>590), so the edge-rim suppression is leakier than the wedge suppression; (2) the wedge suppression now looks broad rather than targeted - the model produces no response at all along the bottom-left fringe bundle or its right-fanning strands, which is correct here but means a real crack initiating at the notch root would likely also be suppressed. Caveat on the \"no crack\" call: the only coherent linear structures in panel 2 are the bottom-left multi-strand wedge/notch fringe bundle (owner-declared not a crack) reaching up to about (250, 225) with tails running right to x~450, the horizontal tile seams at y ~= 95/200/305, and the regularly repeating straight +/-45 deg tile diagonals (mosaic period ~155 px horizontally, confirmed by the periodic low-frequency structure). The thinnest single strand fanning right off the wedge bundle around y 290-330 is the one ambiguous feature - it has paired bright/dark fringe character consistent with the notch flank rather than a crack, so I am calling it artifact, but it is the place to re-check with the owner."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/37.png",
+   "fraction_of_red_that_is_false_positive": 0.68,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "reference or calibration artifact",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A regular 6-column x 3-row lattice of ~15 large amoeboid red blobs (~28x60 px each, pitch ~82 px in x / ~90 px in y, lattice-locked to the periodic oval-ring / \"brush\" reference artifacts) plus 263 sub-50-px specks accounts for roughly 60% of all red area. This is pure periodic instrument/flat-field artifact, is spatially indistinguishable from a real crack in any area- or region-count statistic, and it is exactly what inflates the prediction to 20.6% of frame across 323 regions. It also directly costs recall: red stops at the strong up-right crack strand near (x~420-480, y~25-55) and the faint right-going sub-branch near (x~470-500, y~75-95) while blobs sit on the untextured artifact patches immediately beside those missed tips. Measured breakdown of the 37,153 red px (panel-local 620x286 coords): largest component 14,243 px (38%) = the real crack network fused with 3-4 lattice blobs; right specimen boundary rim stripe at x579-608 spanning y20-274 = 7.4%; thin continuous rim sliver hugging the notch/wedge boundary at x~14-25, y~28-135 (wedge suppression only partially effective - it killed the off-specimen field but not the bright/dark boundary transition line); ~35% of red falls inside a generous 26-px-wide corridor drawn along every visible crack strand, and even that corridor red is over-dilated relative to the few-px-wide strands."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/46.png",
+   "fraction_of_red_that_is_false_positive": 0.6,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge-rim suppression is only partially working: ~54% of all red pixels (457 of 844) are small dashed fragments sitting 1-8 px off the upper and lower boundary of the large dark wedge, running all the way to the right frame edge (x 394-615, y 122-196 in panel coords) - i.e. the model is still stitching a broken outline around the notch it was told to ignore. Secondary problem: the one legitimate detection (the crack-tip extension ahead of the wedge, x~363-400, y~170-180 in panel 2) is rendered as a fat ~40x20 px blob rather than the 3-6 px hairline that is actually there, so even the true positive is over-dilated 3-4x and its 30 connected components make the output look far more fragmented/extensive than the underlying feature."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/44.png",
+   "fraction_of_red_that_is_false_positive": 0.84,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/notch rim suppression is still failing: a thick contiguous red band (~4,900 px, ~43% of all red) hugs the inner contour of the dark wedge for its entire height (y~130 to the bottom of the frame, x~110-200), following the rim curvature rather than any linear feature. Because that band merges with the genuine crack root at the notch tip, it cannot be removed by component-size or isolation filtering; the largest connected component (4,436 px) contains both the real crack and the rim artifact. The suppression appears to only reject the bright rim line itself, so the prediction has simply shifted a few pixels inboard into the edge halo."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/42.png",
+   "fraction_of_red_that_is_false_positive": 0.94,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Almost all red (76%) is a thick ribbon following the specimen boundary / dark-notch transition halo down the entire left side, and another 21% is scattered blobs on the regularly spaced reference-artifact motifs along the top strip (plus a periodic row of dots at y~455) - so the wedge/edge-rim suppression is clearly not holding. Meanwhile the one genuinely crack-like structure in the frame - a branching fan of thin dark hairlines radiating from the notch root at about x 175-380, y 195-315 in panel coordinates, plainly visible in panel 2 and even traceable in panel 1 - is only caught at its first 30-40 px where it merges into the rim band, and the long branches propagating toward the centre are dropped entirely. Net effect: the model is scoring the boundary gradient and the calibration pattern, not the crack, and the true crack is under-segmented by roughly 4-5x in length."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/43.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Red is still dominated by the left specimen-edge / notch-rim contour rather than the crack: 86% of red pixels (3059/3571) lie at x<=190 hugging the boundary, and the single largest blob (1101 px, 31% of all red, centred ~(117,61)) is a fat 10-15 px band that traces the top-left boundary/wedge rim shoulder in an unbroken arc. Meanwhile the one genuine feature -- a branching hairline crack emanating from the notch tip at ~(178,228) and running right/slightly down to ~(390,243), clearly visible in panel 2 with relief shading and a fan of finer branches near its root -- receives only 255 red pixels (7% of the red budget); red covers it as 5 disconnected dashes (~52% of the path length has red within 7 px), misses the whole right half beyond x~320 and misses every branch. So the crack is fragmented into unconnected specks while a non-crack rim gets a solid continuous trace, which inverts any length/connectivity metric. Secondary FPs: 5-6 regularly spaced short vertical strokes at the tips of the repeating top-edge mosaic/seam fingers (x ~250, 260, 371, 424, 483 at y~110-130), red sitting on the off-specimen bright streaks and rough boundary debris in the lower left (y 420-570), and a handful of isolated 1-18 px dots on the ring/reference artifacts in the top row. The specimen interior (centre/right) is correctly left clean -- only faint regular +-45 degree criss-cross striations there, no crack."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/41.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "off-specimen empty field",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model paints the wrong side of the specimen edge. Geometry (panel-relative x, 620 px wide panels): the specimen is the smooth light region on the RIGHT, its edge runs x=48 (y=0) -> x=263 (y=440) -> x=107 (y=760), i.e. a large dark wedge/void lobe indenting the specimen from the left. Measured against that edge, 62% of red sits >40 px OUTSIDE the specimen in the dark lobe, 16% is 10-40 px outside, 19% is on the rim (+-10 px), and only 2.9% (190 px) is inside the material - all of it on the edge fringe. What excites the detector out there is a horizontal band (y~470-600) of dense bright ring/crescent/dust artifacts bounded by mosaic tile-row seams; the two largest blobs (1962 and 893 px at y~542-567, x~49-125) are amorphous area fills over that dust field, not linear. Rim tracing is not fully suppressed: components at y=300 (540 px, offset -1), y=336 (+14), y=382 (-4), y=671 (+2) and the 1426 px streak at y=553 (offset -15) run along the wedge rim. Meanwhile there IS a genuine crack: in panel 2 (and unmistakable under high-pass, /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/z41/D_overlay.png) a set of thin, faint, sub-parallel BRANCHING dark hairlines emanates from the deepest point of the wedge at about (262,255)-(268,320) and propagates down-right into the material to about (365,395), with a curved branch/arc near (355-380,355-390). Red-vs-crack overlap is exactly 0 pixels; the entire inward extent is unmarked. So the frame is simultaneously a 100%-precision failure and a 0%-recall failure: a specimen mask (plus a \"no red left of the specimen edge\" rule) would remove nearly all 96 regions, and the surviving detector still has no sensitivity to the low-amplitude (~1-2 grey level) hairline that is the only true crack here."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/47.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model is still anchored entirely to the dark wedge/notch and completely misses the one unambiguous crack in the frame. All ~1090 red pixels (6-7 components) form a single cluster at panel-x 458-563, panel-y 172-232, wrapped around the LEFT TIP of the dark wedge. The suppression only partly worked: red no longer sits on the sharp bright/dark rim line, but it migrated one step outward onto the wedge's outer dark halo and phase fringes, and the mask's lower boundary still conforms to the wedge halo contour (visible in the overlay: the blob's bottom edge follows the top of the notch's bright lens). Inside the blob there is no coherent linear feature, just mottled striated deformation texture radiating from the notch tip. Meanwhile a textbook real crack IS present in panel 2 (and faintly in panel 1): a thin, connected, ~2-3 px wide, ~135 px long hairline with a bright/dark phase-contrast pair running near-vertically at panel-x ~565-576 from y~30 down to y~165, where it merges into the notch deformation zone. It has a tapered upper tip and drifts ~9 px in x over 100 px in y, so it is not a mosaic tile seam (those are axis-aligned, broad, low-contrast steps, two visible in the lower right) and not the specimen boundary rim (that is the separate bright vertical band at x~615). This crack receives ZERO red -- red's max x is 563, the crack starts at 564, so overlap is exactly nil. Net behaviour is the worst combination: false positives concentrated on the one artifact the owner explicitly excluded, plus a 0% hit rate on the actual crack. Fix direction: make the wedge suppression a dilated exclusion zone around the whole notch halo rather than just the rim ridge, and restore sensitivity to low-amplitude high-aspect-ratio ridge features away from the notch, since the missed crack is faint but geometrically unambiguous."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/48.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge suppression did not remove the rim trace, it only displaced and fragmented it: measured on the panel-3 red mask, 0 of 1243 red pixels lie within 2 px of the dark void, but 82% lie within 10 px and 96% within 20 px of it (median offset 7.2 px), and 73% of red sits at x>=360 where the void is a wide notch, forming a dashed halo (29 components) that follows the upper and lower notch outline point-for-point through the deformation-texture band. Meanwhile the one genuinely crack-like feature - the thin 1-13 px slit that tapers left out of the notch from x~375 to a tip at x~288, plus the mottled process zone ahead of it - receives only ~16-27% of the red, concentrated as a collar around the tip and a couple of dabs at the x~353-361 kink; its centreline is never traced (only 41% of its columns have red within +/-8 px, and no red pixel lies on the slit itself). Net effect: the model spends most of its output re-drawing the notch boundary at a fixed standoff and under-traces the actual crack, so the suppression needs to be widened to the whole notch neighbourhood (or made thickness-aware, keeping only voids thinner than ~15 px) and paired with a term that rewards tracing along the thin slit's length rather than around it."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/40.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The prediction is a material-vs-air segmentation, not crack detection: red is one solid blob filling the whole specimen body (25.2% of frame = 72.8% of the specimen area; the 2 largest components hold ~96% of the red), driven by the dense round-pore / mottled microstructure that lights up under local-contrast enhancement. Measured share of red by zone: 80.7% on-specimen bulk texture (98% of every interior pixel painted), 14.1% specimen edge/boundary rim band, 4.6% wedge-rim band, 0.7% off-specimen reference-artifact specks (~82 tiny components). There is no elongation/linearity or thinness constraint anywhere in the decision: the model rewards \"textured metal\" instead of \"thin connected dark line\", so a blanket-fill on a crack-free frame scores as 108 detections. The wedge-interior suppression works (density 0.002 inside the dark notch, clean ~8-10 px white buffer), but red immediately re-forms a contour parallel to the notch top/bottom rims and a dense wreath around the notch tip, so the wedge outline is still effectively delineated at a small offset. Fix priority: gate on ridge/tubularity (thin dark line response with high aspect ratio and connectivity) and hard-reject blobs whose area/skeleton-length ratio exceeds a few pixels, plus widen the wedge/edge exclusion band beyond the current ~8 px."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/45.png",
+   "fraction_of_red_that_is_false_positive": 0.72,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/edge suppression only DISPLACED the rim tracing instead of removing it. Measured against the panel-1 background mask, ZERO red pixels lie within 3 px of the wedge/boundary and only 1% within 5 px, but 33% sit at 5-8 px and 66% within 12 px - a dashed \"standoff outline\" that hugs the notch rim and the specimen right edge at a fixed ~6-12 px offset, riding the bright/dark ringing halo that the local-contrast enhancement creates alongside every high-contrast boundary (clearly visible as the double dark/bright line in panel 2 at e.g. x~525-540, y~165-195). So the suppression band needs to be wider AND the classifier needs a feature that rejects the LCE ringing halo itself, not just the black pixels. Secondary problem: the one genuine feature is fused into the same connected component as the rim trace, so it cannot be recovered by any downstream size/shape filter."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/39.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The dark-region/boundary-rim suppression is not working on this frame: ~90% of all red is a thick blobby band welded to the specimen edge (31% within 25 px of the boundary, 33% at 25-60 px, plus a 3400-px solid slab filling the top-left corner that reaches 60-90 px into completely featureless material). It has just been displaced from the black side of the rim onto the bright/grey transition shoulder on the specimen side, so it reads as \"inside the material\" to any distance-to-edge heuristic while still being pure edge artifact. The remaining ~10% is the regular ~95 px lattice of reference/calibration marks along the top row (6.5%) and the right frame column (3.4%). Meanwhile the interior contains zero crack: >60 px from the edge there are only six specks of 5-9 px (0.3% of red), and multi-scale ridge/matched-filter searches over the interior return nothing but the periodic mosaic pattern (horizontal seams every ~95 px, 45-degree diagonals, curl/crescent motifs on a regular grid) plus grain mottling. So on a crack-free frame the model still paints 3.1% of the field across 110 regions - i.e. this frame contributes essentially only false-positive area, and the 110-region count is dominated by the artifact lattice being fragmented into dozens of tiny detections."
   }
  ],
  "all_results": [
@@ -645,6 +1066,427 @@
    "real_crack_is_marked": "no_crack_present",
    "wedge_rim_still_traced": true,
    "biggest_remaining_problem": "The edge suppression is a fixed-width exclusion band (~8-14 px) but the local-contrast ringing from the hard bright->black step extends ~20 px, so the model now fires in a halo RING just OUTSIDE the exclusion zone instead of on the rim itself. Measured: 100% of the 1055 red pixels lie 8.2-20.0 px from a zero-valued (black) region (median 15 px; left cluster min 14 px, right cluster min 8 px), while only 9% of the bright field is within 22 px of black, and not one red pixel sits in the interior (>20 px from any edge). The suppression displaced the false positives rather than removing them; it needs to be distance-graded/widened to the full ringing radius, or keyed to \"step edge present within N px\" rather than \"on the edge\"."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/04.png",
+   "fraction_of_red_that_is_false_positive": 0.25,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Two coupled problems, both about WHERE the red sits rather than whether cracks were found. (1) Edge/seam artifact family, ~16% of red area. A ragged vertical red column sits at x~18-30 running y~150-440, immediately inboard of the dead black frame column at x~5-10; panel 2 shows nothing crack-like there, and it runs perpendicular to every real crack in the frame, so it is a pure frame/mosaic-seam false positive (6.6% of red, ~6 components). On the right, 18% of red lies within 18px of the specimen boundary at x>470, and roughly half of that is spill onto the bright/dark boundary halo and onto the dark flank of the edge step/notch at x~480-515, y~200-235 rather than onto crack. The rim suppression is largely working - only 1.0% of red is within 3px of the boundary and 2.6% within 6px, so the classic thin-rim outline trace is gone - but red still bleeds up the notch flank as a diagonal arm, so the wedge/step is not fully suppressed. (2) Systematic blob fattening. Red regions are 2-4x wider than the actual few-pixel dark crack lines, and on branching cracks (the Y-branch at x399-486/y261-286, area 1195px, and the one at x203-258/y108-129) the red fills the solid triangle between the two arms instead of tracing them. 50% of red pixels sit on the top-5% local-contrast fringe and 90% are within 2px of one, so the dilation is only ~2px per side, but that is enough to destroy crack width, opening and branching morphology for any quantitative use. Recall is not the problem: a ridge/dark-line filter over panel 2 found 38 elongated interior features >=30px and every single one inside the specimen core is covered by red (coverage 0.85-1.00); the only uncovered dark lines are at x=5-9 (the frame bar) and a 42x4 vertical line at x=509 (boundary rim), both correctly left alone. Real cracks are unambiguously present and correctly identified: sharp, thin, dark, phase-fringed, branching, all oriented near-horizontal (consistent with a vertical tensile axis), including a genuine crack emanating leftward from the notch root at y~218 and a faint hairline at x525-555/y~29 that only shows in panel 2 and is marked. Fix priority: mask the left frame/dead-column strip and widen the boundary-halo exclusion by ~10px on the right, then reduce the morphological closing/dilation so branch arms stay separate."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/00.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "reference or calibration artifact",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The detector is locked onto a per-tile repeating fixed-pattern artifact, not onto cracks. Measured directly on the red mask: shifting it by 112 px in x gives IoU 0.23 and by 110 px in y gives IoU 0.16, while half-period shifts (56 px, 55 px) give 0.05 and 0.02 - so the predictions are periodic at exactly the mosaic tile pitch. Side-by-side high-pass patches at x = 48, 160, 272, 384 (same y) show the IDENTICAL motif (a fan of parallel diagonal hatch strokes plus a ring/crescent) replicated at each lattice node. Every feature I chased as a possible hairline turned out to be one of these clones: the \"branching hook\" at panel-2 (180, 485), the convincing-looking faint diagonal that appears to run inward from the notch at (419, 261) -> (358, 294), and the streak at (150, 420). All are lattice members, so there is no crack in this frame and ~all 23,385 red pixels / 260 regions are false positive. Morphology confirms the model is a dark-blob detector rather than a curvilinear detector: 84% of regions have aspect ratio < 2, only 2% exceed 4, median region size 34 px, and no red or image structure anywhere forms a connected elongated path (longest dark ridge found by a multi-scale Sato filter in the specimen interior is ~40 px, and it is a lattice clone). Secondary problems: (a) the wedge/edge rim suppression is only partial - 18% of red area lies within 40 px of the right specimen/wedge boundary and an elongated strip hugs the rim contour for a 42-row continuous run at rows 16-58 plus 23-25 row runs at 548-571 and 576-601, i.e. 28% of all image rows have red within 22 px inside that boundary; (b) a solid vertical red line at x = 16-25 spanning 77% of image height tracks the left frame/tile edge (19% of red area); (c) 34% of interior red sits in the 14% of rows nearest the tile seam rows 115/226/332/441/551, a 2.4x enrichment. Net effect: the false-positive noise floor (6.4% of frame) is dense enough at the exact scale of a real microcrack that a genuine faint hairline could not be distinguished from it, so this output is not usable as-is. Fix priority: suppress tile-periodic fixed-pattern features (median across tiles, or a per-tile-phase feature the classifier can reject), add an elongation/curvilinearity gate before the final dilation, and extend the rim suppression to the frame border and to the top/bottom corners where the boundary meets the frame."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/06.png",
+   "fraction_of_red_that_is_false_positive": 0.78,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The prediction is an area fill, not a crack trace. Red is 23.4% of the frame but 89% of it sits in only 2 amorphous blobs (44,182 px at x92-590/y147-358 and 35,503 px at x42-590/y311-535), whereas a multiscale dark-ridge (valley) detector finds only ~3.2% of the frame (12,215 px) of genuine thin elongated filaments. Allowing a generous +/-3-5 px tolerance around every filament still leaves 70-79% of red unexplained; ~1/3 of red pixels (27% even after 6 px erosion of the mask core) lie on matrix whose local 7x7 std is below the frame's 60th percentile, i.e. visibly featureless. Consequences: (1) the mask engulfs the rough deformation-band texture and the smooth matrix flanking it instead of the few-pixel dark lines inside it; (2) the wedge is not suppressed - the sharp dark wedge tip near x100-235/y245-280 is solid red including its rim, and along the large bright wedge at x420-590/y255-320 the red boundary hugs the wedge's upper dark rim and fills everything above it, with axis-aligned rectangular blocks over the lower rim; (3) suppression appears inverted in places - a clean axis-aligned rectangular hole (~x117-237, y430-472) has been carved out of the lower blob exactly over the crispest continuous dark crack line in the lower band, while the surrounding matrix stays painted; (4) despite the 7x area inflation recall on the filaments is only 54%, and the entire branching thin-line network at x420-590/y505-570 (bottom right, ridge fraction 0.073/0.037 in those grid cells) is completely unpainted. There is also clear tile/patch blockiness: a 103-px perfectly straight vertical mask edge at x=589 plus several 23-28 px straight edges at rows 303/336/365/417/434/470 and cols 41/116/454."
+  },
+  {
+   "files": "[]",
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/01.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The edge/rim suppression is not working on either boundary, and there is no crack in this frame for the model to have found, so the output is essentially all noise. Quantitatively: 43.3% of the red is four long vertical strips at x=12-21 pinned ~10 px inside the black field-of-view border at x=0-2 (also the x=19 mosaic seam) on completely featureless bright material; another 30.2% is a broken chain of 16 blobs hugging the right specimen/dark-notch boundary, sitting squarely on the bright rim and its dark transition band (largest single blob, 234 px at x=491-505, y=76-108, is entirely on that rim); the remaining 26.5% is 33 tiny blobs dropped onto individual short bipolar surface-relief arcs in the interior. Multi-scale ridge filtering of panel 2 inside the eroded specimen returns nothing with skeleton length above 30 px, and the one sinuous hairline candidate (x=385-445, y=28-48) resolves at 14x into the same dark-plus-bright relief signature as the ~100 uniformly distributed, commonly oriented texture arcs elsewhere. Priority fix is a hard geometric veto: reject any pixel within ~25 px of the specimen mask boundary or of the frame/mosaic-seam lines (grid period ~81 px, seams at x=19+81k, y=60+81k), then require a minimum skeleton length and monopolar (purely dark) profile before emitting anything, which would zero out this frame as it should."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/03.png",
+   "fraction_of_red_that_is_false_positive": 0.88,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "round pore / inclusion / dust speck",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Two thirds of the red (2600 of 3931 px, ~44 blobs) sits on the ubiquitous population of discrete LENS/CIGAR-shaped objects with a dark core flanked by bright bands (elongated inclusions or relief scratches, ~20-40 px long x 8-16 px wide, aspect only 2-5:1, blunt rounded ends, isolated and scattered uniformly over the whole field, including far from centre). Dozens of visually identical objects are left unmarked, so the classifier is effectively scoring \"locally high-contrast elongated blob\", not \"thin connected line\". Because these FPs are elongated, a circularity/round-pore filter will not remove them - the discriminator that works here is WIDTH and CONNECTED LENGTH: the one true crack is 1-2 px wide with a 100 px continuous ridge (aspect ~27:1, ridge-elongation 27 in a Hessian test), while every FP has aspect <8 and ridge length <40 px. A min-length/max-width (or eigenvalue-ratio) gate on the connected component would delete ~85% of the red while keeping the crack intact."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/15.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The output behaves as a generic low-contrast-texture threshold rather than a crack detector: 20% of the frame is red across 313 blobs, but only ~10% of that red is anywhere near the one real hairline (x 105-345, y 160-210), while ~36% is scattered mottling/ring-artifact blobs in featureless bulk, ~33% is thick bands hugging the dark wedge rim (the suppression stopped interior infill but not rim tracing), and ~22% is a hard convolution/padding halo along the top and left frame edges (rows and columns 12-30 are 45-80% red). Even where the crack is covered, it is swallowed by a ~40-px-wide blob, so no usable crack width, length, or branching geometry can be recovered from this mask."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/12.png",
+   "fraction_of_red_that_is_false_positive": 0.78,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The dark-feature suppression has inverted the prediction at the one place that matters: it punches a hard, tile-aligned red-free hole straight through the strongest real crack (panel-2/3 coords x=191-400, y=294-369 - only 28% of that dark crack core is red), while the model blankets the surrounding bland matrix with 31% red. The wedge rim itself is no longer traced (a rectangular suppression box cleanly excludes both the right-edge notch at x=573-620, y=204-228 and its bright rim), so the suppression fixed the rim artifact but is now over-firing onto genuine wide/open crack. Combined with a blob-shaped classifier output (one 69.5k-px component = 80% of all red, only 24% of red lies within 4 px of any dark linear feature, vs a plausible true crack area of ~4-6% of frame), the result is a damage-zone blob detector rather than a crack tracer: it neither delineates the thin faint branches (e.g. the sharp hairline at x~368 running y=310 up to a clear T-junction at y~250, and the thin lines trailing left from the notch tip at y~195-215) nor stays off texture, calibration crescents (x~490-560/y~240-300, x~500-570/y~420-490), elongated pores (x~170-200/y~130-165), and the frame border strips."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/13.png",
+   "fraction_of_red_that_is_false_positive": 0.87,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The output is a texture/contrast blanket, not a crack tracing: 39.3% of the frame in 109 amorphous blobs whose boundaries bear no relation to any linear feature. Measured against a strict thin-dark-line (Hessian valley) filter set to the top 3% of ridge response, only 21% of red pixels lie within 2 px of any line-like structure, and red covers just 57% of that line content -- barely above the 39% a random mask of the same area would achieve. So the model is not even buying recall with its enormous area; it is filling whichever mosaic tiles have grainier texture (red masses in the upper-left, mid-left and upper-right sit on plain mottling with no linear feature at all, and the mask terminates along perfectly straight vertical/horizontal tile seams at panel x~33, x~600 and several horizontal cuts). Meanwhile genuine thin features are dropped: a long sharp dark line at roughly panel coords x 240-300, y 175-195 falls just outside a red blob whose interior is featureless texture. On the wedge: the suppression does carve holes over the dark cores (the lower-centre blocky wedge near x 250-400, y 285-320 and the right-edge notch near x 555-625, y 185-215 are left grey), but the carve-outs are straight-edged bounding cuts and red still hugs both silhouettes pixel-tight, covers their bright halos and the dark streak extensions running left and right of the notch tip -- so the rim is still effectively being delineated, just as the boundary of a bulk region rather than a thin trace. Fix priority: enforce elongation/width and skeleton-continuity constraints on candidate regions and drop area-dominant blobs before any further threshold tuning; a 39% mask cannot be salvaged by suppressing individual artifacts."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/14.png",
+   "fraction_of_red_that_is_false_positive": 0.7,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is region-level, not crack-level: 82% of all red is ONE amorphous component covering 27% of the frame (bbox y80-420, x123-594, solidity 0.59), and only 25% of red pixels sit within 2 px of a strong ridge (44% within 4 px), so ~70% of the red is dilated deformation-zone mottling / microstructure texture around the cracks rather than the cracks themselves. Worse, the suppression inverts locally: the two most crack-like features are punched OUT as holes while the surrounding matrix is painted - (a) the elongated tapering crack running left from the notch tip (approx x440-580, y185-215) is left unpainted as a white carve-out, and (b) the open central crack / dark lens (approx x255-350, y280-315) sits in a blocky rectangular carve-out with red packed hard against every side. Net effect: nothing crack-shaped is delineated - a real branching crack network IS clearly present in panel 2 (best seen at x120-340/y240-380 and x20-180/y110-260) and ~72% of the strongest ridge pixels fall inside red, but only incidentally, because the blob swallows the entire damage band. Secondary FPs: isolated blobs on quiet upper-frame matrix / faint mottling (x175-260/y70-155, x395-465/y27-50) and one blob abutting a scattered ring-crescent reference artifact near x290/y75. Encouraging: red never lands on off-specimen black, only 1.3% of red is on lowest-quartile flat matrix, no mosaic-seam or specimen-edge tracing, and the wedge/notch rim is clean - red stops at a hard vertical cut at x~592 and never reaches the dark wedge, so that suppression works."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/16.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is inverted at the feature level: the dark-feature suppression that was added for the wedge is not wedge-specific, so it also vetoes the genuine crack, while the classifier floods the featureless matrix. Measured: red covers 43.1% of the frame, but the central dark crack core (connected dark component at y280-302, x239-321, clearly a branching crack in panel 2) is only 0.4% red, and its 1-8 px rim only 3-10% red \u2014 i.e. the one unambiguous crack in the image is punched OUT of the mask while the smooth matrix around it is painted in. Only 24.6% of red pixels sit on any local structure at all (|p1 - median15| > 18), and only 6.7% sit on an elongated linear feature; ~75% of red is on flat mottled matrix. The mask also has a hard rectangular envelope (red switches on abruptly at x=32, off at x=600, on at y=26) with its densest columns (65-71% red) hugging the left specimen-edge/valid-region boundary, so a valid-region/edge-rim artifact is being learned as crack. Net effect: the suppression fixed the wedge rim (1-8 px band around the wedge is 1-4% red vs 43% globally, well below chance, and the wedge interior is 0.0% red) but at the cost of deleting the true positive, and the underlying pixel classifier has essentially no crack specificity \u2014 it is thresholding low-frequency shading, not linear structure. Fix direction: make the dark/wedge veto shape-aware (reject only large low-elongation saturated-dark blobs contiguous with the frame edge, not thin elongated dark ridges), and add an elongation/ridge-response gate to the positive class so 42% of a frame cannot be labelled crack."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/22.png",
+   "fraction_of_red_that_is_false_positive": 0.69,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "One contiguous 1664-px blob (51% of ALL red, ~74% of all false positive area) in the bright granular/mottled thin corner just inside the specimen edge and below the notch (panel coords x 40-87, y 194-274; ~7-14% of width, 67-95% of height). It is fat and amoeba-shaped with no elongated structure in panel 2 at that location - pure microstructure/mottling plus round pores in a thinned notch-flank region. Fixing this one region would cut total false positive area by three quarters. Close second: the red on the genuine crack stops dead at x=341, so the entire upper-right branch of the crack (panel 2, x 343-425, y 75-115) is missed, and the covered part is broken into 4 disjoint segments instead of one connected trace. Third: the wedge suppression only converted the rim trace from a solid line into a dotted arc (~18 small components, ~17% of red) that still follows the notch boundary from y=12 to y=220."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/17.png",
+   "fraction_of_red_that_is_false_positive": 1,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "All four red regions (206 px total, 0.053% of the 625x625 frame) sit directly on the specimen outline's phase-contrast fringe, not inside the material: red at y22-34/x497-504, y134-151/x451-460, y254-263/x426-428, y366-385/x425-428 versus a measured specimen-to-empty-field boundary at x=504 (y=28), 459 (y=140), 430 (y=258), 427 (y=375) - i.e. every blob is within 0-4 px of the bright/dark edge fringe. Notably, three of the four coincide with abrupt lateral STEP discontinuities in the outline (measured edge jumps at y=144, 265, 479), which are mosaic-tile stitching misregistrations that locally double/kink the edge fringe; the model fires exactly there. So the existing wedge/rim suppression is not covering the specimen-boundary fringe when tile seams jog it. There is no dark wedge/notch in this frame at all - the dark area is the uniform off-specimen field (value 0 out to the right frame border, containing two regularly spaced small calibration rings at x~590, y~190 and y~410), so the wedge suppression is untested here rather than failing. Interior verdict: panel 2 (and 4x/5x local-contrast and Sato ridge maps of the interior with a 14 px edge erosion) shows only dust/inclusion clusters, small round pores and mottling - the largest dark ridge component is a 43x11 px blob at x161-204, y115-126 with no elongated connected structure anywhere. The only linear features are pin-thin, perfectly straight lines that fan symmetrically up-left and down-left from the edge jog points and terminate at the boundary; their straightness, symmetry and origin at tile corners mark them as stitching/streak artifacts, not cracks. I do not see a real crack in this frame, so this is a precision leak on a near-empty frame rather than a miss - net effect is small in area but the model's entire positive class here is wrong. Recommended fix: extend the rim suppression to the full specimen/field boundary transition (dilate the outline mask by ~8-12 px and reject candidates whose orientation is parallel to the local boundary), which would zero this frame out."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/19.png",
+   "fraction_of_red_that_is_false_positive": 0.75,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/boundary suppression is still failing: a long, continuous, boundary-parallel red band runs just inside the bright rim of the left dark notch/wedge (largest non-crack component, ~1700 px, spanning roughly y=14-125 at x=103-158 in panel coordinates, plus more of the same at y=209-272 and y=291-321), and it is joined by a \"picture-frame\" of speckle clutter hugging the top and bottom periphery. Quantitatively, of the 13,292 red pixels (6.3% of the frame, 139 connected components): ~19% sit in the left rim/notch band, ~16% in a top peripheral band (y<45), ~19% in a bottom peripheral band (y>285), and ~5% in off-specimen/right-edge/interior specks - i.e. ~60% of the red is plainly off-target, on featureless material or pure edge/vignette transition where panel 2 shows nothing linear. Only one red component (41.7% of red, y=121-207, x=128-367) is on the genuine feature, and even there it is over-dilated roughly 4-5x the true hairline width (crack is 2-4 px; red streak is 10-20 px), so any crack-width, area, or region-count metric derived from this mask will be badly biased. The good news: the real crack is unambiguous in panel 2 - a branching hairline network emanating from the notch at mid-height, fanning into up/down branches near the mouth and consolidating into a single trunk that runs right to about x=370, and the red covers that trunk end-to-end with its tip terminating within a few pixels of where the crack fades out. Priority fix is a rim/periphery exclusion (distance-from-boundary and top/bottom FOV bands), not sensitivity."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/18.png",
+   "fraction_of_red_that_is_false_positive": 0.73,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/notch-rim suppression is still failing: red forms a thick, near-continuous vertical stripe immediately inside the scalloped dark wedge boundary (panel-3 x~70-200) spanning the full frame height (y 14-112, 191-213, 228-280, 339-413), and these are the largest single blobs in the frame (~5,250 px, 39.8% of all red, incl. the 1,477 px and 979 px components). Interior wedge/off-specimen black is correctly left unpainted (only 1 red px on dark pixels), so the suppression only clipped the dark core, not the bright transition rim; downstream this rim stripe will be read as a long vertical \"crack\" parallel to the notch and dwarfs the one real crack. Secondary inflation: top-edge band (y<58, 10.8%) and bottom-edge noise band (y>376, 10.6%) plus a hit on nearly every regularly spaced crescent/reference artifact on the ~95x92 px grid (~12%, blobs at x=245/338/433/529 by y=54/149/241/332) - together these account for the 182-region count. The one genuine crack (branching bundle from the notch root at x~128,y~170 running right to a tip at x~345) is well covered end-to-end apart from a ~20 px gap at x 200-218, but the red is dilated ~2-3x wider than the hairlines and represents only 26.5% of the painted area."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/21.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is anti-correlated with the evidence: it is responding to local texture variance rather than to dark linear ridges. 67 components, all compact (median aspect ratio 1.35 for components >=30 px; none exceed ~2), scattered fairly uniformly over the specimen interior on featureless speckle/mottle - at 6x zoom there is no dark line, ridge, or linear feature under any of them. A single 5650-px amoeba blob in the upper-centre-left is 51% of the total red mass and sits on a coarse-texture patch bounded by one of the periodic bright diagonal streaks. Meanwhile the one genuinely crack-like feature in the frame - a dark, thin (2-4 px), continuous, forking hairline at the bottom-left, panel-local x=0-130, y=310-322, extending as fainter branches up-right to about x=170, y=295 - carries ZERO red. An independent multiscale Hessian dark-ridge filter over the frame returns exactly one elongated component (aspect 7.8, area 177 px, at x=1-71, y=312-321), i.e. that hairline and nothing else, so it is both the only crack candidate present and a complete miss. Net effect: ~5% of frame painted, essentially 0% recall on the actual crack. Fixing this needs a shape/anisotropy gate (reject blobs below an elongation threshold) plus a feature that keys on dark ridge polarity, not variance."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/27.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is a near-blanket fill of grain speckle (measured 58.3% of frame; only 0.17% of red lies off-specimen, so essentially all of it is on-material texture), and the anti-wedge suppression is inverted onto the one unambiguous real crack: the wide-open branching crack running from the left edge to frame centre is punched out as a clean grey HOLE in the red, so the darkest crack-core pixels have LOWER red coverage (34% at grey<40, 41% at <55, 50% at <70) than the frame average of 58%. The model is anti-correlated with the true crack while red blobs are organised by the 4x4 mosaic tile grid (solid red along seams, grey islands inside tiles), i.e. it is thresholding per-tile contrast rather than detecting linear features. The upper crack-tip fan of hairline branches is only \"covered\" incidentally because its whole tile is red, not because it was detected."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/23.png",
+   "fraction_of_red_that_is_false_positive": 0.65,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A solid periodic red band along the top of the frame consumes 43.5% of the entire mask on blank material. It is not one blob but six near-identical scalloped blocks separated by gaps at a strict ~81 px period, i.e. the mosaic tile grid: each tile's top row is flagged. Panel 2 shows nothing there but texture (same mean grey as the interior, only noisier: std 3.0 vs 2.0, the usual fewer-overlapping-projections edge effect), so the model is firing on elevated high-frequency noise at the mosaic boundary. The same periodic signature drives ~115 scattered interior specks that sit on small rings/crescents and faint diagonal seams recurring at the same ~85 px pitch, plus a similar clump on the right image border (3.9%). Secondary, and directly relevant to the suppression that was added: red still hugs the dark wedge/specimen boundary over roughly half its length (a large patch at y~10-90 that merges into the top band, and another at y~190-245, plus flecks inside the dark region) - 10.3% of red sits at x<105. Net effect: the true crack occupies ~2% of the frame but the mask paints 10.3%, and 190 of 195 predicted regions are spurious. The good news is the detection itself is right: the crack from the notch mouth at x~78 running right and branching, with the upper-right fan, is covered essentially end to end by two components (x 105-354 and x 355-428) that track the ridge bundle closely, only missing the diffuse tip beyond x~430 and catching the faint upper hairline at y~65-85 only in fragments. Fixing the frame/tile-edge and rim geometry - not the crack model - would take this from 65% FP to near-clean."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/25.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a near-uniform blanket over the entire specimen (60.2% of frame, 65.8% of specimen, 134 regions) that is statistically uncorrelated with the image: mean local std inside red 31.53 vs 31.69 outside, mean intensity 130.5 vs 132.1. It carries no localization information. Its only structure is the mosaic tile lattice (near-solid 88-93% red along tile seams, dipping to 40-50% at tile centres); the rest indiscriminately paints ordinary surface texture/microstructure, plus the regularly scattered crescent/reference artifacts and the straight bright diagonal detector streaks. A real crack IS clearly present and obvious in panel 2 (also visible in panel 1): a branching, multi-strand fatigue crack entering from the left edge at y~290 and propagating up-right into the material to about (270,175) in panel coords. Even with a generous 11x11 dilation around it, only 2.9% of red pixels fall on or near that crack, so ~97% of red is false positive. Worse: the wedge/notch suppression is misfiring. Red no longer follows a wedge rim, but there is a hard-edged RECTANGULAR carve-out (right edge at x~145, y~262-300) with 0% red directly on the thickest dark crack strand near the notch mouth, deleting ~44% of the true crack's dark pixels; the upper branches are \"covered\" only incidentally by the blanket. So suppression is being applied to the real crack rather than to an artifact. Net: the mask is simultaneously uninformative everywhere and actively wrong at the one place that matters. This image should fail QC. Fixes needed: recalibrate the decision threshold (the classifier is saturating positive), add mosaic-seam handling, and replace the dark-blob bounding-box wedge suppression with a shape test (branching multi-strand hairlines propagating inward = crack, keep it)."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/20.png",
+   "fraction_of_red_that_is_false_positive": 0.35,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Roughly a third of the red is spent on non-crack structure clustered where the model should be silent, and it comes in two flavours. (1) Boundary-transition rim: a 591 px vertical band at panel-2 coords x 88-115 / y 14-77 hugs the bright specimen edge rim above the notch, and a ~450 px cluster of 8-10 fragments at x 81-119 / y 205-270 sits directly on the lower edge rim and the round bump on it, plus a 197 px blob at x 97-114 / y 302-319. Nothing crack-like exists at any of these locations in panel 2 - only the rim halo. (2) Reference/calibration artifacts: panel 2 contains a regularly repeating S-curl marker every ~95 px along the top strip, and red lands squarely on several of them (280 px at x 126-146 / y 14-38, 122 px at x 321-334 / y 14-27, 118 px at x 511-523 / y 14-28, plus ~10 specks). Together these two categories are ~1900 of 6499 red pixels and account for roughly 30 of the 47 reported regions, so region count is badly inflated even though the crack itself is found. Secondary issues: the notch-mouth detection (x 112-190) is a filled 1600 px blob that bridges the material between the individual crack branches rather than tracing each few-pixel-wide line, inflating crack area ~2x there; and a genuine faint crack branch is largely missed - a thin, wavy, sub-parallel set of dark lines running from the notch-mouth diagonal at x~230 / y~110 up-right to x~300-400 / y~78-95, of which only one 83 px fragment at x 323-339 / y 81-88 plus three small specks at x 172-205 / y 119-140 are marked (~25% coverage). On the positive side the wedge suppression is holding: red begins only to the right of the wedge's bright halo and no red follows the wedge's dark arrowhead contour (panel-2 x 62-105, y 95-125), and the main crack trunk from the notch mouth out to the true tip at x~395 / y~142 is tightly and correctly traced, terminating exactly where the dark line fades."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/31.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask is a blanket fill of the specimen interior, not a crack segmentation: red occupies 60.5% of the frame as one inset rectangle (x 26-605, y 20-458 in panel coords, hard straight edges = a border-exclusion rule, not feature response), with the only gaps being regularly spaced gray holes centered inside the mosaic tiles. Essentially all of that red sits on ordinary microstructure/texture mottling, so ~97% of red is false positive. Worse, the response is anti-correlated with the real crack at its most certain point: panel 2 shows an unambiguous branching fatigue crack entering the left edge at mid-height, running right as a wide open trunk to x~0.55, then kinking up and propagating as tapering branched hairlines to the top-right corner. The wedge/dark-feature suppression punches a clean, boxy hole exactly over the widest, highest-contrast trunk segment (roughly x 100-330, y 145-190), and the crack's left-edge entry and its upper extension past y~20 fall outside the inset rectangle, so they are unpainted too. The thin distal branches in the top-right are inside red only incidentally because everything there is red. Net effect: the one feature that should be marked is the one region explicitly excluded, so the suppression is now removing real crack rather than the notch rim (no red follows any wedge rim, and off-specimen field, the boundary rim, and the tile seams outside the inset rectangle are correctly clean). Fix direction: the suppression must be gated on shape/connectivity (a tapering, branching, frame-spanning ridge network is a crack, not a notch) and the bulk-texture response needs a far higher threshold plus per-tile contrast normalization so tile-to-tile gain differences stop driving the mask."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/24.png",
+   "fraction_of_red_that_is_false_positive": 0.87,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "Precision collapse: red is behaving like a local-contrast threshold rather than a crack detector. Measured red density inside the specimen rises monotonically with panel-2 local texture std (0.07 in the lowest-contrast decile -> 0.62 -> 0.90 in the top decile), so every high-contrast mottling patch, every diagonal mosaic seam bar, and every regularly repeated ring/reference-artifact cluster (red blobs recur at the ~93 px tile pitch, confirmed by autocorrelation peak 0.29 at lag 93) gets flooded. Result: 31.2% of the panel is red in 332 blobs, but only 13% of red pixels lie inside a generous 13 px band around the traced crack (38% within 25 px), so the one genuine, unambiguous crack is indistinguishable from the background flood and the mask is unusable for crack length/area measurement without a far more aggressive texture/tile suppression and an elongation-connectivity constraint."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/28.png",
+   "fraction_of_red_that_is_false_positive": 0.5,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A tall red band running the FULL frame height along the left specimen/notch silhouette (panel-3 coords x~14-80, y~17-321) accounts for roughly half of all predicted area. Pixel-by-pixel it tracks the dark edge/wedge transition as it moves in and out (red x 14-33 at y=20, 46-59 at y=140, 66-79 at y=170, 52-74 at the notch mouth y=200, 15-33 at y=290) and sits on the bright halo immediately inboard of the dark silhouette - i.e. the edge/wedge-rim suppression is not firing on this frame. Secondary problem: the genuine upper-right crack branch (the multi-strand fan visible in panel 2 from ~x=395,y=150 up to ~x=470,y=85) is almost entirely missed, only two 3-px dashes near its tip are red, so the model spends area on the rim while dropping a real branch."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/29.png",
+   "fraction_of_red_that_is_false_positive": 0.34,
+   "overall_verdict": "under_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Red stops dead at the crack's elbow (panel x~378): the entire, and most conspicuous, upper-right arm of the crack (x~380-490, y~150 rising to y~50 in panel coords, a multi-strand high-contrast trace in panel 2) is left completely unlabelled, so roughly a third to a half of the real crack length is missed while a third of the red budget is spent on the notch/wedge clutter instead."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/30.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model has the crack and the artifact exactly backwards. A large, unambiguous, notch-initiated branching fatigue crack runs from the left notch root (x~35, y~145) all the way across the frame to the right edge (x~610, y~65) with a horizontal lower branch and an upper diagonal branch plus hairline tips \u2014 it is obvious even in panel 1 and razor-sharp in panel 2 \u2014 yet only 19 red pixels (two ~10 px specks at x=314-319,y=160-163 and x=351-357,y=149-154, both correctly landing on the dark crack line) touch it, i.e. roughly 1-2% of its length. Meanwhile 1319 of 1338 red pixels (98.6%) form four elongated vertical streaks/blobs at x=12-44, y=50-216 that hug the left specimen boundary transition band and the dark notch-mouth structures, extending left into the striped mosaic/off-specimen edge zone. The wedge suppression is only partially effective: the darkest wedge tip (y~128-146) is now clean, but red still flanks it immediately above and below along the same dark rim, so the rim is still being traced. Net effect: near-zero recall on a textbook crack combined with a high-confidence, crack-shaped (vertical, elongated) edge-rim false positive \u2014 the suppression needs to cover the whole boundary transition band, not just the wedge core, and the model needs to fire on the low-amplitude interior hairline traces it is currently ignoring."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/32.png",
+   "fraction_of_red_that_is_false_positive": 0.93,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a blanket threshold on speckle texture that is locked to the mosaic tile grid: red mask column/row profiles dip to ~0.02-0.15 with a ~97 px period in both axes, so red fills every tile interior, traces the horizontal seam lines, and repeats the same 45-degree stitch-streak motif tile after tile. There IS a genuine branching fatigue crack (left notch root at ~y=0.72H, sweeping right and up to ~(0.78W, 0.44H) with branches), and it is covered - but it accounts for only ~2-6% of the frame while red covers 45%, so the crack is buried under roughly 15x its own area of tile/texture false positive and nothing about the output is measurable. The wedge/notch rim suppression is working (red stops on a clean vertical cut outside the left rim ringing, and off-specimen field is clean), so the fix needed is not more edge suppression but a per-tile contrast/noise normalisation plus an elongation-and-connectivity requirement to reject the isotropic tile-interior blobs."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/36.png",
+   "fraction_of_red_that_is_false_positive": 0.92,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The mask has collapsed into a texture detector rather than a crack detector: red fills 47% of the frame (55% of the specimen interior) as amorphous blobs whose density is essentially uniform everywhere (per-block red fraction 0.29-0.83 across a 4x6 grid, including the entire right half where panel 2 shows nothing but mosaic seams and calibration crescents). Measured against the crack's dark core, only ~5% of red pixels lie within 5 px of the crack and ~10% within 15 px, so precision is roughly 0.08 - the genuine multi-strand branching crack in the left-centre is captured (99.5% of its core is red) but is completely buried in background fill and carries no signal above it. There is also a residual mosaic-tile periodicity in the red column density (peaks every ~100-110 px), suggesting per-tile intensity/contrast is driving the response. Note the specimen boundary rim and off-specimen field are correctly excluded (red stops at a clean rectangular inset), and there is no dark wedge/notch in this frame, so the wedge suppression cannot be evaluated here but nothing wedge-like is being traced. Fix needed is a large increase in decision threshold plus an elongation/ridge-shape (linearity, eccentricity, skeleton-length) constraint and per-tile contrast normalisation, not more edge masking."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/35.png",
+   "fraction_of_red_that_is_false_positive": 0.96,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is not a crack trace at all - it is a near-total flood of the specimen interior (measured 61.6% of the frame red, ~153,500 px), and its spatial structure is periodic with the mosaic tile grid rather than with any crack. Column/row profiles of the red mask peak at ~0.95-1.00 on regularly spaced seam lines every ~112 px (cols) / ~120 px (rows) and dip to 0.3-0.5 in tile interiors, leaving a regular 5x3 array of grey holes - i.e. the model is firing on tile seams, the flat-field diamond/criss-cross artifact lines and ordinary microstructure mottling, not on crack morphology. There IS one unambiguous real crack: a branching bundle of thin dark filaments entering at the lower-left and propagating up-right toward the centre (roughly (0,395) to (250,190) in panel coords), obvious in panel 1 and panel 2. A generous dilated envelope around it is only ~0.9-3% of the frame, so ~96% of the red is false positive; the crack is 'covered' only incidentally by the blanket, with no delineation, and ~1/3 of its strongest filaments (the tail near the lower-left corner) actually fall OUTSIDE the hard rectangular border inset of the mask (~20 px in from each edge), so even the one true positive is clipped. No dark wedge/notch exists in this field of view, so the wedge suppression cannot be evaluated here - nothing rim-like is being traced. Fix priority: the model needs an elongation/ridge-linearity constraint plus explicit tile-seam and periodic-artifact rejection; area-based thresholding at this operating point makes the output unusable."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33.png",
+   "fraction_of_red_that_is_false_positive": 0.97,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a near-total blanket: red fills essentially the whole specimen interior (63.8% of the frame measured, one giant blob inset ~22 px from the borders with tile-periodic unpainted holes), so it is painting ordinary matrix texture/mottling rather than any linear feature. The one genuine crack \u2014 the multi-strand, branching hairline bundle running from the lower-left up-right into the centre, clearly visible in both panel 1 and panel 2 \u2014 is only \"covered\" incidentally by that blanket (about 60% of its dark pixels fall inside red; its outermost lower-left segment falls in the unpainted border inset), and a generous 3-px envelope around it accounts for just ~2.3% of all red pixels. Output therefore carries essentially zero discriminative information on this frame; the classifier's decision boundary has collapsed onto matrix speckle for this specimen group. Secondary notes: no discrete dark wedge/notch exists in this frame and red is not selectively following any rim (the suppression is not the problem here); the repeated diagonal streaks and chevrons that look crack-like are fixed-pattern mosaic artifacts \u2014 autocorrelation of panel 2 shows a sharp 111-px horizontal repeat, so they recur identically in every tile and must not be learned as cracks. Diagnostic overlays written to /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33_diag.png (green = crack pixels inside red, blue = crack pixels missed, magenta = mask outline) and /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/33_LL_p1.png."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/38.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The prediction is a texture-driven blanket, not a crack trace: red floods ~60% of the frame as amorphous blobs whose boundaries track local mottling brightness (bright speckled patches left gray, everything else red), so it carries essentially zero localization information. This frame contains one of the clearest, strongest cracks in the whole set \u2014 a multi-strand branching fatigue crack entering at the left edge near y~300 and propagating up-right to about (330,90) with fainter branches fanning to (480,150), obvious even in panel 1 \u2014 yet the mask does not follow it at all; the crack is merely engulfed by the flood. Measured: the strong dark-ridge skeleton of the crack occupies only ~0.6-0.9% of the frame (generously ~2-4% including all faint branches and full bundle width), while red covers 60.4%; only 2-3% of red pixels lie within 8 px of a detected crack ridge. Also note the ~25 px unlabeled margin at the left edge leaves the crack trunk's entry segment unmarked, and the regular oval reference/calibration artifacts (three horizontal rows) and the faint diagonal seam lines are swallowed by the blanket rather than suppressed. Wedge suppression cannot be assessed here (no dark wedge or off-specimen field in this interior crop); the border rim itself is not traced."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/26.png",
+   "fraction_of_red_that_is_false_positive": 0.73,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "mosaic tile grid or seam",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The detector finds the real crack completely, but it also floods whole mosaic tiles along the frame borders: red starts on a dead-straight horizontal line at y~14 and blankets the full-width top band (25% of all red), plus three solid tile-corner blocks against a straight vertical seam at x~613 on the right (10.5%), with diagonal block edges tracking the mosaic seams exactly. Combined with a continuous red ribbon still hugging the notch/specimen boundary contour from y~14 down to y~300 (wedge suppression is clearly not firing here, 10% of red) and scattered hits on the periodic reference-glyph/seam lattice in the lower half (21%), only ~25% of the 20.5%-of-frame red lies on or near the actual crack. All the dominant FP masses are purely geometric (axis-aligned tile boundaries, frame-edge bands, a smooth boundary contour) and should be suppressible without touching the crack, which would cut red area by roughly two thirds."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/34.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": false,
+   "biggest_remaining_problem": "The model has degenerated into a speckle detector: all 53 red components (1,765 px, 0.72% of frame) are small compact blobs (6-154 px, median 28 px, aspect ratio <= 2.8) sitting on isolated dark/bright dots in the surface-texture mottling, with not one elongated or connected trace anywhere. Precision on this frame is effectively zero, and because there is no genuine crack here it also yields no recall signal - so the 56 reported \"regions\" are pure noise that a reviewer must clear by hand. Two structural notes: (1) about 10 of 53 blobs (~15% of red area) hug the left/right specimen boundary rim (x<30 or x>590), so the edge-rim suppression is leakier than the wedge suppression; (2) the wedge suppression now looks broad rather than targeted - the model produces no response at all along the bottom-left fringe bundle or its right-fanning strands, which is correct here but means a real crack initiating at the notch root would likely also be suppressed. Caveat on the \"no crack\" call: the only coherent linear structures in panel 2 are the bottom-left multi-strand wedge/notch fringe bundle (owner-declared not a crack) reaching up to about (250, 225) with tails running right to x~450, the horizontal tile seams at y ~= 95/200/305, and the regularly repeating straight +/-45 deg tile diagonals (mosaic period ~155 px horizontally, confirmed by the periodic low-frequency structure). The thinnest single strand fanning right off the wedge bundle around y 290-330 is the one ambiguous feature - it has paired bright/dark fringe character consistent with the notch flank rather than a crack, so I am calling it artifact, but it is the place to re-check with the owner."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/37.png",
+   "fraction_of_red_that_is_false_positive": 0.68,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "reference or calibration artifact",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "A regular 6-column x 3-row lattice of ~15 large amoeboid red blobs (~28x60 px each, pitch ~82 px in x / ~90 px in y, lattice-locked to the periodic oval-ring / \"brush\" reference artifacts) plus 263 sub-50-px specks accounts for roughly 60% of all red area. This is pure periodic instrument/flat-field artifact, is spatially indistinguishable from a real crack in any area- or region-count statistic, and it is exactly what inflates the prediction to 20.6% of frame across 323 regions. It also directly costs recall: red stops at the strong up-right crack strand near (x~420-480, y~25-55) and the faint right-going sub-branch near (x~470-500, y~75-95) while blobs sit on the untextured artifact patches immediately beside those missed tips. Measured breakdown of the 37,153 red px (panel-local 620x286 coords): largest component 14,243 px (38%) = the real crack network fused with 3-4 lattice blobs; right specimen boundary rim stripe at x579-608 spanning y20-274 = 7.4%; thin continuous rim sliver hugging the notch/wedge boundary at x~14-25, y~28-135 (wedge suppression only partially effective - it killed the off-specimen field but not the bright/dark boundary transition line); ~35% of red falls inside a generous 26-px-wide corridor drawn along every visible crack strand, and even that corridor red is over-dilated relative to the few-px-wide strands."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/46.png",
+   "fraction_of_red_that_is_false_positive": 0.6,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge-rim suppression is only partially working: ~54% of all red pixels (457 of 844) are small dashed fragments sitting 1-8 px off the upper and lower boundary of the large dark wedge, running all the way to the right frame edge (x 394-615, y 122-196 in panel coords) - i.e. the model is still stitching a broken outline around the notch it was told to ignore. Secondary problem: the one legitimate detection (the crack-tip extension ahead of the wedge, x~363-400, y~170-180 in panel 2) is rendered as a fat ~40x20 px blob rather than the 3-6 px hairline that is actually there, so even the true positive is over-dilated 3-4x and its 30 connected components make the output look far more fragmented/extensive than the underlying feature."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/44.png",
+   "fraction_of_red_that_is_false_positive": 0.84,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/notch rim suppression is still failing: a thick contiguous red band (~4,900 px, ~43% of all red) hugs the inner contour of the dark wedge for its entire height (y~130 to the bottom of the frame, x~110-200), following the rim curvature rather than any linear feature. Because that band merges with the genuine crack root at the notch tip, it cannot be removed by component-size or isolation filtering; the largest connected component (4,436 px) contains both the real crack and the rim artifact. The suppression appears to only reject the bright rim line itself, so the prediction has simply shifted a few pixels inboard into the edge halo."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/42.png",
+   "fraction_of_red_that_is_false_positive": 0.94,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Almost all red (76%) is a thick ribbon following the specimen boundary / dark-notch transition halo down the entire left side, and another 21% is scattered blobs on the regularly spaced reference-artifact motifs along the top strip (plus a periodic row of dots at y~455) - so the wedge/edge-rim suppression is clearly not holding. Meanwhile the one genuinely crack-like structure in the frame - a branching fan of thin dark hairlines radiating from the notch root at about x 175-380, y 195-315 in panel coordinates, plainly visible in panel 2 and even traceable in panel 1 - is only caught at its first 30-40 px where it merges into the rim band, and the long branches propagating toward the centre are dropped entirely. Net effect: the model is scoring the boundary gradient and the calibration pattern, not the crack, and the true crack is under-segmented by roughly 4-5x in length."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/43.png",
+   "fraction_of_red_that_is_false_positive": 0.9,
+   "overall_verdict": "severely_over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "Red is still dominated by the left specimen-edge / notch-rim contour rather than the crack: 86% of red pixels (3059/3571) lie at x<=190 hugging the boundary, and the single largest blob (1101 px, 31% of all red, centred ~(117,61)) is a fat 10-15 px band that traces the top-left boundary/wedge rim shoulder in an unbroken arc. Meanwhile the one genuine feature -- a branching hairline crack emanating from the notch tip at ~(178,228) and running right/slightly down to ~(390,243), clearly visible in panel 2 with relief shading and a fan of finer branches near its root -- receives only 255 red pixels (7% of the red budget); red covers it as 5 disconnected dashes (~52% of the path length has red within 7 px), misses the whole right half beyond x~320 and misses every branch. So the crack is fragmented into unconnected specks while a non-crack rim gets a solid continuous trace, which inverts any length/connectivity metric. Secondary FPs: 5-6 regularly spaced short vertical strokes at the tips of the repeating top-edge mosaic/seam fingers (x ~250, 260, 371, 424, 483 at y~110-130), red sitting on the off-specimen bright streaks and rough boundary debris in the lower left (y 420-570), and a handful of isolated 1-18 px dots on the ring/reference artifacts in the top row. The specimen interior (centre/right) is correctly left clean -- only faint regular +-45 degree criss-cross striations there, no crack."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/41.png",
+   "fraction_of_red_that_is_false_positive": 0.98,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "off-specimen empty field",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model paints the wrong side of the specimen edge. Geometry (panel-relative x, 620 px wide panels): the specimen is the smooth light region on the RIGHT, its edge runs x=48 (y=0) -> x=263 (y=440) -> x=107 (y=760), i.e. a large dark wedge/void lobe indenting the specimen from the left. Measured against that edge, 62% of red sits >40 px OUTSIDE the specimen in the dark lobe, 16% is 10-40 px outside, 19% is on the rim (+-10 px), and only 2.9% (190 px) is inside the material - all of it on the edge fringe. What excites the detector out there is a horizontal band (y~470-600) of dense bright ring/crescent/dust artifacts bounded by mosaic tile-row seams; the two largest blobs (1962 and 893 px at y~542-567, x~49-125) are amorphous area fills over that dust field, not linear. Rim tracing is not fully suppressed: components at y=300 (540 px, offset -1), y=336 (+14), y=382 (-4), y=671 (+2) and the 1426 px streak at y=553 (offset -15) run along the wedge rim. Meanwhile there IS a genuine crack: in panel 2 (and unmistakable under high-pass, /private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/z41/D_overlay.png) a set of thin, faint, sub-parallel BRANCHING dark hairlines emanates from the deepest point of the wedge at about (262,255)-(268,320) and propagates down-right into the material to about (365,395), with a curved branch/arc near (355-380,355-390). Red-vs-crack overlap is exactly 0 pixels; the entire inward extent is unmarked. So the frame is simultaneously a 100%-precision failure and a 0%-recall failure: a specimen mask (plus a \"no red left of the specimen edge\" rule) would remove nearly all 96 regions, and the surviving detector still has no sensitivity to the low-amplitude (~1-2 grey level) hairline that is the only true crack here."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/47.png",
+   "fraction_of_red_that_is_false_positive": 0.95,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "not_at_all",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The model is still anchored entirely to the dark wedge/notch and completely misses the one unambiguous crack in the frame. All ~1090 red pixels (6-7 components) form a single cluster at panel-x 458-563, panel-y 172-232, wrapped around the LEFT TIP of the dark wedge. The suppression only partly worked: red no longer sits on the sharp bright/dark rim line, but it migrated one step outward onto the wedge's outer dark halo and phase fringes, and the mask's lower boundary still conforms to the wedge halo contour (visible in the overlay: the blob's bottom edge follows the top of the notch's bright lens). Inside the blob there is no coherent linear feature, just mottled striated deformation texture radiating from the notch tip. Meanwhile a textbook real crack IS present in panel 2 (and faintly in panel 1): a thin, connected, ~2-3 px wide, ~135 px long hairline with a bright/dark phase-contrast pair running near-vertically at panel-x ~565-576 from y~30 down to y~165, where it merges into the notch deformation zone. It has a tapered upper tip and drifts ~9 px in x over 100 px in y, so it is not a mosaic tile seam (those are axis-aligned, broad, low-contrast steps, two visible in the lower right) and not the specimen boundary rim (that is the separate bright vertical band at x~615). This crack receives ZERO red -- red's max x is 563, the crack starts at 564, so overlap is exactly nil. Net behaviour is the worst combination: false positives concentrated on the one artifact the owner explicitly excluded, plus a 0% hit rate on the actual crack. Fix direction: make the wedge suppression a dilated exclusion zone around the whole notch halo rather than just the rim ridge, and restore sensitivity to low-amplitude high-aspect-ratio ridge features away from the notch, since the missed crack is faint but geometrically unambiguous."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/48.png",
+   "fraction_of_red_that_is_false_positive": 0.8,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "dark wedge or notch (not a crack)",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "partially",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge suppression did not remove the rim trace, it only displaced and fragmented it: measured on the panel-3 red mask, 0 of 1243 red pixels lie within 2 px of the dark void, but 82% lie within 10 px and 96% within 20 px of it (median offset 7.2 px), and 73% of red sits at x>=360 where the void is a wide notch, forming a dashed halo (29 components) that follows the upper and lower notch outline point-for-point through the deformation-texture band. Meanwhile the one genuinely crack-like feature - the thin 1-13 px slit that tapers left out of the notch from x~375 to a tip at x~288, plus the mottled process zone ahead of it - receives only ~16-27% of the red, concentrated as a collar around the tip and a couple of dabs at the x~353-361 kink; its centreline is never traced (only 41% of its columns have red within +/-8 px, and no red pixel lies on the slit itself). Net effect: the model spends most of its output re-drawing the notch boundary at a fixed standoff and under-traces the actual crack, so the suppression needs to be widened to the whole notch neighbourhood (or made thickness-aware, keeping only voids thinner than ~15 px) and paired with a term that rewards tracing along the thin slit's length rather than around it."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/40.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "surface texture / microstructure",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The prediction is a material-vs-air segmentation, not crack detection: red is one solid blob filling the whole specimen body (25.2% of frame = 72.8% of the specimen area; the 2 largest components hold ~96% of the red), driven by the dense round-pore / mottled microstructure that lights up under local-contrast enhancement. Measured share of red by zone: 80.7% on-specimen bulk texture (98% of every interior pixel painted), 14.1% specimen edge/boundary rim band, 4.6% wedge-rim band, 0.7% off-specimen reference-artifact specks (~82 tiny components). There is no elongation/linearity or thinness constraint anywhere in the decision: the model rewards \"textured metal\" instead of \"thin connected dark line\", so a blanket-fill on a crack-free frame scores as 108 detections. The wedge-interior suppression works (density 0.002 inside the dark notch, clean ~8-10 px white buffer), but red immediately re-forms a contour parallel to the notch top/bottom rims and a dense wreath around the notch tip, so the wedge outline is still effectively delineated at a small offset. Fix priority: gate on ridge/tubularity (thin dark line response with high aspect ratio and connectivity) and hard-reject blobs whose area/skeleton-length ratio exceeds a few pixels, plus widen the wedge/edge exclusion band beyond the current ~8 px."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/45.png",
+   "fraction_of_red_that_is_false_positive": 0.72,
+   "overall_verdict": "over_predicts",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": true,
+   "real_crack_is_marked": "fully",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The wedge/edge suppression only DISPLACED the rim tracing instead of removing it. Measured against the panel-1 background mask, ZERO red pixels lie within 3 px of the wedge/boundary and only 1% within 5 px, but 33% sit at 5-8 px and 66% within 12 px - a dashed \"standoff outline\" that hugs the notch rim and the specimen right edge at a fixed ~6-12 px offset, riding the bright/dark ringing halo that the local-contrast enhancement creates alongside every high-contrast boundary (clearly visible as the double dark/bright line in panel 2 at e.g. x~525-540, y~165-195). So the suppression band needs to be wider AND the classifier needs a feature that rejects the LCE ringing halo itself, not just the black pixels. Secondary problem: the one genuine feature is fused into the same connected component as the rim trace, so it cannot be recovered by any downstream size/shape filter."
+  },
+  {
+   "file": "/private/tmp/claude-501/-Users-jiamingzhang-Desktop-APP/ca4727e5-ac25-49c5-94b5-b5cabff138cc/scratchpad/v2audit/39.png",
+   "fraction_of_red_that_is_false_positive": 0.99,
+   "overall_verdict": "mostly_false_positive",
+   "dominant_fp_kind": "specimen edge / boundary rim",
+   "real_crack_visible": false,
+   "real_crack_is_marked": "no_crack_present",
+   "wedge_rim_still_traced": true,
+   "biggest_remaining_problem": "The dark-region/boundary-rim suppression is not working on this frame: ~90% of all red is a thick blobby band welded to the specimen edge (31% within 25 px of the boundary, 33% at 25-60 px, plus a 3400-px solid slab filling the top-left corner that reaches 60-90 px into completely featureless material). It has just been displaced from the black side of the rim onto the bright/grey transition shoulder on the specimen side, so it reads as \"inside the material\" to any distance-to-edge heuristic while still being pure edge artifact. The remaining ~10% is the regular ~95 px lattice of reference/calibration marks along the top row (6.5%) and the right frame column (3.4%). Meanwhile the interior contains zero crack: >60 px from the edge there are only six specks of 5-9 px (0.3% of red), and multi-scale ridge/matched-filter searches over the interior return nothing but the periodic mosaic pattern (horizontal seams every ~95 px, 45-degree diagonals, curl/crescent motifs on a regular grid) plus grain mottling. So on a crack-free frame the model still paints 3.1% of the field across 110 regions - i.e. this frame contributes essentially only false-positive area, and the 110-region count is dominated by the artifact lattice being fragmented into dozens of tiny detections."
   }
  ]
 }
