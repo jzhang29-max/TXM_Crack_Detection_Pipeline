@@ -5,7 +5,7 @@
       "name": "txm-paint-tool",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["code/paint_server.py"],
-      "port": 8766
+      "autoPort": true
     }
   ]
 }

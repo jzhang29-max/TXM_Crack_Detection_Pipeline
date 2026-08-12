@@ -13,7 +13,8 @@ class to manage -- just a binary crack/not-crack mask per pixel.
 Run:
     python3 paint_server.py
 
-then open http://127.0.0.1:8766 in a browser. (Port 8766, not 8765, so it
+then open the printed URL in a browser. Uses $PORT when set (so multiple
+sessions can coexist), else 8766 -- not 8765, so it
 can run alongside the CBS project's own paint server without clashing.)
 """
 
@@ -137,4 +138,9 @@ def api_flip_region(name):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8766, debug=False, threaded=True)
+    # Honour the PORT the harness assigns, so several chats/sessions can each
+    # run their own copy without colliding. Falls back to 8766 when launched
+    # directly from a shell.
+    port = int(os.environ.get("PORT", "8766"))
+    print(f"[paint_server] listening on http://127.0.0.1:{port}", flush=True)
+    app.run(host="127.0.0.1", port=port, debug=False, threaded=True)
