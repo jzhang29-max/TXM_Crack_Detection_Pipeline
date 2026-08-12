@@ -23,7 +23,23 @@ python3 code/paint_server.py
 
 Work is saved per image. Stop and resume whenever.
 
-## 2. What to mark, in priority order
+## 2. Working through all 71
+
+`WORKLIST.md` is a tickable checklist of every image, ordered by value rather
+than alphabetically — Wrought first, then AM (neither has any crack example
+yet), then B3, then B2. Within each group the worst-predicted frames come
+first, since that is where a correction teaches the model the most.
+
+```bash
+python3 code/make_worklist.py     # refresh the ticks after a session
+```
+
+Current: **12 / 71 marked** — Wrought 0/14, AM 0/27, B3 0/13, B2 12/17.
+
+You can retrain at any point, not just at the end. Marking one group and
+retraining tells you what that group bought before you invest in the next.
+
+## 3. What to mark, in priority order
 
 **AM and Wrought have ZERO crack examples.** All 12 hand-marked images are B2.
 That is the entire reason those groups mark wedge rims instead of the thin
@@ -38,7 +54,7 @@ falls back on B2 morphology.
 You do NOT need to do all 71. The model generalises from a few examples per
 material; the gap is variety, not volume.
 
-## 3. Retrain
+## 4. Retrain
 
 ```bash
 python3 code/markup_status.py --todo      # what is marked so far
@@ -56,6 +72,7 @@ python3 code/build_outputs_per_group.py
 ```
 
 ## Current state
+
 
 | | |
 |---|---|
