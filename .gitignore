@@ -68,3 +68,27 @@ results/final_71_raw/*_overlay.png
 !results/final_71_pergroup/summary.*
 !results/final_71_pergroup/_montage_*.png
 results/final_71_pergroup/*_overlay.png
+
+# ---- app runtime data (uploads, embeddings, predictions, retrained models).
+# Regenerated per user; the SAM embedding cache alone is ~30MB per image.
+app_data/
+
+# ---- 2026-08-17 cleanup ----
+# The 71 hand-drawn correction masks are the irreplaceable artefact here, but as
+# raw uint8 .npy they were 850 MB of tracked data. They are overwhelmingly zero
+# and compress 257x, so the COMPRESSED archive is tracked instead and
+# code/unpack_package.py restores the .npy files from it. Verified bit-identical.
+paint/corrections/*_correction.npy
+paint/corrections/*_painted.png
+!paint/corrections/corrections.npz
+
+# app runtime data: uploads, SAM embeddings, predictions, retrained models
+app_data/
+# SAM embedding cache: 2.1 GB, rebuilt on demand by cache_sam_embeddings.py
+paint/sam_embcache/
+# per-image prediction caches, all regenerable
+paint/predicted_cache_pergroup/
+paint/predicted_cache_hybrid/
+.venv/
+# on-demand destitch/flatfield cache, rebuilt by txm_preprocess.py
+paint/preproc_cache/

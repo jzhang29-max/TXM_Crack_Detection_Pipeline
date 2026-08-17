@@ -1,11 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "txm-paint-tool",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["code/paint_server.py"],
-      "autoPort": true
-    }
+    { "name": "txm-app", "runtimeExecutable": "python3", "runtimeArgs": ["app/server.py"], "autoPort": true }
   ]
 }

@@ -54,6 +54,26 @@ controlled (`--neg-cap 2000`, 43.9% crack). The ORIGINAL is preserved at
 | raw_v3 (38% crack) | 0.744 | 0.858 | 5.58% |
 | **raw_v4 (44% crack)** | **0.773** | **0.881** | **7.43%** |
 
+> **THE 0.773 AND 0.779 FIGURES ARE LEAKY — corrected 2026-08-12.** Every IoU in
+> the two tables above is the model scored on images whose corrections it was
+> TRAINED on. That is leakage, and it inflates the number. Measured honestly
+> with leave-one-image-out over the same 4 GT images and the same architecture
+> (`code/baseline_loio_for_sam.py`, results in
+> `results/sam/baseline_pixel17_loio*.json`):
+>
+> | protocol | mean IoU | mean recall |
+> |---|---|---|
+> | deployed model scored on its own training images (what 0.773 is) | 0.773 | 0.881 |
+> | **honest LOIO, n_per_class=30000** | **0.734** | **0.890** |
+> | **honest LOIO, n_per_class=20000** | **0.744** | **0.891** |
+>
+> Quote 0.734 (or 0.744 at the matched budget) as the model's accuracy. The
+> 0.773 rows are kept because the RELATIVE comparison between ORIG/v2/v3/v4 is
+> still valid — all four were scored the same leaky way, so the ranking holds
+> and v4 is still the right choice. It is only the ABSOLUTE value that is wrong.
+> Note also that `pixel_hgb_final.joblib` is, despite its filename,
+> Pipeline(StandardScaler, MLPClassifier(64,32)) — not HistGradientBoosting.
+
 v4 holds ORIG's accuracy (IoU within 0.006, recall within 0.003) while cutting
 false crack on the six owner-confirmed crack-free specimens by **4.2x**. On
 `333_75_um_zoom` it beats ORIG outright (0.755 vs 0.735).
@@ -212,6 +232,29 @@ attempts were reverted because they violated them:
    misreading and reverted.
 2. **The real cracks are THIN, VERY FAINT, and in the CENTRE of the frame.**
    They are often visible only under local-contrast enhancement.
+
+> **SCOPE of rules 1 and 2 — settled 2026-08-12, do not re-open.** Rules 1 and 2
+> describe the AM / Wrought / B3 frames, which sit at lower damage. They do NOT
+> describe the four B2 Ilastik ground-truth images (333.75-343.75 lbf), where
+> the owner has confirmed the crack is genuinely WIDE OPEN and the broad dark
+> band IS the crack.
+>
+> This needed settling because the two readings look contradictory in the data
+> and an audit flagged it as a "deciding fact" that invalidated the metric. It
+> does not. What was measured, and is true:
+>   - the GT masks are 18-30% of frame; 86-91% of each is ONE connected
+>     component filling ~40% of its own bounding box (a blob, not a hairline)
+>   - the owner's own paint strokes mark 19-49% of GT-positive pixels as
+>     force-NOT-crack, and the owner's +crack strokes cover ~1-3% of frame
+> Both facts are real. Neither invalidates the GT: at 333-343 lbf the crack is
+> wide, GT area grows monotonically with load (25.5% -> 27.0% -> 29.7% at
+> 333.75 -> 336.25 -> 338.13 lbf, same field of view) which is what crack
+> propagation looks like, and the owner's B2 strokes were removing the model's
+> false positives elsewhere in the frame rather than retracting the GT band.
+>
+> Consequence: IoU against these four masks IS a crack-detection score, and
+> may be quoted as one. Do not "fix" the GT by shrinking it to the thin
+> central feature — that would be correct for AM/Wrought and wrong here.
 3. **Elongated INCLUSIONS are not cracks.** An attempt to label them
    (12 of 13 B3 images) was reverted — 4,901,522 px of bogus force-crack
    labels zeroed.

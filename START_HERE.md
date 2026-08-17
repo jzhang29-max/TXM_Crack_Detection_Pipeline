@@ -1,86 +1,67 @@
-# START HERE — manual correction
+# START HERE
 
-Everything is running. Three commands, nothing to set up.
+Two ways in, depending on what you want.
 
-## 1. Mark up
-
-The paint tool is **already running**: open **http://127.0.0.1:8766**
-
-All 71 predictions are pre-computed, so every image opens instantly (no 30s wait).
-
-If it is ever not running:
-```bash
-python3 code/paint_server.py
-```
-
-**Controls**
-| control | does |
-|---|---|
-| **Add crack** brush | mark crack the model missed — the high-value action |
-| **Eraser** brush | mark a false positive as background |
-| **Click-to-remove** | clears one whole connected false-positive region in a single click — fastest way to kill a wedge rim or speckle |
-| **Save corrections** | writes to `paint/corrections/`, regenerates that image's outputs |
-
-Work is saved per image. Stop and resume whenever.
-
-## 2. Working through all 71
-
-`WORKLIST.md` is a tickable checklist of every image, ordered by value rather
-than alphabetically — Wrought first, then AM (neither has any crack example
-yet), then B3, then B2. Within each group the worst-predicted frames come
-first, since that is where a correction teaches the model the most.
+## Just use it
 
 ```bash
-python3 code/make_worklist.py     # refresh the ticks after a session
+./run_app.sh
 ```
 
-Current: **12 / 71 marked** — Wrought 0/14, AM 0/27, B3 0/13, B2 12/17.
+Opens http://127.0.0.1:8800. Drag TXM images in, the current model predicts them,
+paint corrections, press **Retrain on my corrections**. Nothing to configure.
 
-You can retrain at any point, not just at the end. Marking one group and
-retraining tells you what that group bought before you invest in the next.
+First run creates a virtualenv, installs dependencies, and expands the
+compressed ground truth and correction masks. The SAM weights (~2.4 GB) download
+from HuggingFace on the first prediction.
 
-## 3. What to mark, in priority order
-
-**AM and Wrought have ZERO crack examples.** All 12 hand-marked images are B2.
-That is the entire reason those groups mark wedge rims instead of the thin
-centre cracks — the model has never been shown a crack in that material and
-falls back on B2 morphology.
-
-1. **2–3 Wrought frames** — `1250`–`1300_cycles_crack` are cleanest (1.8–2.7% predicted).
-   Mark the thin centre crack. **Ignore the dark wedge — you have confirmed it is not a crack.**
-2. **2–3 AM frames** — include one `_tip_zoom`, which is where output is worst.
-3. Anything else that looks wrong.
-
-You do NOT need to do all 71. The model generalises from a few examples per
-material; the gap is variety, not volume.
-
-## 4. Retrain
+Verify your install any time:
 
 ```bash
-python3 code/markup_status.py --todo      # what is marked so far
-python3 code/retrain_after_markup.py --deploy
+python3 app/selftest.py            # 30 checks
+python3 app/selftest.py --retrain   # plus a full retrain (slow)
 ```
 
-It sweeps class balance, scores each candidate against ground truth on BOTH
-axes — IoU/recall (does it find real cracks) and false crack on the six
-confirmed crack-free specimens — and deploys only if a candidate beats the
-current model on both. If nothing passes it says so and changes nothing.
+## Hand it to someone else
 
-Then regenerate outputs:
 ```bash
-python3 code/build_outputs_per_group.py
+./make_package.sh
 ```
 
-## Current state
+Builds a 55 MB clone-ready repo at `~/Desktop/txm-crack-detector` containing only
+what the app needs. Already published at
+https://github.com/jzhang29-max/txm-crack-detector
 
+## This folder vs that one
 
-| | |
-|---|---|
-| deployed model | `models/pixel_hgb_final.joblib` (raw_v4) — IoU **0.773**, recall 0.881 |
-| tuning | exhausted; a 4-point balance sweep confirmed the current setting is best |
-| outputs | `results/final_71_pergroup/` — all 71 masks + overlays + stats |
-| trustworthy groups | **B2, B3** (verified against ground truth) |
-| unreliable groups | **AM, Wrought** — still trace wedge rims; this is the labelling gap above |
-| rollback | `models/pixel_ORIG_raw_backup.joblib` |
+**This** folder is the lab archive: every experiment, every figure, the SAM
+comparison study, the research history, and the SAM embedding cache. It is the
+record of how the model was arrived at.
 
-Full history, including four things that were tried and failed, is in `HANDOFF.md`.
+**That** folder is the product: 33 files, no dead ends.
+
+## What the model is
+
+A mean-probability ensemble of a 17-hand-crafted-feature MLP and a SAM ViT-H + 17
+hybrid. Leave-one-image-out on the 4 Ilastik ground-truth images, with false
+positives measured on 6 owner-confirmed crack-free specimens:
+
+| approach | mean IoU | pixel-weighted | recall | crack-free FP |
+|---|---|---|---|---|
+| 17 features alone | 0.744 | 0.721 | 0.891 | 7.43% |
+| SAM + 17 (hybrid alone) | 0.795 | 0.719 | 0.894 | 0.14% |
+| **ensemble (deployed)** | **0.821** | **0.777** | **0.914** | **0.11%** |
+
+## Read next
+
+- `QUICKSTART.md` — using the app, and the caveats that matter
+- `SAM_COMPARISON.md` — why not just use Segment Anything, with 33 verified citations
+- `APP_COMPARISON.md` — this app vs the SEM one, and the bug that comparison found
+- `HANDOFF.md` — the full research record, including four reverted approaches
+
+## Storage note
+
+The 71 correction masks are tracked as `paint/corrections/corrections.npz` (3.2 MB)
+rather than as raw `.npy` (850 MB). `code/unpack_package.py` restores them, and
+`run_app.sh` calls it automatically. The caches under `paint/` and `app_data/` are
+regenerable and untracked.

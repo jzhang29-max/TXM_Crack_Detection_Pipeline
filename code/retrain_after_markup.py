@@ -27,7 +27,7 @@ a good one both reduce area; only recall against ground truth separates them.
 Usage:
     python3 retrain_after_markup.py [--sweep 1000 2000 3000 5000] [--deploy]
 """
-import argparse, json, os, subprocess, sys
+import argparse, glob, json, os, subprocess, sys
 import joblib, numpy as np, tifffile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paint_common as pc
@@ -67,11 +67,68 @@ def score(model):
     return float(np.mean(ious)), float(np.mean(recs)), float(np.mean(cf))
 
 
+def balancing_neg_cap():
+    """The --neg-cap that would make the training set ~50% crack, computed from
+    the labels that actually exist right now.
+
+    A FIXED sweep goes stale as markup proceeds, and silently. The old default
+    [1000,2000,3000,5000] was right when 12 images carried crack labels; once 20
+    did (8 AM images marked 2026-08-12) the balance point moved to ~8500 and the
+    whole sweep sat below it, topping out at 57% crack with no way to go higher.
+    Class balance is the knob that caused four separate regressions in this
+    project, so it must not depend on a hard-coded list staying current.
+
+    crack side = bootstrap crack + (30000 cap x images with crack labels)
+    bg side    = bootstrap bg    + (neg_cap x images with bg labels)
+    Solve for the neg_cap that equates them.
+    """
+    from retrain_with_corrections import (BOOTSTRAP_N_PER_CLASS_PER_IMAGE,
+                                          CORRECTION_N_PER_CLASS_PER_IMAGE)
+    n_boot = 0
+    for p in glob.glob(os.path.join(pc.PROJECT_DIR, "dataset_cache", "*_gt.npy")):
+        gt = np.load(p, mmap_mode="r")
+        n_boot += min(BOOTSTRAP_N_PER_CLASS_PER_IMAGE, int(np.asarray(gt).sum()))
+        del gt
+
+    n_crack_imgs = n_bg_imgs = 0
+    corr_crack = 0
+    for p in sorted(glob.glob(os.path.join(pc.CORRECTIONS_DIR, "*_correction.npy"))):
+        a = np.load(p, mmap_mode="r")
+        arr = np.asarray(a)
+        c, b = int((arr == 1).sum()), int((arr == 2).sum())
+        del a, arr
+        if c:
+            n_crack_imgs += 1
+            corr_crack += min(CORRECTION_N_PER_CLASS_PER_IMAGE, c)
+        if b:
+            n_bg_imgs += 1
+    if n_bg_imgs == 0:
+        return CORRECTION_N_PER_CLASS_PER_IMAGE
+    # The bootstrap contributes equal crack and background per image, so those
+    # terms cancel and the balance condition reduces to:
+    #   neg_cap x n_bg_imgs = corr_crack
+    cap = int(round(corr_crack / n_bg_imgs))
+    print(f"  label inventory: bootstrap crack {n_boot:,}, correction crack {corr_crack:,} "
+          f"from {n_crack_imgs} images, bg available on {n_bg_imgs} images")
+    print(f"  balancing --neg-cap ~= {cap:,} (equalises crack and background)")
+    return max(cap, 500)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sweep", type=int, nargs="+", default=[1000, 2000, 3000, 5000])
+    ap.add_argument("--sweep", type=int, nargs="+", default=None,
+                    help="neg-cap values to try. Default is computed from the "
+                         "CURRENT label inventory and bracketed around the "
+                         "balance point, because a fixed list goes stale as "
+                         "markup proceeds (see balancing_neg_cap).")
     ap.add_argument("--deploy", action="store_true", help="actually swap production if a candidate wins")
     args = ap.parse_args()
+
+    if args.sweep is None:
+        print("=" * 74); print("CLASS BALANCE"); print("=" * 74)
+        c = balancing_neg_cap()
+        args.sweep = sorted({max(500, int(c * f)) for f in (0.5, 0.75, 1.0, 1.35)})
+        print(f"  sweep: {args.sweep}")
 
     print("=" * 74); print("MARKUP COVERAGE"); print("=" * 74)
     subprocess.run([sys.executable, os.path.join(HERE, "markup_status.py"), "--todo"])

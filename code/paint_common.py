@@ -93,6 +93,77 @@ USE_FLATFIELD = False              # retained: some callers still read this
 MODEL_PATH = RAW_MODEL_PATH if not _FORCE else os.path.join(PROJECT_DIR, "models", _FORCE)
 PREDICTED_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache_pergroup")
 
+# ---------------------------------------------------------------- hybrid mode
+# TXM_PAINT_HYBRID=1 serves the SAM+17 hybrid's masks instead of the 17-feature
+# per-group model's. Opt-in via env var and a SEPARATE cache directory, so the
+# default path is untouched and switching back is instant.
+#
+# Why it is worth the extra dependency for hand correction specifically:
+# measured on the 6 owner-confirmed crack-free specimens, predicted (i.e. false)
+# crack area falls from 7.43% to 0.14% -- a 51x reduction -- while recall on the
+# 4 ground-truth images HOLDS (0.894 vs 0.891). Correcting the old model's mask
+# means hand-erasing false positives the hybrid never draws.
+#
+# RAW input for every group in this mode. The hybrid was trained on raw, and
+# feeding it the flatfielded image that FLATFIELD_GROUPS would otherwise select
+# is a train/serve mismatch -- the same 17-feature model scores IoU 0.13 against
+# itself across those two inputs, so the mismatch is not a detail.
+HYBRID_MODEL_PATH = os.path.join(PROJECT_DIR, "models", "pixel_sam_hybrid.joblib")
+HYBRID_CACHE_DIR = os.path.join(PROJECT_DIR, "paint", "predicted_cache_hybrid")
+USE_HYBRID = os.environ.get("TXM_PAINT_HYBRID", "") not in ("", "0", "false", "False")
+if USE_HYBRID and not os.path.exists(HYBRID_MODEL_PATH):
+    print(f"[paint_common] TXM_PAINT_HYBRID set but {HYBRID_MODEL_PATH} is missing "
+          f"-- falling back to the per-group 17-feature model.")
+    USE_HYBRID = False
+if USE_HYBRID:
+    MODEL_PATH = HYBRID_MODEL_PATH
+    PREDICTED_CACHE_DIR = HYBRID_CACHE_DIR
+
+# ------------------------------------------------------- display vs model input
+# What the MODEL is fed and what the HUMAN sees are different questions, and
+# tying them together was a mistake. The hybrid must be fed RAW because that is
+# what it was trained on -- the same 17-feature model scores IoU 0.13 against
+# itself across raw vs flatfielded, so the mismatch is not cosmetic. But
+# HANDOFF.md §3 records that the real cracks are "THIN, VERY FAINT ... often
+# visible only under local-contrast enhancement", so marking up on raw asks the
+# owner to paint what they cannot see.
+#
+# So: predict from raw, DISPLAY the processed image. Flat-fielding and
+# de-stitching are per-pixel/periodic corrections that preserve geometry, so a
+# raw-derived mask overlays a processed image correctly.
+#   flatfielded -- removes the illumination gradient, best local contrast
+#   destitched  -- removes the mosaic tile seams
+#   raw         -- what the model actually sees, for auditing
+DISPLAY_SET = os.environ.get("TXM_PAINT_DISPLAY", "flatfielded" if USE_HYBRID else "raw")
+PROCESSED_ROOT = os.path.expanduser("~/Desktop/TXM DATA processed")
+
+
+def display_path_for(raw_path, which=None):
+    """Map a raw image path to its processed counterpart for DISPLAY only.
+
+    Returns None (caller shows raw) when no counterpart exists, rather than
+    guessing -- silently displaying a different specimen would be worse than
+    displaying an unenhanced one.
+    """
+    which = which or DISPLAY_SET
+    if which in ("raw", "", None):
+        return None
+    root = os.path.join(PROCESSED_ROOT, which)
+    if not os.path.isdir(root):
+        return None
+    if "/TXM DATA/" in raw_path:
+        cand = raw_path.replace("/TXM DATA/", f"/TXM DATA processed/{which}/")
+        if os.path.exists(cand):
+            return cand
+    import glob as _glob
+    hits = _glob.glob(os.path.join(root, "**", os.path.basename(raw_path)), recursive=True)
+    return hits[0] if hits else None
+
+
+if USE_HYBRID:
+    print(f"[paint_common] HYBRID mode: SAM+17 masks (model sees RAW), "
+          f"displaying '{DISPLAY_SET}' images, cache {os.path.basename(HYBRID_CACHE_DIR)}")
+
 
 def _group_of(name):
     for info in list_images():
@@ -102,8 +173,12 @@ def _group_of(name):
 
 
 def uses_flatfield(name):
-    """True if this image's group is served the flatfielded input+model."""
-    return (not _FORCE) and _group_of(name) in FLATFIELD_GROUPS
+    """True if this image's group is served the flatfielded input+model.
+
+    Always False in hybrid mode: the hybrid is a raw-input model, so serving it
+    flatfielded input would be a train/serve mismatch.
+    """
+    return (not _FORCE) and (not USE_HYBRID) and _group_of(name) in FLATFIELD_GROUPS
 
 
 def model_for(name):
@@ -277,8 +352,42 @@ def get_state(name):
                 path = ffp
         raw = tifffile.imread(path).astype(np.float64)
         img01 = robust_normalize(raw, 1.0, 99.0)
-        model = model_for(name)
-        prob_map = predict_probability_map(model, img01)
+        if USE_HYBRID and DISPLAY_SET not in ("raw", "", None):
+            # Swap ONLY the displayed image; the mask below still comes from the
+            # raw-input hybrid. Geometry is preserved by both processing steps.
+            #
+            # Goes through txm_preprocess, which prefers a hand-batched TIFF when
+            # one exists and otherwise runs destitch+flatfield on demand and
+            # caches it. So a NEW image needs no manual batch step, and the
+            # pre-batched folders can be deleted without breaking anything.
+            try:
+                import txm_preprocess as _tp
+                disp_raw = _tp.get(_find_path(name), DISPLAY_SET)
+            except Exception as e:
+                print(f"[paint_common] {DISPLAY_SET} preprocessing failed for "
+                      f"{name[:36]} ({type(e).__name__}: {str(e)[:60]}) -- displaying raw.")
+                disp_raw = None
+            if disp_raw is None:
+                print(f"[paint_common] no '{DISPLAY_SET}' image for {name[:40]} "
+                      f"-- displaying raw.")
+            else:
+                disp = robust_normalize(np.asarray(disp_raw, np.float64), 1.0, 99.0)
+                if disp.shape == img01.shape:
+                    img01 = disp
+                else:
+                    print(f"[paint_common] '{DISPLAY_SET}' image for {name[:36]} has "
+                          f"shape {disp.shape} vs raw {img01.shape} -- displaying raw.")
+        if USE_HYBRID:
+            # Needs the SAM embedding for this image. It is cached (2.2 GB for
+            # all 71, built once by cache_sam_embeddings.py) so this is a lookup
+            # plus a ~70s prediction pass, not a fresh ViT forward over tiles.
+            import joblib as _joblib
+            import apply_sam_hybrid as _ash
+            _b = _joblib.load(HYBRID_MODEL_PATH)
+            prob_map, _ = _ash.predict_image(name, _b["model"], _b["n_features"])
+        else:
+            model = model_for(name)
+            prob_map = predict_probability_map(model, img01)
         predicted_mask = postprocess_mask(prob_map)
         np.save(mask_path, predicted_mask)
         np.save(img_path, img01)
