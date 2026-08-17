@@ -19,8 +19,24 @@ DEST="${1:-$HOME/Desktop/txm-crack-detector}"
 
 echo "==> packaging from $SRC"
 echo "    into           $DEST"
+
+# Rebuild $DEST from scratch, but keep .git if the destination is already the
+# published checkout. Without this, re-running the script to ship an update
+# deletes the very history you were about to push to -- recoverable only by
+# refetching from the remote, and silently, since a fresh `git init` there looks
+# like a brand-new repo rather than a decapitated one.
+KEEP_GIT=""
+if [ -d "$DEST/.git" ]; then
+  KEEP_GIT="$(mktemp -d)"
+  mv "$DEST/.git" "$KEEP_GIT"/
+  echo "    (preserving existing git history)"
+fi
 rm -rf "$DEST"
 mkdir -p "$DEST"/{code,app/core,app/static,models,dataset_cache,paint/corrections,docs}
+if [ -n "$KEEP_GIT" ]; then
+  mv "$KEEP_GIT"/.git "$DEST"/
+  rmdir "$KEEP_GIT"
+fi
 
 # --- code. Only what the app imports, plus the research scripts a user might
 # rerun. Everything else in code/ is one-off experiment scaffolding from the
@@ -128,6 +144,12 @@ __pycache__/
 .DS_Store
 # per-user runtime data: uploads, SAM embeddings, predictions, retrained models
 app_data/
+# unpacked artifacts -- regenerated from the shipped PNG/npz by unpack_package.py.
+# Must stay ignored: run_app.sh expands these on first start, and the 17-feature
+# stacks alone are 2.1 GB, so without this a user's first `git status` offers a
+# repo-breaking commit.
+dataset_cache/*.npy
+paint/corrections/*_correction.npy
 EOF
 
 echo
