@@ -43,7 +43,7 @@ fi
 # development history and is deliberately left behind.
 for f in txm_features.py destitch.py flatfield.py txm_preprocess.py \
          sem_crack_measurements.py apply_pixel_model.py unpack_package.py \
-         generate_benchmark_report.py sam_common.py; do
+         generate_benchmark_report.py sam_common.py load_all_images.py; do
   [ -f "$SRC/code/$f" ] && cp "$SRC/code/$f" "$DEST"/code/
 done
 cp "$SRC"/app/server.py      "$DEST"/app/
