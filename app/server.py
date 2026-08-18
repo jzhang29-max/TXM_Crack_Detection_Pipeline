@@ -116,7 +116,11 @@ def api_upload():
         out = []
         for k, iid in enumerate(todo, 1):
             report(f"{iid} ({k}/{len(todo)})", k, len(todo))
-            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", a, b))
+            # Keep the OUTER image counter in k/n. Passing the inner sub-step counts
+            # through made the progress bar show "8/15" of one image's stages while
+            # actually on image 12 of 71 -- so the bar jumped backwards every image and
+            # no honest time estimate was possible. The sub-step still shows in the text.
+            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", k, len(todo)))
             out.append(iid)
         return dict(processed=out)
 
@@ -494,7 +498,11 @@ def api_reoverlay():
         done = []
         for k, iid in enumerate(ids, 1):
             report(f"{iid} ({k}/{len(ids)})", k, len(ids))
-            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", a, b))
+            # Keep the OUTER image counter in k/n. Passing the inner sub-step counts
+            # through made the progress bar show "8/15" of one image's stages while
+            # actually on image 12 of 71 -- so the bar jumped backwards every image and
+            # no honest time estimate was possible. The sub-step still shows in the text.
+            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", k, len(ids)))
             done.append(iid)
         return dict(reoverlayed=done)
     return jsonify(ok=True, job=_job(work, f"re-overlay {len(ids)} image(s)"))
@@ -549,7 +557,11 @@ def api_model_select():
         def work(report):
             for k, iid in enumerate(todo, 1):
                 report(f"{iid} ({k}/{len(todo)})", k, len(todo))
-                P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", a, b))
+                # Keep the OUTER image counter in k/n. Passing the inner sub-step counts
+            # through made the progress bar show "8/15" of one image's stages while
+            # actually on image 12 of 71 -- so the bar jumped backwards every image and
+            # no honest time estimate was possible. The sub-step still shows in the text.
+            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", k, len(todo)))
             return dict(predicted=todo)
         jid = _job(work, f"predict {len(todo)} image(s) with {entry.get('label')}")
 
