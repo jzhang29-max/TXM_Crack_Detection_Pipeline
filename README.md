@@ -248,6 +248,25 @@ to improvements elsewhere.
 When it does deploy it re-applies the new model to every image **inside the same job**, so
 nothing is left stale if you close the tab.
 
+### 8. Back up your labels
+
+`app_data/` is gitignored, and should be -- it is 19 GB of predictions, SAM embeddings and
+thumbnails, all regenerable. Your correction labels are the exception: nothing can
+regenerate them, and they live only on your disk. They are also nearly free to version,
+because a correction mask is uint8 and overwhelmingly zero:
+
+```bash
+python3 code/backup_labels.py            # 850 MB of masks -> 3.1 MB in paint/app_labels.npz
+python3 code/backup_labels.py --status   # what is saved vs what is live
+python3 code/backup_labels.py --restore  # write them back after a loss
+git add paint/app_labels.* && git commit -m "labels" && git push
+```
+
+Run it after a labelling session. Keyed by filename, not by image id -- an id is a content
+hash, so it changes if an image is ever recompressed, and a backup keyed by id would fail
+to restore onto the same picture. Restore refuses to overwrite labels the app already has
+unless you pass `--force`, since the app's copy is normally the newer one.
+
 ### 7. Export
 
 | item | what you get |
