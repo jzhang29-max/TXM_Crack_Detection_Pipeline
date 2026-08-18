@@ -187,7 +187,16 @@ def save_npy(image_id, name, arr):
     d = path(image_id)
     os.makedirs(d, exist_ok=True)
     final = path(image_id, name)
-    tmp = final + ".tmp"
+    # Unique staging name, not a fixed "<name>.tmp". The CLI tools
+    # (import_research_corrections.py, backup_labels.py --restore) are separate
+    # PROCESSES that write correction.npy for a live app on purpose -- they delete the
+    # overlay caches afterwards so the labels appear immediately in the open browser --
+    # and a process boundary is exactly where image_lock() stops helping, since it is an
+    # in-interpreter threading.Lock. With one shared temp path, a CLI write and a brush
+    # stroke land in the same file: one replace() wins and the loser keeps writing into
+    # the inode that is now the live correction.npy, which defeats the whole point of
+    # staging. pid+thread is already how _link_or_copy names its temp, for the same reason.
+    tmp = f"{final}.{os.getpid()}.{threading.get_ident()}.tmp"
     try:
         with open(tmp, "wb") as fh:
             np.save(fh, arr)

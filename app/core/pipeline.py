@@ -54,6 +54,73 @@ CLEAN_SPECIMENS = ["b3_amb", "B2_amb_mosaic_2", "B2_2_1_lbf", "B2_2_9_lbf",
                    "b3_3_18lbf", "wrought_316L_fatigue_0_cycles"]
 
 
+def specimen_support(raw, ds=4):
+    """True where the specimen is; False on off-specimen background.
+
+    Brightness alone cannot separate them. A crack is dark too, so a plain Otsu split
+    calls the crack background -- which is how a first attempt at this scored every
+    crack-heavy frame as 100% false positive. What distinguishes them is topology:
+    background is one large dark region open to the frame edge, a crack is a thin
+    structure in the interior.
+    """
+    from skimage import filters, measure, morphology
+    from scipy import ndimage as ndi
+    small = raw[::ds, ::ds].astype(np.float32)
+    dark = small < filters.threshold_otsu(small)
+    dark = morphology.binary_opening(dark, morphology.disk(3))
+    lab = measure.label(dark)
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+    off = np.zeros_like(dark)
+    for pr in measure.regionprops(lab):
+        if pr.label in edge and pr.area > 0.005 * lab.size:
+            off |= (lab == pr.label)
+    off = morphology.binary_closing(off, morphology.disk(5))
+    spec = ndi.binary_fill_holes(~off)
+    return np.kron(spec, np.ones((ds, ds), bool))[:raw.shape[0], :raw.shape[1]]
+
+
+def display_limits(iid):
+    """(lo, hi) to map display.npy onto 0-255 for a HUMAN to look at.
+
+    Why this is not just clip(0, 1): flat-fielding leaves the specimen in a narrow
+    bright band -- measured across the loaded images, the specimen occupies a standard
+    deviation of 7 to 14 grey levels out of 255. Rendered with a plain clip, a crack
+    whose amplitude is a handful of counts is very nearly invisible, and the person
+    labelling it is the one who most needs to see it. Stretching the specimen's own
+    1st-99th percentile across the full range takes that standard deviation to 41-47.
+
+    THE MODEL IS UNAFFECTED. It reads img.npy, the raw frame, and never this. Changing
+    these limits changes what the screen shows and nothing about a prediction --
+    flat-fielding as model INPUT was measured at a cost of 0.169 IoU, which is why the
+    human view and the model view are deliberately different in the first place.
+
+    Percentiles are taken over the specimen only. Off-specimen background is often 20-40%
+    of a frame and sits at zero, so whole-image percentiles are dragged down by it and the
+    stretch does almost nothing. Memoised in meta.json: the Otsu-plus-morphology support
+    pass costs a second or two on a 32 MP mosaic and the answer never changes.
+    """
+    meta = S.read_meta(iid)
+    lim = meta.get("display_limits")
+    if isinstance(lim, (list, tuple)) and len(lim) == 2:
+        return float(lim[0]), float(lim[1])
+    disp = S.load_npy(iid, "display.npy")
+    if disp is None:
+        return 0.0, 1.0
+    a = np.clip(np.asarray(disp), 0, 1)
+    try:
+        raw = S.load_npy(iid, "img.npy", mmap=True)
+        sel = a[specimen_support(np.asarray(raw))] if raw is not None else a.ravel()
+    except Exception:                                   # noqa: BLE001
+        sel = a.ravel()
+    if sel.size < 1000:
+        sel = a.ravel()
+    lo, hi = (float(v) for v in np.percentile(sel, (1.0, 99.0)))
+    if not np.isfinite(lo) or not np.isfinite(hi) or hi - lo < 1e-4:
+        lo, hi = 0.0, 1.0                               # degenerate: fall back to clip
+    S.write_meta(iid, dict(display_limits=[lo, hi]))
+    return lo, hi
+
+
 def _score_clean(model, progress=None, cache_key=None):
     """(mean predicted area fraction, n images) over the loaded crack-free specimens.
 

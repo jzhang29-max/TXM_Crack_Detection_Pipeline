@@ -128,6 +128,20 @@ def api_upload():
     return jsonify(ok=True, added=added, reused=reused, rejected=rejected, job=jid)
 
 
+def _to8(arr, limits):
+    """Map a 0-1 float frame onto 0-255 through (lo, hi).
+
+    One helper, used by both display.png and thumb.png, because they were each doing
+    their own clip and a change to one silently gave the sidebar a different rendering
+    from the canvas.
+    """
+    lo, hi = limits
+    a = np.clip(np.asarray(arr), 0, 1).astype(np.float32)
+    if hi - lo > 1e-4:
+        a = np.clip((a - lo) / (hi - lo), 0, 1)
+    return (a * 255).astype(np.uint8)
+
+
 @app.route("/api/image/<iid>/display.png")
 def api_display(iid):
     which = request.args.get("view", "display")
@@ -135,7 +149,9 @@ def api_display(iid):
     if arr is None:
         return jsonify(ok=False, error="not ingested"), 404
     from PIL import Image
-    a = (np.clip(np.asarray(arr), 0, 1) * 255).astype(np.uint8)
+    # The raw view is shown as-is; only the processed view is stretched, because the
+    # stretch limits are measured on the processed array.
+    a = _to8(arr, P.display_limits(iid) if which == "display" else (0.0, 1.0))
     buf = io.BytesIO()
     Image.fromarray(a).save(buf, format="PNG", optimize=False, compress_level=1)
     buf.seek(0)
@@ -168,11 +184,14 @@ def api_thumb(iid):
     stamp = max([os.path.getmtime(p) for p in (corr_p, prob_p) if os.path.exists(p)] or [0])
 
     disp = S.load_npy(iid, "display.npy")
+    processed = disp is not None
     if disp is None:
         disp = S.load_npy(iid, "img.npy")
     if disp is None:
         return jsonify(ok=False, error="not ingested"), 404
-    g = (np.clip(np.asarray(disp), 0, 1) * 255).astype(np.uint8)
+    # Same limits as the canvas: a sidebar row that renders differently from the image
+    # it links to is worse than no thumbnail at all.
+    g = _to8(disp, P.display_limits(iid) if processed else (0.0, 1.0))
     im = Image.fromarray(g).convert("RGB")
     mask = P.effective_mask(iid)
     if mask is not None and mask.shape == g.shape:
@@ -564,14 +583,25 @@ def api_model_select():
     jid = None
     if todo:
         def work(report):
+            done = []
             for k, iid in enumerate(todo, 1):
                 report(f"{iid} ({k}/{len(todo)})", k, len(todo))
                 # Keep the OUTER image counter in k/n. Passing the inner sub-step counts
-            # through made the progress bar show "8/15" of one image's stages while
-            # actually on image 12 of 71 -- so the bar jumped backwards every image and
-            # no honest time estimate was possible. The sub-step still shows in the text.
-            P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", k, len(todo)))
-            return dict(predicted=todo)
+                # through made the progress bar show "8/15" of one image's stages while
+                # actually on image 12 of 71 -- so the bar jumped backwards every image
+                # and no honest time estimate was possible. The sub-step still shows in
+                # the text.
+                #
+                # KEEP P.ingest INSIDE THIS LOOP. It was once dedented by one level --
+                # by a comment reflow, not deliberately -- which left the loop body as
+                # the report() call alone. The job then walked the progress bar over all
+                # 71 images, predicted only the last one, and returned predicted=todo
+                # claiming every one of them. The images kept the previous model's mask
+                # while the UI said the switch was finished. selftest's
+                # check_model_switch_predicts_all covers exactly this.
+                P.ingest(iid, progress=lambda st, a, b: report(f"{iid}: {st}", k, len(todo)))
+                done.append(iid)
+            return dict(predicted=done)
         jid = _job(work, f"predict {len(todo)} image(s) with {entry.get('label')}")
 
     return jsonify(ok=True, current=S.registry()["current"], instant=instant,

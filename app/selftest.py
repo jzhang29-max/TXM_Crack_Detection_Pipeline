@@ -458,6 +458,33 @@ def main():
     except Exception as e:
         check("model picker", False, str(e))
 
+    # ---- the UNCACHED half of a model switch, checked structurally.
+    #
+    # The check above can only ever exercise the cached path: it deliberately picks a
+    # model already computed for every image, because the alternative is a real
+    # 70-image prediction pass. That left the branch that actually predicts untested,
+    # and it broke -- a comment reflow dedented P.ingest out of the `for iid in todo`
+    # loop, so a switch walked the progress bar over every pending image, predicted only
+    # the LAST one, and returned predicted=todo claiming all of them. Every other image
+    # silently kept the previous model's mask while the UI reported success.
+    #
+    # Cheap to assert structurally, and this is the assertion that would have caught it.
+    try:
+        import ast
+        src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server.py")
+        fn = next(f for f in ast.walk(ast.parse(open(src).read()))
+                  if isinstance(f, ast.FunctionDef) and f.name == "api_model_select")
+        work = next(n for n in ast.walk(fn)
+                    if isinstance(n, ast.FunctionDef) and n.name == "work")
+        loop = next(st for st in work.body if isinstance(st, ast.For))
+        body = [ast.unparse(b) for b in loop.body]
+        check("a model switch predicts every pending image, not just the last",
+              any("P.ingest" in b for b in body),
+              f"loop body: {[b[:38] for b in body]}")
+    except Exception as e:
+        check("a model switch predicts every pending image, not just the last",
+              False, f"{type(e).__name__}: {e}")
+
     # ---- reset
     _, c = req(B, f"/api/image/{iid}/correction", "POST", dict(mode="clear"))
     check("reset clears this image's corrections", c.get("crack_px") == 0 and c.get("not_px") == 0)

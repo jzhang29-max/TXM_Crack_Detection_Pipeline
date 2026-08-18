@@ -26,8 +26,17 @@ configure:
    measured for this dataset's tile pitch) to remove the macro brightness gradient.
 
 Left is what came off the instrument: a 5×3 tile grid, a bright blob, and a crack you can
-barely see. Right is what you mark on. Both steps preserve geometry, so a mask still
-registers pixel-for-pixel on the original.
+barely see. The middle panel is what you mark on, and the right one is the same crack at
+native resolution. Both steps preserve geometry, so a mask still registers pixel-for-pixel
+on the original.
+
+**Contrast is stretched for display.** Flat-fielding leaves the specimen inside a narrow
+bright band — measured across these 71 images, a standard deviation of 7 to 14 grey levels
+out of 255 — so a crack a few counts deep is nearly invisible if the array is shown as-is.
+The app stretches each image's own 1st–99th percentile, measured over the specimen and
+cached, which takes that spread to 41–47. That is a *viewing* change only. It also makes
+the destitcher's residual visible: the notch removes 91–99% of the tile-pitch amplitude,
+and the faint grid still discernible in the middle panel above is the 1–9% that is left.
 
 **The model is still fed the raw image**, deliberately: flat-fielding as *model input* was
 tried and cost 0.169 IoU, because large-radius intensity features are ~41% of the model's
@@ -40,13 +49,15 @@ otherwise.
 
 ![Detection example](docs/img/example_detection.png)
 
-Left, the image as you see it (destitched and flat-fielded). Right, the model's output.
-It traces the fine branching hairline accurately, down to individual branches a few
-pixels wide -- and this is an AM/HC specimen, a group with **no** pixel-level ground
-truth, so nothing about this frame was used to fit or validate the model.
+A native-resolution window — 1364×1023 of a 3507×2275 frame — because a hairline crack
+does not survive being downsampled to README width. Left, the image as you see it in the
+app. Right, the shipped baseline's output. It follows the crack's fibrous body and its
+branches, and this is an AM/HC specimen: a group with **no** pixel-level ground truth, so
+nothing about this frame was used to fit or validate the model.
 
-Look at the top and right edges: the dark off-specimen background is also marked red.
-That is a false positive, and it is the honest reason the correction tools exist.
+It is not tight. The red runs a little wide of the darkest strands and bridges some of the
+gaps between them, and there are a few isolated specks on plain specimen. Correcting that
+is the job the tools below exist for.
 
 ### Correcting it
 
@@ -58,6 +69,12 @@ click rather than a minute of brushing. Press Retrain and those labels become tr
 data.
 
 ### How well does it do, honestly
+
+![Model against ground truth](docs/img/ground_truth.png)
+
+The one comparison that does not rely on your eye: the model's output beside the
+hand-labelled truth for the same window. Agreement is high where the crack is wide open,
+which is what all four ground-truth images are.
 
 On the four ground-truth images (all one specimen group, B2) under leave-one-image-out:
 mean IoU **0.821**, recall **0.914**, and on six specimens the owner confirmed
@@ -120,7 +137,7 @@ needs the first four entries:
 |---|---|
 | `run_app.sh` | the only command you need |
 | `app/` | the server and the single-file frontend |
-| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`) |
+| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`, `backup_labels.py`, `make_readme_figures.py`) |
 | `images/` | **all 71 raw TXM images**, bit-exact. Deflate-compressed float32 TIFF with the floating-point predictor: 2.26 GB instead of 3.40 GB, every file under GitHub's 100 MB limit (two of the originals were 122 MB and could not be pushed at all). Verified 71/71 identical to the originals. Read them with `tifffile` or GDAL; if a tool cannot handle predictor 3, re-save with `tifffile.imwrite(out, tifffile.imread(src))` |
 | `models/`, `dataset_cache/`, `paint/corrections/` | the shipped models, the 4 reference ground-truth images, and the correction labels |
 | `docs/` | how the model was arrived at. `HANDOFF.md` is the development record including four approaches that were adopted and then reverted; `SAM_COMPARISON.md` is the zero-shot SAM study |
@@ -256,9 +273,10 @@ regenerate them, and they live only on your disk. They are also nearly free to v
 because a correction mask is uint8 and overwhelmingly zero:
 
 ```bash
-python3 code/backup_labels.py            # 850 MB of masks -> 3.1 MB in paint/app_labels.npz
+python3 code/backup_labels.py            # 850 MB of masks -> 4.1 MB in paint/app_labels.npz
 python3 code/backup_labels.py --status   # what is saved vs what is live
 python3 code/backup_labels.py --restore  # write them back after a loss
+python3 code/backup_labels.py --prune    # drop archived images not loaded here
 git add paint/app_labels.* && git commit -m "labels" && git push
 ```
 
@@ -318,9 +336,18 @@ full study, including 33 verified citations.
   recall drops from ~0.87 at a raw threshold to 0.14–0.40 after it. Toggle it on
   if you want the old behaviour.
 - **Retrain refuses to deploy a regression.** A candidate must hold IoU within
-  0.01. Every regression this project has had passed a single-metric check —
+  0.01 *and* not raise its false-positive rate on the crack-free specimens by more
+  than 0.5 points. Every regression this project has had passed a single-metric check —
   an over-aggressive filter and a good one both reduce predicted area, and only
   recall against ground truth separates them.
+- **The gate's IoU is in-sample, and that is a real limitation.** A retrain samples
+  100 k crack and 100 k background pixels from each of the four ground-truth images,
+  and then the gate scores the candidate on those same four images. So "IoU did not
+  drop" can be satisfied by fitting them more closely rather than by generalising, and
+  a number measured that way runs high: models here score 0.92–0.96 on the ground-truth
+  images they trained on, against the 0.821 that leave-one-image-out gives. Quote 0.821.
+  The false-positive check on the crack-free specimens is the part of the gate that is
+  actually adversarial, and it is what caught the 22.4% model.
 - If you retrain and it says *not deployed*, the model file is still saved so you
   can inspect it. **Roll back** restores the previous model.
 

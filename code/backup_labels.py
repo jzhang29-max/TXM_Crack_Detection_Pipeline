@@ -57,11 +57,48 @@ def _labelled():
     return out
 
 
-def save():
+def save(prune=False):
+    """Snapshot the live labels, MERGING with whatever the archive already holds.
+
+    Merging, not replacing, because app_data/ is gitignored and therefore routinely a
+    SUBSET of the archive: a second machine, or a fresh clone, ingests a handful of the
+    71 images before anyone labels anything. save() only sees what is loaded, so a
+    straight overwrite turned a 71-image archive into a 2-image one, printed "saved 2
+    image(s)" as success, and the README then told the user to commit and push it --
+    propagating the truncated archive as the new canonical copy of the only data in
+    app_data that cannot be regenerated.
+
+    An image whose labels are loaded always wins: the live copy is the newer one. An
+    image that is merely absent is carried through untouched. Deliberately dropping
+    entries is --prune, so it has to be asked for.
+    """
     items = _labelled()
-    if not items:
+    live = {fn for fn, *_ in items}
+
+    carried, carried_meta = {}, {}
+    if os.path.exists(ARCHIVE) and not prune:
+        z = np.load(ARCHIVE)
+        old_meta = {}
+        if os.path.exists(MANIFEST):
+            with open(MANIFEST) as f:
+                old_meta = (json.load(f).get("images") or {})
+        for fn in z.files:
+            if fn in live:
+                continue
+            carried[fn] = z[fn]
+            carried_meta[fn] = old_meta.get(fn) or dict(
+                crack=int((carried[fn] == 1).sum()),
+                not_crack=int((carried[fn] == 2).sum()),
+                shape=list(carried[fn].shape))
+
+    if not items and not carried:
         print("no labels in app_data yet -- nothing to save")
         return 0
+    if not items and carried:
+        print(f"nothing labelled is loaded; leaving the {len(carried)}-image archive alone")
+        print("  (use --prune to replace it with what is loaded now)")
+        return 0
+
     raw = sum(a.nbytes for _, _, a, _, _ in items)
     os.makedirs(os.path.dirname(ARCHIVE), exist_ok=True)
     # Write through a handle, not a path: np.savez_compressed APPENDS ".npz" to a path
@@ -70,25 +107,35 @@ def save():
     # created. Passing an open file writes exactly where told.
     tmp = ARCHIVE + ".tmp"
     with open(tmp, "wb") as fh:
-        np.savez_compressed(fh, **{fn: a for fn, _, a, _, _ in items})
+        np.savez_compressed(fh, **carried, **{fn: a for fn, _, a, _, _ in items})
     os.replace(tmp, ARCHIVE)
 
+    images = dict(carried_meta)
+    images.update({fn: dict(crack=int(c), not_crack=int(n), shape=list(a.shape))
+                   for fn, _, a, c, n in items})
     manifest = dict(
         saved=time.strftime("%Y-%m-%d %H:%M:%S"),
-        n_images=len(items),
-        total_crack_px=int(sum(c for *_, c, _ in items)),
-        total_not_crack_px=int(sum(n for *_, n in items)),
-        images={fn: dict(crack=int(c), not_crack=int(n), shape=list(a.shape))
-                for fn, _, a, c, n in items},
+        n_images=len(images),
+        n_from_app_data=len(items),
+        n_carried_forward=len(carried),
+        total_crack_px=int(sum(v["crack"] for v in images.values())),
+        total_not_crack_px=int(sum(v["not_crack"] for v in images.values())),
+        images=images,
     )
     with open(MANIFEST, "w") as f:
         json.dump(manifest, f, indent=2, sort_keys=True)
 
     size = os.path.getsize(ARCHIVE)
-    print(f"saved {len(items)} image(s) of labels")
-    print(f"  {manifest['total_crack_px']:,} force-crack + "
+    print(f"saved {len(items)} image(s) of labels from app_data")
+    if carried:
+        print(f"  kept {len(carried)} archived image(s) not loaded here "
+              f"(--prune to drop them instead)")
+    elif prune and os.path.exists(ARCHIVE):
+        print("  --prune: archive now holds ONLY what is loaded")
+    print(f"  archive total: {manifest['n_images']} image(s), "
+          f"{manifest['total_crack_px']:,} force-crack + "
           f"{manifest['total_not_crack_px']:,} force-not-crack pixels")
-    print(f"  {raw/1e6:.0f} MB of masks -> {size/1e6:.2f} MB compressed "
+    print(f"  {raw/1e6:.0f} MB of live masks -> {size/1e6:.2f} MB compressed "
           f"({raw/max(size,1):.0f}x)")
     print(f"  {os.path.relpath(ARCHIVE, PROJECT)}  +  {os.path.relpath(MANIFEST, PROJECT)}")
     print("\ncommit them to version this session's work:")
@@ -176,12 +223,15 @@ def main():
     g.add_argument("--status", action="store_true")
     ap.add_argument("--force", action="store_true",
                     help="with --restore, overwrite labels the app already has")
+    ap.add_argument("--prune", action="store_true",
+                    help="when saving, DROP archived images that are not loaded here "
+                         "(default: carry them forward)")
     a = ap.parse_args()
     if a.status:
         return status()
     if a.restore:
         return restore(force=a.force)
-    return save()
+    return save(prune=a.prune)
 
 
 if __name__ == "__main__":
