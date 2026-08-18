@@ -352,6 +352,17 @@ full study, including 33 verified citations.
   than 0.5 points. Every regression this project has had passed a single-metric check —
   an over-aggressive filter and a good one both reduce predicted area, and only
   recall against ground truth separates them.
+- **Some imported not-crack labels are on real crack, and most cannot be checked.**
+  `code/import_research_corrections.py` brought in 263 M not-crack pixels from the
+  research archive. On the four images where pixel truth exists, **22–28% of that
+  archive's not-crack labels sit on real crack** — the outlines it came from were drawn
+  tight, so crack margins came through as background. That is not a harmless missing
+  label: it teaches the model that crack margins are background, and margins are where a
+  segmentation is decided. `code/clean_gt_conflicting_labels.py` has cleared the 362,851
+  such pixels on those four images. **The other 67 images carry negatives from the same
+  archive and there is no truth to check them against**, so assume some contamination
+  remains and treat the crack-margin behaviour of any retrain with suspicion. Owner-drawn
+  force-crack labels, by contrast, agree with ground truth 92–100%.
 - **The gate's IoU is in-sample, and that is a real limitation.** A retrain samples
   100 k crack and 100 k background pixels from each of the four ground-truth images,
   and then the gate scores the candidate on those same four images. So "IoU did not

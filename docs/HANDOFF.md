@@ -281,6 +281,45 @@ labelling needs the owner's strokes in the paint tool.
 | false-positive cleanup (wedge margin, edge ring, round speckle) | not-crack | 43.3M px | MEDIUM — audit later showed wedge+rim still dominant, so it was too weak |
 | ~~automated positive crack labels~~ | ~~crack~~ | ~~4.9M px~~ | **REVERTED — was wrong** |
 
+### MEASURED CORRECTION, 2026-08-18: the not-crack labels are not all HIGH
+
+The three HIGH ratings above were not measured when they were written. They now have
+been, against the only thing that can settle it — the four Ilastik ground-truth masks.
+**On those four images, 22–28% of this archive's force-not-crack pixels sit on real
+crack:**
+
+| image | archive not-crack px | of which GT says crack |
+|---|---|---|
+| LARGE_343_75 | 9,110,312 | 2,155,235 (**23.7%**) |
+| 336_25 | 642,815 | 179,595 (**27.9%**) |
+| 338_13 | 765,283 | 166,902 (**21.8%**) |
+| 333_75_um_zoom | 351,042 | 22,624 (6.4%) |
+
+The likely mechanism is the "false-positive cleanup" row, already rated MEDIUM: outlines
+drawn tight to a crack hand its margins to the background class. This is not a harmless
+absent label. It teaches the model that crack margins are background, and margins are
+where a segmentation is decided — which fits the deployed model leaving holes inside
+crack bodies.
+
+**Consequences for anyone continuing this work:**
+
+- Do NOT read the HIGH ratings above as verified. Only the 4 GT masks and the owner's own
+  strokes are verified; the owner's force-crack labels measure 92–100% agreement with GT.
+- `code/import_research_corrections.py` imports these negatives. It is still the right
+  tool — 263 M pixels of mostly-legitimate off-specimen exclusion, and without them the
+  retrain gate's false-positive check has nothing to measure — but it imports the
+  contamination too.
+- `code/clean_gt_conflicting_labels.py` clears the conflicts on the four images where
+  they can be seen: 362,851 px cleared to 0 (not flipped to crack — `gather_training_data`
+  already samples truth from the GT masks directly, so zeroing removes the contradiction
+  without writing a second source's opinion into the owner's label set).
+- **The other 67 images cannot be checked.** There is no pixel truth outside B2. Assume
+  similar contamination and distrust crack-margin behaviour accordingly.
+- The symmetric error exists too and was left alone: 337,917 px of force-crack sit where
+  GT says background. At a crack margin it is genuinely arguable which is right, and
+  those are the owner's own strokes. `--also-crack` clears them if a future measurement
+  justifies it.
+
 The 6 confirmed crack-free specimens (`research/code/mark_zero_crack_images.py`):
 b3_amb, B2_amb_mosaic_2, B2_2_1_lbf, B2_2_9_lbf, b3_3_18lbf,
 wrought_316L_fatigue_0_cycles.

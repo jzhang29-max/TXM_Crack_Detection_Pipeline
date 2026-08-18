@@ -18,7 +18,7 @@
     },
     "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 831484,
+      "not_crack": 789272,
       "shape": [
         1671,
         1706
@@ -58,7 +58,7 @@
     },
     "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 34486,
-      "not_crack": 129433,
+      "not_crack": 119101,
       "shape": [
         1688,
         1693
@@ -74,7 +74,7 @@
     },
     "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 187514,
-      "not_crack": 678589,
+      "not_crack": 635915,
       "shape": [
         1706,
         1693
@@ -122,7 +122,7 @@
     },
     "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 4077170,
-      "not_crack": 7925732,
+      "not_crack": 7658099,
       "shape": [
         3691,
         6367
@@ -572,7 +572,7 @@
   "n_carried_forward": 0,
   "n_from_app_data": 71,
   "n_images": 71,
-  "saved": "2026-08-18 16:09:12",
+  "saved": "2026-08-18 16:52:25",
   "total_crack_px": 17059978,
-  "total_not_crack_px": 375124430
+  "total_not_crack_px": 374761579
 }
