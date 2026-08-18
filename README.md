@@ -45,28 +45,39 @@ model sees are different on purpose. If preprocessing ever fails, the app falls 
 raw and says so in red rather than letting you mark an unprocessed frame believing
 otherwise.
 
-### A crack it finds well
+### What it finds, and what it misses
 
 ![Detection example](docs/img/example_detection.png)
 
-A native-resolution window — 1364×1023 of a 3507×2275 frame — because a hairline crack
-does not survive being downsampled to README width. Left, the image as you see it in the
-app. Right, the shipped baseline's output. It follows the crack's fibrous body and its
-branches, and this is an AM/HC specimen: a group with **no** pixel-level ground truth, so
-nothing about this frame was used to fit or validate the model.
+A native-resolution window — 1013×760 of a 4376×2363 frame — because a hairline crack does
+not survive being downsampled to README width. Left, the image as you see it in the app;
+right, the shipped baseline's output. This is an AM/HC specimen, a group with **no**
+pixel-level ground truth, so nothing about this frame was used to fit or validate the
+model.
 
-It is not tight. The red runs a little wide of the darkest strands and bridges some of the
-gaps between them, and there are a few isolated specks on plain specimen. Correcting that
-is the job the tools below exist for.
+Four things are visible here, and the last two are why the correction tools exist:
+
+1. It follows the main crack closely, including the fine strands that fray off its left end.
+2. It stays off the mottled background texture, which is the failure mode you would expect
+   from a pixel classifier on a noisy frame.
+3. **It misses the thin crack across the top.** That one is shallower and it is not marked
+   at all.
+4. **The isolated red sliver on the left is a false positive** — an elongated pore, not a
+   crack.
 
 ### Correcting it
 
 ![Correction example](docs/img/example_correction.png)
 
-Red is predicted crack, cyan is what a human marked as *not* crack. **Flip region** takes
-a whole connected blob in one click, so a false positive the size of the frame is one
-click rather than a minute of brushing. Press Retrain and those labels become training
-data.
+A different frame, showing the single most useful tool. The model has marked a field of
+rounded pores as crack — a reasonable mistake, since porosity is dark and roughly the
+right scale, and a wrong one. **Flip region** takes the whole connected blob in one click:
+65,181 px removed, the region recorded as not-crack (cyan outline), and Retrain learns
+from it. **Erase** would reach the same result by brushing, which on a blob this size is
+about a minute of work.
+
+The difference between the two is only how you select: Erase is a brush, Flip region is
+one click on a connected component. Both write the same not-crack label.
 
 ### How well does it do, honestly
 

@@ -55,13 +55,13 @@ DIM = (150, 150, 158)
 # The images each figure is built from. Chosen by --list, which ranks every loaded image
 # on how much of a well-formed crack sits inside a croppable window; these were the top
 # of that ranking, checked by eye afterwards.
-DETECTION_IMAGE = "HC_316L_fatigue_1780_tip_zoom_2"
+DETECTION_IMAGE = "HC_316L_fatigue_1200_cycles"
 PREPROCESS_IMAGE = "HC_316L_fatigue_1200_cycles"
 GT_IMAGE = ("336_25", "b2_336_25")          # (ground-truth stem, app filename fragment)
 # Needs an image carrying BOTH kinds of label, or the figure cannot show what the two
 # colours mean. Ranked by "pixels where a human marked not-crack over model crack":
 # this one has 300 k of those plus 3.8 M confirmed crack.
-CORRECTION_IMAGE = "b2_343_75_LARGE"
+CORRECTION_IMAGE = "HC_316L_fatigue_400_cycles"
 
 # Crops are PINNED, not searched, for the images above. find_crop() picks the window from
 # a model's mask, so the same figure moved when regenerated under a different model --
@@ -69,8 +69,11 @@ CORRECTION_IMAGE = "b2_343_75_LARGE"
 # object; --list plus find_crop() is how these were found, and pinning them is how they
 # stay put. (y, x, h, w) at native resolution.
 CROPS = {
-    "HC_316L_fatigue_1780_tip_zoom_2": (1009, 6, 1023, 1364),
-    "HC_316L_fatigue_1200_cycles": (797, 1014, 519, 692),
+    # detection: a stretch of the 1200-cycle crack DELIBERATELY not the window the
+    # preprocessing figure zooms into -- the auto-chosen one contained that zoom entirely,
+    # so the README showed the same few hundred pixels twice.
+    "detection": (500, 1590, 760, 1013),
+    "HC_316L_fatigue_1200_cycles": (797, 1014, 519, 692),   # preprocessing panel 3
     "b2_336_25": (885, 422, 759, 1012),
 }
 
@@ -243,7 +246,7 @@ def fig_detection(key, label):
     raw = np.asarray(S.load_npy(m["id"], "img.npy", mmap=True))
     prob = prob_of(m["id"], key)
     mask = prob > 0.5
-    y, x, ch, cw = crop_for(DETECTION_IMAGE, mask, raw)
+    y, x, ch, cw = crop_for("detection", mask, raw)
     d, mk = disp[y:y + ch, x:x + cw], mask[y:y + ch, x:x + cw]
     g = as_app_shows(m['id'], d)
     save(strip([("what you see", g),
@@ -305,44 +308,52 @@ def fig_preprocessing(key, label):
 
 
 def fig_correction(key, label):
+    """Before and after one Flip region click.
+
+    Shows the EFFECT, not the label. Painting the not-crack label itself was tried and
+    is unreadable: most of the not-crack pixels here are imported research negatives
+    covering whole crack-free areas, so any window containing them came out 56-86% flat
+    cyan and drowned the picture. What a user actually experiences is red disappearing,
+    so that is what this shows, with a thin cyan outline recording what was removed.
+    """
     m = find_image(CORRECTION_IMAGE)
     corr = S.load_npy(m["id"], "correction.npy", mmap=True)
     if corr is None:
         print("  skipping example_correction.png -- no labels on this image")
         return
+    from skimage import measure, morphology
     corr = np.asarray(corr)
-    disp = np.asarray(S.load_npy(m["id"], "display.npy", mmap=True))
-    raw = np.asarray(S.load_npy(m["id"], "img.npy", mmap=True))
     mask = prob_of(m["id"], key) > 0.5
     if corr.shape != mask.shape:
         print("  skipping example_correction.png -- label/prediction shape mismatch")
         return
+    flip = (corr == 2) & mask
+    if flip.sum() < 5000:
+        print("  skipping example_correction.png -- nothing was flipped off here")
+        return
 
-    # Window showing both colours: overruled false positives AND confirmed crack. Scoring
-    # on the product means a window full of one and none of the other cannot win.
-    over, conf = (corr == 2) & mask, mask & (corr != 2)
-    ds = 16
-    H, W = mask.shape
-    ch = int(min(H, max(240, H * 0.34)))
-    cw = int(min(W, ch * 4 / 3))
-    kh, kw = max(1, ch // ds), max(1, cw // ds)
-    do = ndi.uniform_filter(over[::ds, ::ds].astype(np.float32), (kh, kw), mode="constant")
-    dc = ndi.uniform_filter(conf[::ds, ::ds].astype(np.float32), (kh, kw), mode="constant")
-    cy, cx = np.unravel_index(np.argmax(do * dc), do.shape)
-    y = int(np.clip(cy * ds - ch // 2, 0, H - ch))
-    x = int(np.clip(cx * ds - cw // 2, 0, W - cw))
+    lab = measure.label(flip)
+    top = max(measure.regionprops(lab), key=lambda pr: pr.area)
+    y0, x0, y1, x1 = top.bbox
+    pad = int(0.7 * max(y1 - y0, x1 - x0))
+    y, x = max(0, y0 - pad), max(0, x0 - pad)
+    ch = min(mask.shape[0], y1 + pad) - y
+    cw = min(mask.shape[1], x1 + pad) - x
 
+    disp = np.asarray(S.load_npy(m["id"], "display.npy", mmap=True))
     g = as_app_shows(m["id"], disp[y:y + ch, x:x + cw])
-    mk, ck = mask[y:y + ch, x:x + cw], corr[y:y + ch, x:x + cw]
+    mk = mask[y:y + ch, x:x + cw]
+    fl = lab[y:y + ch, x:x + cw] == top.label
     left = tint(g, mk, CRACK_RGB)
-    right = tint(tint(g, mk & (ck != 2), CRACK_RGB), ck == 2, NOT_RGB)
-    save(strip([(f"{label}, uncorrected", left),
-                ("after correcting  -  red = crack, cyan = marked not-crack", right)],
-               caption=f"{m['filename'][:52]}  -  the cyan areas are places a human "
-                       f"overruled the model with Flip region, one click each: "
-                       f"{int(((corr == 2) & mask).sum()):,} px of predicted crack marked "
-                       f"not-crack across this image. Press Retrain and both colours "
-                       f"become training data."),
+    right = tint(g, mk & ~fl, CRACK_RGB)
+    right[fl ^ morphology.binary_erosion(fl, morphology.disk(3))] = NOT_RGB.astype(np.uint8)
+    save(strip([(f"{label}: this is not a crack", left),
+                ("after one Flip region click", right)],
+               caption=f"{m['filename'][:52]}  -  the model marked a field of rounded "
+                       f"pores as crack. One click on the blob removes all "
+                       f"{int(top.area):,} px of it and records the region as "
+                       f"not-crack (cyan outline), which Retrain then learns from. "
+                       f"Erase would have needed a minute of brushing for the same result."),
          "example_correction.png")
 
 
