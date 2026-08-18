@@ -161,6 +161,18 @@ def load_npy(image_id, name, mmap=False):
     return np.load(p, mmap_mode="r" if mmap else None)
 
 
+def load_npy_at(p, mmap=False):
+    """Load an .npy by explicit path, or None if it is not there.
+
+    load_npy() addresses files by (image_id, name); the per-model prediction cache is
+    addressed by path, and the retrain gate needs to read from it without pretending a
+    cache entry is the image's live prob.npy.
+    """
+    if not p or not os.path.exists(p):
+        return None
+    return np.load(p, mmap_mode="r" if mmap else None)
+
+
 def save_npy(image_id, name, arr):
     """Write atomically: full file to a temp name, fsync, then rename over the target.
 

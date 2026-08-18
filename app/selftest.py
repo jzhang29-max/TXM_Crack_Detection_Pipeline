@@ -85,7 +85,16 @@ def S_label(resp):
     return ((resp or {}).get("current") or {}).get("label")
 
 
-def wait_job(base, jid, label, timeout=2400):
+def wait_job(base, jid, label, timeout=5400):
+    """Poll a job to completion.
+
+    5400 s, not 2400: a retrain now gathers features from every labelled image, and after
+    the research negatives were imported that is 71 images rather than 2. Add the
+    crack-free false-positive check and the whole pass runs ~30 min, so the old 40-minute
+    cap could expire on a HEALTHY retrain. It also returned dict(state="timeout") with no
+    "seconds" key, so the failure printed as "Nones" and read like a crash -- it now says
+    plainly that it gave up waiting, which is a different problem from a job that died.
+    """
     t0 = time.time()
     last = ""
     while time.time() - t0 < timeout:
@@ -96,7 +105,9 @@ def wait_job(base, jid, label, timeout=2400):
         if j["state"] != "running":
             return j
         time.sleep(4)
-    return dict(state="timeout")
+    return dict(state="timeout", seconds=timeout,
+                error=f"still running after {timeout}s -- the self test gave up waiting; "
+                      f"the job itself may still finish. Check /api/jobs.")
 
 
 def make_test_tiff():

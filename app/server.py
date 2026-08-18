@@ -207,7 +207,16 @@ def api_mask(iid):
     # cyan. Part of the cache key, not just a render-time flag.
     show_labels = request.args.get("labels", "1") in ("1", "true", "True")
 
-    tag = f"{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
+    # The model identity is part of the cache key. Without it, correctness across a model
+    # switch rested entirely on adopt_prob's os.utime(p, None) bumping prob.npy's mtime --
+    # and that call is there for LRU pruning, not for cache invalidation. prob.npy is a
+    # HARD LINK to the per-model cache entry, so its mtime is that entry's write time:
+    # adopt a model predicted an hour ago and, without the utime, prob.npy would look OLDER
+    # than an overlay rendered a minute ago and the stale overlay would pass the freshness
+    # test. Verified the utime does currently save it; keying on the model means it no
+    # longer has to.
+    mkey = S.read_meta(iid).get("model_key") or "nomodel"
+    tag = f"{mkey}_{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
     cache = S.path(iid, "overlays", f"{tag}.png")
     srcs = [S.path(iid, "prob.npy"), S.path(iid, "correction.npy")]
     # Strictly older, not "not newer". Filesystem timestamps are coarse enough that an
@@ -574,6 +583,19 @@ def api_rollback():
     ok = S.rollback()
     P._model_cache["key"] = None
     return jsonify(ok=ok, current=S.registry()["current"])
+
+
+@app.route("/api/jobs")
+def api_jobs():
+    """Every job this process remembers, newest first.
+
+    Added because a failed background job was effectively unreadable: the only way to
+    see its error was to already know its id, and a job that failed after the client
+    stopped polling left no way to ask what happened. Also lets the frontend re-attach
+    to a job still running after a page reload.
+    """
+    js = sorted(JOBS.values(), key=lambda j: j.get("started", 0), reverse=True)
+    return jsonify(jobs=js[:20])
 
 
 @app.route("/api/job/<jid>")

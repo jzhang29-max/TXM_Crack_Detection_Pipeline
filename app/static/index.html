@@ -655,6 +655,15 @@ syncThrEnabled();
   if(q.get("labels")==="0")$("#showlabels").checked=false;
   await loadModel();
   await loadList(!!q.get("image"));
+  // Re-attach to a job still running. Reloading the page used to reset BUSY to false,
+  // so Retrain looked clickable while a 30-minute retrain was in flight and pressing it
+  // queued a second one behind the server's job lock -- an hour of work for nothing, with
+  // no progress shown for either.
+  try{
+    const js=await j("/api/jobs");
+    const live=(js.jobs||[]).find(x=>x.state==="running");
+    if(live)watch(live.id, live.label||"Working");
+  }catch(e){}
   const want=q.get("image");
   if(want){
     const hit=IMAGES.find(i=>(i.filename||"").toLowerCase().includes(want.toLowerCase()));

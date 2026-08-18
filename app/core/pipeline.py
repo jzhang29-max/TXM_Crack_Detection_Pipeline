@@ -54,17 +54,31 @@ CLEAN_SPECIMENS = ["b3_amb", "B2_amb_mosaic_2", "B2_2_1_lbf", "B2_2_9_lbf",
                    "b3_3_18lbf", "wrought_316L_fatigue_0_cycles"]
 
 
-def _score_clean(model, progress=None):
+def _score_clean(model, progress=None, cache_key=None):
     """(mean predicted area fraction, n images) over the loaded crack-free specimens.
 
     Lower is better; 0.0 is perfect. Returns (None, 0) when none of them are loaded, so
     the caller can say the check was unavailable rather than quietly treat it as passed.
+
+    cache_key: if given and this model's prediction for an image is already in the
+    per-model cache, read it instead of predicting again. The incumbent has by definition
+    already been run over every loaded image, so recomputing its predictions here cost
+    ~50 s per specimen for information already on disk -- enough to push a retrain past
+    the self test's timeout. The candidate has no cache yet and must be computed.
     """
     fracs = []
-    for m in S.list_images():
+    todo = [m for m in S.list_images()
+            if any(k.lower() in (m.get("filename") or "").lower() for k in CLEAN_SPECIMENS)]
+    for i, m in enumerate(todo, 1):
         name = m.get("filename", "")
-        if not any(k.lower() in name.lower() for k in CLEAN_SPECIMENS):
-            continue
+        if progress:
+            progress(f"false-positive check {i}/{len(todo)}: {name[:30]}", i, len(todo))
+        if cache_key:
+            cached = S.load_npy_at(S.prob_cache_path(m["id"], cache_key), mmap=True)
+            if cached is not None:
+                fracs.append(float((np.asarray(cached) > 0.5).mean()))
+                del cached
+                continue
         img = S.load_npy(m["id"], "img.npy")
         if img is None:
             continue
@@ -73,8 +87,6 @@ def _score_clean(model, progress=None):
         if model.needs_sam() and os.path.exists(zp):
             z = np.load(zp)
             emb = (z["coords"], z["emb"])
-        if progress:
-            progress(f"false-positive check on {name[:34]}", len(fracs) + 1, 0)
         prob = model.predict(img, emb=emb)
         fracs.append(float((prob > 0.5).mean()))
         del img, prob, emb
@@ -554,7 +566,8 @@ def retrain(deploy=True, progress=None):
     # specimen group cannot see that: over-prediction on OTHER specimens costs it nothing.
     if progress:
         progress("false-positive check on crack-free specimens", 0, 1)
-    fp_inc, n_clean = _score_clean(inc, progress=progress)
+    fp_inc, n_clean = _score_clean(inc, progress=progress,
+                                   cache_key=S.model_key(S.registry().get('current')))
     fp_cand, _ = _score_clean(cand, progress=progress)
     result.update(clean_specimens=n_clean,
                   incumbent_clean_fp=fp_inc, candidate_clean_fp=fp_cand)
