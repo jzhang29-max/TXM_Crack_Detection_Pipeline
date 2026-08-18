@@ -69,15 +69,16 @@ Four things are visible here, and the last two are why the correction tools exis
 
 ![Correction example](docs/img/example_correction.png)
 
-A different frame, showing the single most useful tool. The model has marked a field of
-rounded pores as crack — a reasonable mistake, since porosity is dark and roughly the
-right scale, and a wrong one. **Flip region** takes the whole connected blob in one click:
-65,181 px removed, the region recorded as not-crack (cyan outline), and Retrain learns
-from it. **Erase** would reach the same result by brushing, which on a blob this size is
-about a minute of work.
+One of the four ground-truth images, so this correction can be checked rather than
+asserted. The model has run 17,983 px past the end of a real crack — its documented main
+failure mode is running wide of a crack, not inventing one elsewhere — and ground truth
+says **0.00%** of the cyan region is crack. **Flip region** takes that whole connected blob
+in one click; the real crack in the same window keeps its red.
 
-The difference between the two is only how you select: Erase is a brush, Flip region is
-one click on a connected component. Both write the same not-crack label.
+**Erase** reaches the same result by brushing, which on a blob this size is about a minute
+of work. That is the only difference between the two: Erase is a brush, Flip region is one
+click on a connected component. Both write the same not-crack label, and Retrain learns
+from it.
 
 ### How well does it do, honestly
 
