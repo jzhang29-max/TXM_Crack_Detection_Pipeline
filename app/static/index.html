@@ -628,7 +628,22 @@ $("#thr").oninput=e=>$("#thrv").textContent=(e.target.value/100).toFixed(2);
 $("#thr").onchange=refresh;
 syncThrEnabled();
 
-loadModel();loadList();
+// Deep link: ?image=<substring of the filename> selects that image on load, and
+// &labels=0 starts with the cyan not-crack layer hidden. Useful for sharing "look at
+// this frame" with a colleague, and it is what makes the README figures reproducible
+// instead of whatever happened to sort first.
+(async()=>{
+  const q=new URLSearchParams(location.search);
+  if(q.get("labels")==="0")$("#showlabels").checked=false;
+  await loadModel();
+  await loadList(!!q.get("image"));
+  const want=q.get("image");
+  if(want){
+    const hit=IMAGES.find(i=>(i.filename||"").toLowerCase().includes(want.toLowerCase()));
+    if(hit)show(hit.id);
+    else say(`no loaded image matches "${want}"`,"var(--warn)");
+  }
+})();
 </script>
 </body>
 </html>

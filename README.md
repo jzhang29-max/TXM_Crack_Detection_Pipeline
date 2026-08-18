@@ -3,6 +3,48 @@
 Detects cracks in transmission X-ray microscopy images. Drag images in, look at
 what the model found, fix what it got wrong, press Retrain. That is the whole loop.
 
+## What it looks like
+
+![The app](docs/img/app.png)
+
+Sidebar lists your images with the result burned into each thumbnail; the toolbar is the
+three correction tools, the two view toggles, and Retrain. The model picker is bottom
+left. Every stroke saves itself -- there is no save button.
+
+### A crack it finds well
+
+![Detection example](docs/img/example_detection.png)
+
+Left, the image as you see it (destitched and flat-fielded). Right, the model's output.
+It traces the fine branching hairline accurately, down to individual branches a few
+pixels wide -- and this is an AM/HC specimen, a group with **no** pixel-level ground
+truth, so nothing about this frame was used to fit or validate the model.
+
+Look at the top and right edges: the dark off-specimen background is also marked red.
+That is a false positive, and it is the honest reason the correction tools exist.
+
+### Correcting it
+
+![Correction example](docs/img/example_correction.png)
+
+Red is predicted crack, cyan is what a human marked as *not* crack. **Flip region** takes
+a whole connected blob in one click, so a false positive the size of the frame is one
+click rather than a minute of brushing. Press Retrain and those labels become training
+data.
+
+### How well does it do, honestly
+
+On the four ground-truth images (all one specimen group, B2) under leave-one-image-out:
+mean IoU **0.821**, recall **0.914**, and on six specimens the owner confirmed
+crack-free it marks **0.11%** of area as crack. Zero-shot SAM, prompted the way SAM is
+designed to be prompted, scores 0.23-0.36 on the same images.
+
+Performance varies a lot by specimen group, and the examples above were chosen to show
+both ends. Some frames over-predict substantially -- wide red bands around a crack rather
+than the crack itself. There is no ground truth outside B2, so outside B2 those numbers
+are unverified and your eye is the only judge. `docs/SAM_COMPARISON.md` has the full study
+and `docs/HANDOFF.md` records four approaches that were tried and reverted.
+
 ## Run it
 
 One command. Nothing to install first, nothing to configure:
