@@ -1,0 +1,31 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Jiaming Zhang
+
+WHAT THIS COVERS -- the experimental data in this repository, which is NOT
+software and is NOT covered by the MIT licence in LICENSE:
+
+  images/                        71 raw transmission X-ray microscopy images
+  dataset_cache/                 the 4 reference ground-truth images and masks
+  paint/corrections/             the human correction labels
+  research/results/, *figures*   derived result sets and figures
+
+You are free to share and adapt this data for any purpose, including
+commercially, provided you give appropriate credit, link to this licence, and
+indicate if changes were made. Full text: https://creativecommons.org/licenses/by/4.0/
+
+HOW TO CREDIT. Attribution requires naming the source. If you use this data in
+work you publish, please also cite the associated publication once it exists;
+until then, cite this repository:
+
+  Jiaming Zhang, "TXM Crack Detection", 2026.
+  https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline
+
+WHAT THE DATA IS. 71 mosaic TXM images of 316L stainless steel specimens across
+four groups (B2, B3, Wrought, AM/HC) under tension and fatigue loading, stored
+as deflate-compressed float32 TIFF and bit-exact to the instrument output.
+Pixel-level crack ground truth exists for four images only, all in group B2;
+the remaining labels are human corrections and geometric/confirmed-crack-free
+negatives of varying provenance. docs/HANDOFF.md section 4 records which is
+which and how much to trust each source -- read it before treating any label as
+truth.

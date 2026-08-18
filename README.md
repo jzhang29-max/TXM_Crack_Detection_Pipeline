@@ -249,3 +249,18 @@ app_data/              your uploads, embeddings and retrained models (gitignored
 
 Your data lives in `app_data/` inside the checkout. Nothing points at an absolute
 path outside it, so moving or deleting your original files cannot break the app.
+
+## Licence
+
+Two licences, because this repository holds both software and experimental data:
+
+- **Code** — MIT, see [LICENSE](LICENSE). Use it, change it, ship it; no warranty.
+- **Data** — CC BY 4.0, see [LICENSE-DATA](LICENSE-DATA). That covers `images/`,
+  `dataset_cache/`, `paint/corrections/` and the derived results and figures. Free to
+  reuse with credit; please cite the repository, or the associated publication once it
+  exists.
+
+The distinction matters: a code licence does not grant rights to data, and the raw images
+here are experimental measurements rather than software. If you use the labels, read
+`docs/HANDOFF.md` section 4 first -- it records which labels are hand-drawn, which are
+geometric, and which sources proved untrustworthy.
