@@ -1,7 +1,8 @@
 """
 Load every TXM image into the app and predict it, reusing the research SAM cache.
 
-    python3 code/load_all_images.py --src ~/Desktop/"TXM DATA"
+    python3 code/load_all_images.py                  # the 71 images shipped in images/
+    python3 code/load_all_images.py --src /some/other/dir
     python3 code/load_all_images.py --src <dir> --dry-run
 
 Why this exists rather than dragging 71 files onto the window: the SAM embedding is
@@ -53,7 +54,8 @@ def find_cached_embedding(filename):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True, help="directory to search recursively for .tif/.tiff")
+    ap.add_argument("--src", default=os.path.join(PROJECT, "images"),
+                    help="directory to search recursively (default: the repo's images/)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="stop after N images (for testing)")
     args = ap.parse_args()
@@ -66,6 +68,14 @@ def main():
     if not files:
         print(f"no images found under {src}")
         return 1
+
+    # Guard against loading the same PICTURE twice under a different id. An image id is
+    # a hash of file CONTENT, and images/ holds recompressed copies -- same pixels, other
+    # bytes -- so a library already loaded from the uncompressed originals would gain 71
+    # duplicates, each with its own predictions and none of the other's labels. Filename
+    # is the stable identity across recompression, and it is what the correction masks
+    # and the SAM cache key on too.
+    by_name = {m.get("filename"): m for m in S.list_images()}
 
     cur_key = S.model_key(S.registry().get("current"))
     print(f"found {len(files)} image(s) under {src}")
@@ -83,6 +93,11 @@ def main():
     loaded = skipped = failed = 0
     for i, f in enumerate(files, 1):
         name = os.path.basename(f)
+        prior = by_name.get(name)
+        if prior is not None and prior.get("status") == "ready":
+            print(f"[{i}/{len(files)}] {name[:58]}  already in the app (same filename)")
+            skipped += 1
+            continue
         with open(f, "rb") as fh:
             content = fh.read()
         iid, is_new = S.save_upload(name, content)

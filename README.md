@@ -45,6 +45,7 @@ needs the first four entries:
 | `run_app.sh` | the only command you need |
 | `app/` | the server and the single-file frontend |
 | `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`) |
+| `images/` | **all 71 raw TXM images**, bit-exact. Deflate-compressed float32 TIFF with the floating-point predictor: 2.26 GB instead of 3.40 GB, every file under GitHub's 100 MB limit (two of the originals were 122 MB and could not be pushed at all). Verified 71/71 identical to the originals. Read them with `tifffile` or GDAL; if a tool cannot handle predictor 3, re-save with `tifffile.imwrite(out, tifffile.imread(src))` |
 | `models/`, `dataset_cache/`, `paint/corrections/` | the shipped models, the 4 reference ground-truth images, and the correction labels |
 | `docs/` | how the model was arrived at. `HANDOFF.md` is the development record including four approaches that were adopted and then reverted; `SAM_COMPARISON.md` is the zero-shot SAM study |
 | `research/` | result sets, figures and one-off experiment scaffolding. Nothing here is needed to run the app |
@@ -54,6 +55,18 @@ It used to be two repos: this archive plus a slimmed-down `txm-crack-detector` t
 `make_package.sh` generated from it. That split cost a double push on every change and
 silently drifted once -- a utility was committed here and left out of the generated copy
 because it was missing from an explicit file list. One repo, one push, no list.
+
+## Load the 71 shipped images
+
+The app starts empty -- drag images in, or load everything that ships with the repo:
+
+```bash
+python3 code/load_all_images.py          # ~45 min for all 71, reusing the cached SAM embeddings
+python3 code/import_research_corrections.py   # attach the 264 M not-crack labels
+```
+
+The loader skips anything already present by filename, so it is safe to re-run. Both are
+optional: the app works on images you drop in yourself.
 
 ## Using it
 

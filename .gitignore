@@ -106,3 +106,13 @@ dataset_cache/*
 !dataset_cache/*_img.png
 !dataset_cache/masks.npz
 !dataset_cache/manifest.json
+
+# --- raw source images ---------------------------------------------------------
+# images/ is tracked ON PURPOSE. The 71 source TXM images are the thing every label
+# in this repo refers to; without them the 264 M correction pixels and the 4 ground
+# truth masks describe pictures nobody has. They are stored as deflate-compressed
+# float32 TIFF with the floating-point predictor: bit-exact (verified 71/71 against
+# the originals), 2.26 GB instead of 3.40 GB, and every file under GitHub's 100 MB
+# per-file hard limit -- two of the originals were 122 MB and could not be pushed
+# at all. Read them with tifffile/GDAL; if a tool cannot handle predictor 3, see
+# the note in README.
