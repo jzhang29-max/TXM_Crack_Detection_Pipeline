@@ -11,6 +11,31 @@ Sidebar lists your images with the result burned into each thumbnail; the toolba
 three correction tools, the two view toggles, and Retrain. The model picker is bottom
 left. Every stroke saves itself -- there is no save button.
 
+### Every upload is destitched and flat-fielded automatically
+
+![Preprocessing](docs/img/preprocessing.png)
+
+Drop an image in and two corrections run before you ever see it, with nothing to
+configure:
+
+1. **FFT destitch** — the mosaic tile grid is periodic, so it is one to two frequency
+   bins in the row/column profile. `code/destitch.py` notches exactly those bins, with a
+   protection pass that blends the correction back wherever real structure would be
+   damaged.
+2. **Flat-field** — divide by an anisotropic Gaussian blur (σ_y=16, σ_x=22, both
+   measured for this dataset's tile pitch) to remove the macro brightness gradient.
+
+Left is what came off the instrument: a 5×3 tile grid, a bright blob, and a crack you can
+barely see. Right is what you mark on. Both steps preserve geometry, so a mask still
+registers pixel-for-pixel on the original.
+
+**The model is still fed the raw image**, deliberately: flat-fielding as *model input* was
+tried and cost 0.169 IoU, because large-radius intensity features are ~41% of the model's
+importance and flat-fielding removes exactly those. So what the human sees and what the
+model sees are different on purpose. If preprocessing ever fails, the app falls back to
+raw and says so in red rather than letting you mark an unprocessed frame believing
+otherwise.
+
 ### A crack it finds well
 
 ![Detection example](docs/img/example_detection.png)

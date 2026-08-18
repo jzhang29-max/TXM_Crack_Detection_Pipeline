@@ -344,7 +344,16 @@ async function show(id){
   $("#base").src=`/api/image/${id}/display.png`;
   READY=true;
   refresh();fit();
-  say(`${im.filename}`);
+  // Every upload is destitched (FFT notch) and flat-fielded to make the faint cracks
+  // visible before you mark them. If that step failed, ingest falls back to the raw
+  // image and records why -- and until now nothing said so, which meant marking an
+  // unprocessed frame while believing it was processed.
+  const dsp=im.display||"";
+  if(dsp.startsWith("raw")){
+    say(`${im.filename} — WARNING: shown RAW, ${dsp.replace(/^raw \(|\)$/g,"")}. `+
+        `Faint cracks may be invisible; results from marking this are suspect.`,"var(--bad)");
+  }else say(`${im.filename}`);
+  $("#tag").title=dsp?`view: ${dsp}`:"";
 }
 function refresh(){
   if(!CUR)return;
