@@ -61,7 +61,16 @@ data.
 
 On the four ground-truth images (all one specimen group, B2) under leave-one-image-out:
 mean IoU **0.821**, recall **0.914**, and on six specimens the owner confirmed
-crack-free it marks **0.11%** of area as crack. Zero-shot SAM, prompted the way SAM is
+crack-free the **shipped baseline** marks **0.21%** of area as crack (measured).
+
+> **Check which model you are on.** Those numbers are the shipped baseline's. A model
+> retrained in the app can be far worse at background and still deploy, because until
+> recently the gate only compared IoU on the four B2 ground-truth images. A retrain on a
+> single image's corrections measured **22.4%** of crack-free specimen area marked as
+> crack -- 107x the baseline -- and passed. The gate now also refuses any candidate whose
+> false-positive rate on the crack-free specimens rises by more than 0.5 points, but
+> models deployed before that fix are still in your history. The model picker's
+> `shipped baseline` entry is the measured-good one. Zero-shot SAM, prompted the way SAM is
 designed to be prompted, scores 0.23-0.36 on the same images.
 
 Performance varies a lot by specimen group, and the examples above were chosen to show

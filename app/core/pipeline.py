@@ -46,6 +46,42 @@ GT_STEMS = ["333_75_um_zoom", "336_25", "338_13", "LARGE_343_75"]
 IOU_TOL = 0.01
 FP_TOL = 0.005
 
+# Specimens the owner confirmed contain NO crack (docs/HANDOFF.md section 4). Anything a
+# model marks here is a false positive by definition, which makes them the only check on
+# over-prediction that does not need pixel-level ground truth -- and ground truth exists
+# for exactly four images, all one specimen group.
+CLEAN_SPECIMENS = ["b3_amb", "B2_amb_mosaic_2", "B2_2_1_lbf", "B2_2_9_lbf",
+                   "b3_3_18lbf", "wrought_316L_fatigue_0_cycles"]
+
+
+def _score_clean(model, progress=None):
+    """(mean predicted area fraction, n images) over the loaded crack-free specimens.
+
+    Lower is better; 0.0 is perfect. Returns (None, 0) when none of them are loaded, so
+    the caller can say the check was unavailable rather than quietly treat it as passed.
+    """
+    fracs = []
+    for m in S.list_images():
+        name = m.get("filename", "")
+        if not any(k.lower() in name.lower() for k in CLEAN_SPECIMENS):
+            continue
+        img = S.load_npy(m["id"], "img.npy")
+        if img is None:
+            continue
+        emb = None
+        zp = S.path(m["id"], "emb.npz")
+        if model.needs_sam() and os.path.exists(zp):
+            z = np.load(zp)
+            emb = (z["coords"], z["emb"])
+        if progress:
+            progress(f"false-positive check on {name[:34]}", len(fracs) + 1, 0)
+        prob = model.predict(img, emb=emb)
+        fracs.append(float((prob > 0.5).mean()))
+        del img, prob, emb
+    if not fracs:
+        return None, 0
+    return float(np.mean(fracs)), len(fracs)
+
 # Extensions the uploader accepts. Kept here next to the reader that has to cope
 # with them so the two cannot drift apart.
 READABLE_EXT = (".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp")
@@ -510,8 +546,32 @@ def retrain(deploy=True, progress=None):
     i1, r1 = _score(cand, progress=progress)
     result.update(incumbent=dict(iou=i0, recall=r0), candidate=dict(iou=i1, recall=r1))
 
-    passes = i1 >= i0 - IOU_TOL
-    result["passes_gate"] = bool(passes)
+    # The IoU half of the gate, and then the half that was documented but never
+    # implemented. FP_TOL sat unused while the docstring above promised "a candidate must
+    # hold IoU AND not increase false positives on known-clean specimens". It did not, and
+    # a model that marks 22% of a confirmed crack-free specimen as crack was deployed on
+    # that basis -- against a shipped baseline that marks 0.21%. IoU on four images of one
+    # specimen group cannot see that: over-prediction on OTHER specimens costs it nothing.
+    if progress:
+        progress("false-positive check on crack-free specimens", 0, 1)
+    fp_inc, n_clean = _score_clean(inc, progress=progress)
+    fp_cand, _ = _score_clean(cand, progress=progress)
+    result.update(clean_specimens=n_clean,
+                  incumbent_clean_fp=fp_inc, candidate_clean_fp=fp_cand)
+
+    iou_ok = i1 >= i0 - IOU_TOL
+    if n_clean and fp_inc is not None and fp_cand is not None:
+        fp_ok = fp_cand <= fp_inc + FP_TOL
+    else:
+        fp_ok = True                       # cannot check; reported below, not hidden
+    passes = bool(iou_ok and fp_ok)
+    result["passes_gate"] = passes
+    result["gate_detail"] = dict(
+        iou_ok=bool(iou_ok), fp_ok=bool(fp_ok),
+        fp_checked_on=n_clean,
+        note=(None if n_clean else
+              "no crack-free specimen is loaded, so over-prediction was NOT checked -- "
+              "load one of " + ", ".join(CLEAN_SPECIMENS[:3]) + ", ... to enable it"))
     if deploy and passes:
         S.set_current(cand_entry)
         _model_cache["key"] = None
@@ -533,8 +593,15 @@ def retrain(deploy=True, progress=None):
                 result.setdefault("reapply_failed", []).append(f"{iid}: {e}")
         result["reapplied"] = len(ids) - len(result.get("reapply_failed", []))
     else:
+        bits = []
+        if not iou_ok:
+            bits.append(f"IoU regressed {i0:.3f} -> {i1:.3f} (tolerance {IOU_TOL})")
+        if not fp_ok:
+            bits.append(f"false positives on {n_clean} crack-free specimen(s) rose "
+                        f"{fp_inc*100:.2f}% -> {fp_cand*100:.2f}% of area "
+                        f"(tolerance {FP_TOL*100:.1f} points)")
         result.update(deployed=False,
                       reason=(None if passes else
-                              f"IoU regressed {i0:.3f} -> {i1:.3f} (tolerance {IOU_TOL}); "
-                              f"not deployed. The model file is kept so you can inspect it."))
+                              "; ".join(bits) + ". Not deployed. The model file is kept "
+                              "so you can inspect it."))
     return result
