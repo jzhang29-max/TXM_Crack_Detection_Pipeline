@@ -1,3 +1,10 @@
+> **HISTORICAL — written before the app existed.** The commands in this file refer to
+> the research-era paint tools (`research/code/paint_server.py`, `research/code/make_worklist.py`), which
+> now live in `research/code/` and are superseded by the web app. To label, run
+> `./run_app.sh` from the repo root and open http://127.0.0.1:8800. The measurements and
+> the priority ordering below are still accurate and still worth reading; only the
+> commands and file paths are out of date.
+
 # START HERE
 
 Two ways in, depending on what you want.

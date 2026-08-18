@@ -1,3 +1,10 @@
+> **HISTORICAL — written before the app existed.** The commands in this file refer to
+> the research-era paint tools (`research/code/paint_server.py`, `research/code/make_worklist.py`), which
+> now live in `research/code/` and are superseded by the web app. To label, run
+> `./run_app.sh` from the repo root and open http://127.0.0.1:8800. The measurements and
+> the priority ordering below are still accurate and still worth reading; only the
+> commands and file paths are out of date.
+
 # WORKLIST — all 71 images
 
 **12 / 71 marked** (has at least one force-CRACK label)
@@ -7,7 +14,7 @@ first (Wrought, AM), then within each group worst-output-first, since those
 frames are where the model is most wrong and a correction teaches the most.
 
 Progress saves per image — stop and resume freely. Refresh the ticks with:
-`python3 code/make_worklist.py`
+`python3 research/code/make_worklist.py`
 
 Columns: predicted crack area, number of separate pieces found.
 

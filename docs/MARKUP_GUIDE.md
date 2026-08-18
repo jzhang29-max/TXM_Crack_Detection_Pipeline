@@ -1,9 +1,16 @@
+> **HISTORICAL — written before the app existed.** The commands in this file refer to
+> the research-era paint tools (`research/code/paint_server.py`, `research/code/make_worklist.py`), which
+> now live in `research/code/` and are superseded by the web app. To label, run
+> `./run_app.sh` from the repo root and open http://127.0.0.1:8800. The measurements and
+> the priority ordering below are still accurate and still worth reading; only the
+> commands and file paths are out of date.
+
 # Markup guide — mark all 71, then one command retrains
 
 ## 1. Start the tool
 
 ```bash
-python3 code/paint_server.py
+python3 research/code/paint_server.py
 ```
 Open **http://127.0.0.1:8766**
 
@@ -36,8 +43,8 @@ Corrections accumulate across sessions. You can stop and resume any time.
 ## 3. Check progress
 
 ```bash
-python3 code/markup_status.py           # full table
-python3 code/markup_status.py --todo    # just the summary + what to mark next
+python3 research/code/markup_status.py           # full table
+python3 research/code/markup_status.py --todo    # just the summary + what to mark next
 ```
 
 States: **HAND-MARKED** (has your force-crack labels), **NEG-ONLY** (only
@@ -48,8 +55,8 @@ Current: 12 of 71 hand-marked, all B2. AM 0/27, Wrought 0/14, B3 0/13.
 ## 4. Retrain when done
 
 ```bash
-python3 code/retrain_after_markup.py            # train + validate, report only
-python3 code/retrain_after_markup.py --deploy   # ...and deploy if it wins
+python3 research/code/retrain_after_markup.py            # train + validate, report only
+python3 research/code/retrain_after_markup.py --deploy   # ...and deploy if it wins
 ```
 
 This sweeps class balance (`--neg-cap`), scores every candidate against ground
@@ -69,7 +76,7 @@ outcome, not a failure.
 ## 5. Regenerate all outputs
 
 ```bash
-python3 code/build_outputs_per_group.py    # masks + overlays + stats + montages
+python3 research/code/build_outputs_per_group.py    # masks + overlays + stats + montages
 ```
 
 Writes `results/final_71_pergroup/`. Crack = **black** in the `_crack_mask.png`

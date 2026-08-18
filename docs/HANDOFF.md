@@ -58,7 +58,7 @@ controlled (`--neg-cap 2000`, 43.9% crack). The ORIGINAL is preserved at
 > the two tables above is the model scored on images whose corrections it was
 > TRAINED on. That is leakage, and it inflates the number. Measured honestly
 > with leave-one-image-out over the same 4 GT images and the same architecture
-> (`code/baseline_loio_for_sam.py`, results in
+> (`research/code/baseline_loio_for_sam.py`, results in
 > `results/sam/baseline_pixel17_loio*.json`):
 >
 > | protocol | mean IoU | mean recall |
@@ -281,7 +281,7 @@ labelling needs the owner's strokes in the paint tool.
 | false-positive cleanup (wedge margin, edge ring, round speckle) | not-crack | 43.3M px | MEDIUM — audit later showed wedge+rim still dominant, so it was too weak |
 | ~~automated positive crack labels~~ | ~~crack~~ | ~~4.9M px~~ | **REVERTED — was wrong** |
 
-The 6 confirmed crack-free specimens (`code/mark_zero_crack_images.py`):
+The 6 confirmed crack-free specimens (`research/code/mark_zero_crack_images.py`):
 b3_amb, B2_amb_mosaic_2, B2_2_1_lbf, B2_2_9_lbf, b3_3_18lbf,
 wrought_316L_fatigue_0_cycles.
 
@@ -301,9 +301,9 @@ Two independent mechanisms. A killed run does NOT need re-running.
 **1. Harvest the journal** (works mid-run, on a dead run, repeatedly):
 
 ```bash
-python3 code/harvest_workflow_results.py --list          # every run, started vs completed
-python3 code/harvest_workflow_results.py                 # newest run -> results/harvested/
-python3 code/harvest_workflow_results.py --run wf_xxxxx  # a specific run
+python3 research/code/harvest_workflow_results.py --list          # every run, started vs completed
+python3 research/code/harvest_workflow_results.py                 # newest run -> results/harvested/
+python3 research/code/harvest_workflow_results.py --run wf_xxxxx  # a specific run
 ```
 
 Every agent that finishes has its return value appended to that run's
@@ -341,21 +341,21 @@ Scripts live in
 
 ```bash
 # regenerate the best outputs (masks, overlays, stats, montages) for all 71
-python3 code/build_final_outputs_v2.py --model models/pixel_flatfield_clean.joblib
+python3 research/code/build_final_outputs_v2.py --model models/pixel_flatfield_clean.joblib
 
 # open the paint tool to add corrections (flatfielded input + flatfielded model)
-python3 code/paint_server.py     # then http://127.0.0.1:8766
+python3 research/code/paint_server.py     # then http://127.0.0.1:8766
 #   TXM_PAINT_RAW=1 reverts it to raw input + the old raw model
 
 # retrain after adding corrections. BOTH caps must be tuned together (see §6)
-python3 code/train_flatfield_model.py --crack-cap 30000 --neg-cap 6000 \
+python3 research/code/train_flatfield_model.py --crack-cap 30000 --neg-cap 6000 \
     --out models/my_candidate.joblib
 
 # architecture comparison on the current label set
-python3 code/compare_architectures_flatfield.py
+python3 research/code/compare_architectures_flatfield.py
 
 # rebuild the flatfielded feature cache from scratch if needed (~2GB, gitignored)
-python3 code/build_flatfield_dataset.py
+python3 research/code/build_flatfield_dataset.py
 ```
 
 The paint tool auto-detects a swapped model file and invalidates its cache —
