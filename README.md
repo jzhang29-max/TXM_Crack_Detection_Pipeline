@@ -144,48 +144,120 @@ python3 code/import_research_corrections.py   # attach the 264 M not-crack label
 The loader skips anything already present by filename, so it is safe to re-run. Both are
 optional: the app works on images you drop in yourself.
 
-## Using it
-
-1. **Drag TXM images in** (`.tif`, `.tiff`, `.png`). Each one is automatically
-   destitched, flat-fielded, embedded with SAM, and predicted. Budget ~20 s per
-   2.9 MP image on a GPU; the progress bar names the stage.
-2. **Look.** Red overlay is predicted crack. The image you see is the
-   destitched + flat-fielded version, because real cracks are thin and faint and
-   are often invisible in raw; the *model* is fed raw, which is what it was
-   trained on. Both corrections preserve geometry, so the mask registers exactly.
-3. **Correct.** Three tools, and the difference between the last two is the
-   gesture:
-
-   | tool | gesture | what it does |
-   |---|---|---|
-   | **Add crack** | drag | paints crack the model missed |
-   | **Erase** | drag | removes *only the pixels your brush passes over* |
-   | **Delete region** | one click | removes *an entire connected blob* of the result |
-
-   Use Erase for trimming an edge or thinning a stroke. Use Delete region for a
-   false positive too big to brush out -- one click takes the whole thing. The
-   status bar restates this whenever you switch tools.
-
-   Every stroke saves itself the moment you release the mouse. There is no save
-   button and nothing is held in the browser: the correction is on disk before the
-   request returns, verified by killing the server mid-session and restarting.
-   `Cmd+Z` / `Ctrl+Z` undoes one stroke at a time, 30 deep, and survives a restart.
-4. **Retrain.** Trains on every correction you have painted across every image,
-   validates against the reference ground truth, and deploys only if it does not
-   regress. When it deploys it **re-applies the new model to all your images inside
-   the same job**, so you do not have to press anything else and nothing is lost if
-   you close the tab while it runs.
-5. **Switch models** with the dropdown in the bottom-left. It lists the shipped
-   baseline plus every model you have retrained, and says which are `ready`.
-   Switching to a model already computed for your images is instant -- predictions
-   are cached per (image, model) and hard-linked, so N models cost N predictions on
-   disk rather than 2N. A model that has not seen an image yet gets a prediction
-   pass, and the image you are looking at goes first in the queue.
-6. **Export** gives the B&W mask, the overlay, per-crack measurements as CSV, or
-   everything for every image as a zip. Exports honour the sensitivity you are
-   viewing, so what you see is what you get.
+## Using it — every control, and what it is for
 
 Nothing here needs a config file edited or a script run in the right order.
+
+### 1. Get images in
+
+Drag them onto the window, or click the drop zone to browse. Accepted:
+`.tif .tiff .png .jpg .jpeg .bmp` — anything else is refused immediately with a message
+naming what is supported, rather than failing later inside a background job.
+
+Each image is then destitched, flat-fielded, embedded with SAM and predicted. Budget
+~20 s for a 2.9 MP image, a few minutes for a 30 MP mosaic; the status line names the
+stage and, on multi-image jobs, shows elapsed time and an estimate of what is left.
+
+To load the 71 images that ship with the repo, `python3 code/load_all_images.py` is much
+faster than dragging them, because it reuses the cached SAM embeddings.
+
+### 2. Look at the result
+
+| control | what it does |
+|---|---|
+| **Show result** | the red predicted-crack overlay on/off |
+| **My labels** | the cyan *marked not-crack* overlay on/off. Some specimens are 95% marked, so being able to hide it matters |
+| status bar, right | `width×height · % crack · N regions`, for the sensitivity you are viewing. Hover it to see whether you are looking at the destitched+flat-fielded view or raw |
+| sidebar rows | thumbnail with the result burned in, `% crack`, `edited` if you have labelled it, and `older model` if its prediction came from a model other than the current one |
+| **×** on a row | removes that image and its corrections from the app. Your original file is untouched |
+
+`?image=<part of a filename>` in the URL opens straight to that image, and `&labels=0`
+starts with the cyan layer hidden — useful for pointing a colleague at one frame.
+
+### 3. Correct it
+
+Three tools. Keys **1**, **2**, **3**. The status line describes whichever is active.
+
+| tool | gesture | what it does |
+|---|---|---|
+| **Add crack** | drag | marks crack the model missed |
+| **Erase** | drag | marks *only the pixels your brush passes over* as not-crack |
+| **Flip region** | one click | marks a *whole connected region* as not-crack. Click it again to flip it back to crack |
+
+**Flip region** resolves your click in three steps, so it works on things the model got
+wrong as well as things it got right:
+
+1. clicked a red blob → that blob
+2. clicked somewhere the model only *half* fires (probability > 0.15) → that region.
+   These are the most valuable negatives you can give it: hard cases on the decision
+   boundary
+3. clicked plain background → a flood fill from the click, refused if it runs past 25% of
+   the image (brush it instead)
+
+**Every stroke saves itself** the moment you release the mouse. There is no save button
+and nothing is held in the browser — the correction is on disk before the request
+returns, verified by killing the server mid-session and restarting. **⌘Z / Ctrl+Z**
+undoes one stroke at a time, 30 deep, and survives a restart. If a save ever fails you
+get a red warning and the stroke stays on screen, rather than silently vanishing.
+
+### 4. Advanced (collapsed by default)
+
+These are tuning knobs, not part of the loop:
+
+| control | notes |
+|---|---|
+| **Brush** | 2–120 px radius |
+| **Zoom** / **Fit** | Fit also re-fits when you resize the window, unless you have set a zoom by hand |
+| **Sensitivity** | the probability threshold, default 0.50 (calibrated). Lower marks more |
+| **Legacy post-processing** | reproduces the older pipeline's cleanup. Off because it measurably removes thin cracks: −0.08 IoU, −0.07 recall, and hand-painted stroke recall falls from ~0.87 to 0.14–0.40. It computes its own mask, so it **disables Sensitivity** while on |
+| **Re-apply model** | re-predicts every image with the current model. The recovery path if a model switch was interrupted and some rows still read `older model` |
+| **Undo**, **Reset image** | same as ⌘Z; Reset clears all corrections on the open image (⌘Z restores them) |
+
+### 5. Switch models
+
+The dropdown lists the shipped baseline plus every model you have retrained, each marked
+`ready`, `N/M ready`, or `needs a pass`. Switching to a model already computed for your
+images is **instant** — predictions are cached per (image, model) and hard-linked, so N
+models cost N predictions on disk rather than 2N. A model that has not seen an image yet
+gets a prediction pass, and the image you are looking at is predicted first.
+
+This is also how you roll back: select an earlier model. **Check which model you are on
+before trusting an overlay** — see the warning under *How well does it do*.
+
+### 6. Retrain
+
+Trains on every correction across every image, plus the reference ground truth, then
+deploys only if it passes both halves of the gate.
+
+Two caps decide how much of your work is used, and they are worth knowing:
+
+- **30,000 crack pixels per image.** More than that on one image is discarded, so strokes
+  spread over ten images are worth far more than the same effort on one.
+- **Negatives per image = (total crack pixels) ÷ (images with negatives)**, to hold the
+  class balance near 50/50. So the amount of *background* the model learns from is
+  governed by how much *crack* you have drawn — with crack on one image only, 263 M
+  not-crack labels are sampled down to ~35,000.
+
+The gate refuses a candidate that either drops IoU on the ground truth by more than 0.01,
+**or** raises false positives on the confirmed crack-free specimens by more than 0.5
+percentage points. If it refuses, the message says which half failed and by how much, and
+the model file is kept so you can inspect it. A refusal is not proof your labels were
+wrong — ground truth exists for four images of one specimen group, so the gate is blind
+to improvements elsewhere.
+
+When it does deploy it re-applies the new model to every image **inside the same job**, so
+nothing is left stale if you close the tab.
+
+### 7. Export
+
+| item | what you get |
+|---|---|
+| **Black & white mask** | crack = black, PNG |
+| **Overlay image** | the display image with red crack and cyan not-crack burned in |
+| **Measurements (CSV)** | one row per crack region: area, skeleton length, mean and max width, tortuosity, branch points, orientation, boundary roughness, centroid. Same column definitions as the sibling SEM pipeline |
+| **Everything, all images (.zip)** | the three above for every image, plus `summary.csv`. At 71 images this is ~590 MB and takes about five minutes in one request with no progress bar — the menu says so |
+
+Exports honour the sensitivity you are viewing, so what you see is what you get.
 
 ## What the model is
 
