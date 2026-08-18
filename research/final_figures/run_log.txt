@@ -1,0 +1,96 @@
+
+=== RandomForest (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5609 Dice=0.7187 (fit 20.5s, predict 15.0s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7190 Dice=0.8365 (fit 21.2s, predict 3.5s, n_train=180000)
+    [336_25] IoU=0.7141 Dice=0.8332 (fit 19.0s, predict 3.2s, n_train=180000)
+    [338_13] IoU=0.7424 Dice=0.8522 (fit 20.2s, predict 3.3s, n_train=180000)
+  mean IoU=0.6841
+
+=== ExtraTrees (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5567 Dice=0.7152 (fit 3.4s, predict 25.0s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7182 Dice=0.8360 (fit 3.2s, predict 6.7s, n_train=180000)
+    [336_25] IoU=0.7117 Dice=0.8316 (fit 3.5s, predict 7.3s, n_train=180000)
+    [338_13] IoU=0.7305 Dice=0.8443 (fit 3.2s, predict 6.6s, n_train=180000)
+  mean IoU=0.6793
+
+=== HistGradientBoosting (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5608 Dice=0.7186 (fit 9.0s, predict 16.2s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7225 Dice=0.8389 (fit 8.4s, predict 2.2s, n_train=180000)
+    [336_25] IoU=0.7206 Dice=0.8376 (fit 8.3s, predict 2.1s, n_train=180000)
+    [338_13] IoU=0.7654 Dice=0.8671 (fit 8.4s, predict 2.4s, n_train=180000)
+  mean IoU=0.6923
+
+=== MLP (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.6871 Dice=0.8145 (fit 14.9s, predict 6.5s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7300 Dice=0.8439 (fit 14.6s, predict 0.3s, n_train=180000)
+    [336_25] IoU=0.7503 Dice=0.8573 (fit 8.4s, predict 0.3s, n_train=180000)
+    [338_13] IoU=0.7700 Dice=0.8701 (fit 10.8s, predict 0.3s, n_train=180000)
+  mean IoU=0.7343
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig1_model_comparison.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig2_area_fraction_parity.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig3_roc_curves.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig4_confusion_matrices.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig5_feature_importance.png
+
+=== Learning curve: HistGradientBoosting + MLP vs. bootstrap sample size ===
+    [LARGE_343_75] IoU=0.5525 Dice=0.7118 (fit 4.4s, predict 9.4s, n_train=30000)
+    [333_75_um_zoom] IoU=0.7140 Dice=0.8331 (fit 4.2s, predict 1.3s, n_train=30000)
+    [336_25] IoU=0.6968 Dice=0.8213 (fit 5.6s, predict 1.7s, n_train=30000)
+    [338_13] IoU=0.7421 Dice=0.8520 (fit 5.2s, predict 1.6s, n_train=30000)
+  HistGradientBoosting n=5000: mean IoU=0.6764
+    [LARGE_343_75] IoU=0.5730 Dice=0.7285 (fit 8.4s, predict 15.7s, n_train=90000)
+    [333_75_um_zoom] IoU=0.7205 Dice=0.8376 (fit 9.2s, predict 2.3s, n_train=90000)
+    [336_25] IoU=0.7174 Dice=0.8355 (fit 8.5s, predict 2.3s, n_train=90000)
+    [338_13] IoU=0.7645 Dice=0.8665 (fit 8.2s, predict 2.1s, n_train=90000)
+  HistGradientBoosting n=15000: mean IoU=0.6938
+    [LARGE_343_75] IoU=0.5608 Dice=0.7186 (fit 8.2s, predict 14.3s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7225 Dice=0.8389 (fit 8.3s, predict 2.1s, n_train=180000)
+    [336_25] IoU=0.7206 Dice=0.8376 (fit 8.2s, predict 2.1s, n_train=180000)
+    [338_13] IoU=0.7654 Dice=0.8671 (fit 8.2s, predict 2.1s, n_train=180000)
+  HistGradientBoosting n=30000: mean IoU=0.6923
+    [LARGE_343_75] IoU=0.5589 Dice=0.7170 (fit 8.8s, predict 14.6s, n_train=360000)
+    [333_75_um_zoom] IoU=0.7267 Dice=0.8417 (fit 9.3s, predict 2.4s, n_train=360000)
+    [336_25] IoU=0.7263 Dice=0.8414 (fit 9.4s, predict 2.4s, n_train=360000)
+    [338_13] IoU=0.7675 Dice=0.8685 (fit 9.4s, predict 2.5s, n_train=360000)
+  HistGradientBoosting n=60000: mean IoU=0.6948
+    [LARGE_343_75] IoU=0.5575 Dice=0.7159 (fit 10.2s, predict 16.8s, n_train=600000)
+    [333_75_um_zoom] IoU=0.7250 Dice=0.8406 (fit 10.2s, predict 2.6s, n_train=600000)
+    [336_25] IoU=0.7253 Dice=0.8408 (fit 10.3s, predict 2.4s, n_train=600000)
+    [338_13] IoU=0.7690 Dice=0.8694 (fit 10.3s, predict 2.6s, n_train=600000)
+  HistGradientBoosting n=100000: mean IoU=0.6942
+    [LARGE_343_75] IoU=0.5881 Dice=0.7406 (fit 1.2s, predict 5.1s, n_train=30000)
+    [333_75_um_zoom] IoU=0.7137 Dice=0.8330 (fit 1.1s, predict 0.3s, n_train=30000)
+    [336_25] IoU=0.7184 Dice=0.8361 (fit 1.2s, predict 0.3s, n_train=30000)
+    [338_13] IoU=0.7628 Dice=0.8654 (fit 1.4s, predict 0.3s, n_train=30000)
+  MLP n=5000: mean IoU=0.6958
+    [LARGE_343_75] IoU=0.7185 Dice=0.8362 (fit 5.6s, predict 5.1s, n_train=90000)
+    [333_75_um_zoom] IoU=0.7368 Dice=0.8485 (fit 4.3s, predict 0.3s, n_train=90000)
+    [336_25] IoU=0.7418 Dice=0.8518 (fit 5.6s, predict 0.3s, n_train=90000)
+    [338_13] IoU=0.7715 Dice=0.8710 (fit 7.7s, predict 0.4s, n_train=90000)
+  MLP n=15000: mean IoU=0.7422
+    [LARGE_343_75] IoU=0.6871 Dice=0.8145 (fit 14.5s, predict 4.3s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7300 Dice=0.8439 (fit 14.7s, predict 0.3s, n_train=180000)
+    [336_25] IoU=0.7503 Dice=0.8573 (fit 8.8s, predict 0.3s, n_train=180000)
+    [338_13] IoU=0.7700 Dice=0.8701 (fit 11.3s, predict 0.4s, n_train=180000)
+  MLP n=30000: mean IoU=0.7343
+    [LARGE_343_75] IoU=0.6589 Dice=0.7944 (fit 17.3s, predict 4.9s, n_train=360000)
+    [333_75_um_zoom] IoU=0.7238 Dice=0.8398 (fit 26.0s, predict 0.4s, n_train=360000)
+    [336_25] IoU=0.7644 Dice=0.8665 (fit 18.7s, predict 0.4s, n_train=360000)
+    [338_13] IoU=0.7717 Dice=0.8711 (fit 31.4s, predict 0.4s, n_train=360000)
+  MLP n=60000: mean IoU=0.7297
+    [LARGE_343_75] IoU=0.6730 Dice=0.8046 (fit 39.6s, predict 5.2s, n_train=600000)
+    [333_75_um_zoom] IoU=0.7230 Dice=0.8392 (fit 48.7s, predict 0.4s, n_train=600000)
+    [336_25] IoU=0.7520 Dice=0.8585 (fit 22.4s, predict 0.4s, n_train=600000)
+    [338_13] IoU=0.7781 Dice=0.8752 (fit 30.1s, predict 0.4s, n_train=600000)
+  MLP n=100000: mean IoU=0.7315
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig6_learning_curve.png
+
+=== Interpretability tiers (reusing Otsu/LogReg/Tree numbers, HGB+MLP freshly computed above) ===
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/code/generate_final_comparison_suite.py:101: UserWarning: Glyph 8594 (\N{RIGHTWARDS ARROW}) missing from font(s) Georgia.
+  fig.savefig(path, bbox_inches="tight")
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig7_interpretability_tiers.png
+
+=== Decision boundary comparison: HGB vs MLP, top-2 features ===
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/fig8_decision_boundary_comparison.png
+
+Saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/final_figures/final_summary.json

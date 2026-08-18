@@ -92,3 +92,17 @@ paint/predicted_cache_hybrid/
 .venv/
 # on-demand destitch/flatfield cache, rebuilt by txm_preprocess.py
 paint/preproc_cache/
+
+# --- single-repo consolidation -------------------------------------------------
+# This repo is now both the research archive and the thing a user clones and runs,
+# so it has to TRACK the compressed reference data run_app.sh expands on first
+# start. Previously dataset_cache/ was ignored wholesale and the runnable copy of
+# these six files lived only in the separate txm-crack-detector repo -- which is
+# exactly the split being removed. The .npy originals stay ignored: LARGE_343_75's
+# is 94 MB, over GitHub's 100 MB per-file limit, which is why they ship as
+# 16-bit PNG (1/65535 quantisation, measured to move IoU by 9e-06).
+!dataset_cache/
+dataset_cache/*
+!dataset_cache/*_img.png
+!dataset_cache/masks.npz
+!dataset_cache/manifest.json

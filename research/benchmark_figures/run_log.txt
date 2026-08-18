@@ -1,0 +1,60 @@
+
+=== RandomForest (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5609 Dice=0.7187 (fit 19.8s, predict 14.8s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7190 Dice=0.8365 (fit 19.7s, predict 3.2s, n_train=180000)
+    [336_25] IoU=0.7141 Dice=0.8332 (fit 19.3s, predict 3.4s, n_train=180000)
+    [338_13] IoU=0.7424 Dice=0.8522 (fit 19.5s, predict 3.3s, n_train=180000)
+  mean IoU=0.6841  Dice=0.8101  Precision=0.7443  Recall=0.8932
+
+=== ExtraTrees (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5567 Dice=0.7152 (fit 3.4s, predict 24.8s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7182 Dice=0.8360 (fit 3.2s, predict 6.3s, n_train=180000)
+    [336_25] IoU=0.7117 Dice=0.8316 (fit 3.6s, predict 7.2s, n_train=180000)
+    [338_13] IoU=0.7305 Dice=0.8443 (fit 3.5s, predict 6.9s, n_train=180000)
+  mean IoU=0.6793  Dice=0.8068  Precision=0.7396  Recall=0.8930
+
+=== HistGradientBoosting (LOIO, n_per_class=30000) ===
+    [LARGE_343_75] IoU=0.5608 Dice=0.7186 (fit 9.4s, predict 15.2s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7225 Dice=0.8389 (fit 8.7s, predict 2.1s, n_train=180000)
+    [336_25] IoU=0.7206 Dice=0.8376 (fit 8.7s, predict 2.1s, n_train=180000)
+    [338_13] IoU=0.7654 Dice=0.8671 (fit 8.8s, predict 3.1s, n_train=180000)
+  mean IoU=0.6923  Dice=0.8156  Precision=0.7495  Recall=0.9008
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_a_model_comparison.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_b_area_fraction_parity.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_c_roc_curves.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_d_confusion_matrix.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_e_feature_importance.png
+
+=== Learning curve: HistGradientBoosting IoU vs. bootstrap sample size ===
+  n_per_class_per_image=5000
+    [LARGE_343_75] IoU=0.5525 Dice=0.7118 (fit 4.7s, predict 10.7s, n_train=30000)
+    [333_75_um_zoom] IoU=0.7140 Dice=0.8331 (fit 4.2s, predict 1.4s, n_train=30000)
+    [336_25] IoU=0.6968 Dice=0.8213 (fit 5.9s, predict 1.8s, n_train=30000)
+    [338_13] IoU=0.7421 Dice=0.8520 (fit 5.4s, predict 1.6s, n_train=30000)
+  n_per_class_per_image=15000
+    [LARGE_343_75] IoU=0.5730 Dice=0.7285 (fit 8.8s, predict 15.3s, n_train=90000)
+    [333_75_um_zoom] IoU=0.7205 Dice=0.8376 (fit 8.7s, predict 2.0s, n_train=90000)
+    [336_25] IoU=0.7174 Dice=0.8355 (fit 8.2s, predict 2.0s, n_train=90000)
+    [338_13] IoU=0.7645 Dice=0.8665 (fit 8.2s, predict 2.3s, n_train=90000)
+  n_per_class_per_image=30000
+    [LARGE_343_75] IoU=0.5608 Dice=0.7186 (fit 9.1s, predict 14.5s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7225 Dice=0.8389 (fit 8.6s, predict 2.1s, n_train=180000)
+    [336_25] IoU=0.7206 Dice=0.8376 (fit 9.1s, predict 2.3s, n_train=180000)
+    [338_13] IoU=0.7654 Dice=0.8671 (fit 8.7s, predict 2.2s, n_train=180000)
+  n_per_class_per_image=60000
+    [LARGE_343_75] IoU=0.5589 Dice=0.7170 (fit 9.3s, predict 16.0s, n_train=360000)
+    [333_75_um_zoom] IoU=0.7267 Dice=0.8417 (fit 9.3s, predict 2.2s, n_train=360000)
+    [336_25] IoU=0.7263 Dice=0.8414 (fit 9.1s, predict 2.1s, n_train=360000)
+    [338_13] IoU=0.7675 Dice=0.8685 (fit 9.2s, predict 2.3s, n_train=360000)
+  n_per_class_per_image=100000
+    [LARGE_343_75] IoU=0.5575 Dice=0.7159 (fit 10.1s, predict 15.0s, n_train=600000)
+    [333_75_um_zoom] IoU=0.7250 Dice=0.8406 (fit 10.2s, predict 2.4s, n_train=600000)
+    [336_25] IoU=0.7253 Dice=0.8408 (fit 10.3s, predict 2.2s, n_train=600000)
+    [338_13] IoU=0.7690 Dice=0.8694 (fit 10.1s, predict 2.2s, n_train=600000)
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_f_learning_curve.png
+
+=== Decision boundary in top-2-feature space: gradmag_s8 vs texture_s8 ===
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_g_decision_boundary.png
+
+Saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/benchmark_summary.json
+Saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/benchmark_summary.md

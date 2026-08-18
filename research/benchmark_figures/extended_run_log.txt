@@ -1,0 +1,31 @@
+
+=== Neural network (MLPClassifier), SAME LOIO protocol as fig_a ===
+    [LARGE_343_75] IoU=0.6871 Dice=0.8145 (fit 15.0s, predict 5.0s, n_train=180000)
+    [333_75_um_zoom] IoU=0.7300 Dice=0.8439 (fit 15.1s, predict 0.3s, n_train=180000)
+    [336_25] IoU=0.7503 Dice=0.8573 (fit 8.9s, predict 0.3s, n_train=180000)
+    [338_13] IoU=0.7700 Dice=0.8701 (fit 11.4s, predict 0.4s, n_train=180000)
+  mean IoU=0.7343  ROC AUC=0.9680  (total wall time 59s)
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_h_neural_network_comparison.png
+
+=== Interpretability tiers: Otsu threshold -> identified equation -> full ML ===
+  top-4 features by RF importance: ['gradmag_s8', 'texture_s8', 'smooth_s2', 'intensity']
+    [Otsu] LARGE_343_75: IoU=0.3180 threshold=0.6270
+    [Otsu] 333_75_um_zoom: IoU=0.4329 threshold=0.6270
+    [Otsu] 336_25: IoU=0.4519 threshold=0.5918
+    [Otsu] 338_13: IoU=0.5004 threshold=0.5566
+  Logistic regression (top-4 features), LOIO...
+    [LARGE_343_75] IoU=0.5131 Dice=0.6782 (fit 0.1s, predict 0.4s, n_train=180000)
+    [333_75_um_zoom] IoU=0.5688 Dice=0.7251 (fit 0.1s, predict 0.0s, n_train=180000)
+    [336_25] IoU=0.5483 Dice=0.7082 (fit 0.1s, predict 0.1s, n_train=180000)
+    [338_13] IoU=0.5610 Dice=0.7187 (fit 0.1s, predict 0.0s, n_train=180000)
+  Decision tree (depth 4, top-4 features), LOIO...
+    [LARGE_343_75] IoU=0.5243 Dice=0.6880 (fit 0.3s, predict 0.3s, n_train=180000)
+    [333_75_um_zoom] IoU=0.6408 Dice=0.7811 (fit 0.3s, predict 0.0s, n_train=180000)
+    [336_25] IoU=0.6012 Dice=0.7509 (fit 0.3s, predict 0.0s, n_train=180000)
+    [338_13] IoU=0.6283 Dice=0.7718 (fit 0.3s, predict 0.0s, n_train=180000)
+  Identified equation: logit(P(crack)) = +3.351 +6.580×gradmag_s8 +43.670×texture_s8 -4.903×smooth_s2 -2.392×intensity
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_j_interpretability_tiers.png
+  saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/fig_k_decision_tree.png
+
+Saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/extended_summary.json
+Saved /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/benchmark_figures/extended_summary.md
