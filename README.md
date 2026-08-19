@@ -161,7 +161,7 @@ needs the first four entries:
 |---|---|
 | `run_app.sh` | the only command you need |
 | `app/` | the server and the single-file frontend |
-| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`, `backup_labels.py`, `clean_gt_conflicting_labels.py`, `make_readme_figures.py`) |
+| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`, `backup_labels.py`, `clean_gt_conflicting_labels.py`, `crossval.py`, `make_readme_figures.py`, `make_icon.py`) |
 | `images/` | **all 71 raw TXM images**, bit-exact. Deflate-compressed float32 TIFF with the floating-point predictor: 2.26 GB instead of 3.40 GB, every file under GitHub's 100 MB limit (two of the originals were 122 MB and could not be pushed at all). Verified 71/71 identical to the originals. Read them with `tifffile` or GDAL; if a tool cannot handle predictor 3, re-save with `tifffile.imwrite(out, tifffile.imread(src))` |
 | `models/`, `dataset_cache/`, `paint/corrections/` | the shipped models, the 4 reference ground-truth images, and the correction labels |
 | `docs/` | how the model was arrived at. `HANDOFF.md` is the development record including four approaches that were adopted and then reverted; `SAM_COMPARISON.md` is the zero-shot SAM study |

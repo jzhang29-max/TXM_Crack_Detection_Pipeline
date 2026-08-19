@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"
+     width="64" height="64" role="img" aria-label="TXM Crack Detection">
+  <title>TXM Crack Detection</title>
+  <rect x="2" y="2" width="60" height="60" rx="13" fill="#C6C9C4"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- the model's overlay: wider than the crack, on purpose -->
+    <polyline points="7 55 17 46 23 47 30 37 36 38 45 26 50 27 57 9" stroke="#E8574C" stroke-width="12" opacity="0.48"/>
+    <!-- the crack, and two branches at acute angles -->
+    <polyline points="7 55 17 46 23 47 30 37 36 38 45 26 50 27 57 9" stroke="#191B1F" stroke-width="5"/>
+    <polyline points="30 37 25 30" stroke="#191B1F" stroke-width="3"/>
+    <polyline points="45 26 50 33" stroke="#191B1F" stroke-width="3"/>
+  </g>
+</svg>
