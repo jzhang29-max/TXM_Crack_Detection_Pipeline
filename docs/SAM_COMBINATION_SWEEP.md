@@ -1,0 +1,171 @@
+# Which SAM combination works best — 78 variants, leave-one-image-out
+
+**Answer: the combination already deployed.** Nothing tested beat it by more than measurement
+noise, and the two things that looked like wins died under controls. The useful output is the
+mechanism — *why* the deployed shape is right — plus a list of where the real headroom is not.
+
+Run 2026-08-18. 78 variants across five families, then adversarial verification. Harness:
+`leave-one-image-out over the four ground-truth images`, threshold chosen on training data
+only, test rows sampled uniformly so class balance matches the real frames.
+
+> **Every number here is at a 90,000-row training cap.** Absolute IoU therefore sits below
+> the 0.821 the shipped baseline gets from the full training set. These numbers **rank
+> architectures**; they are not deployment estimates.
+
+Harness validation: the deployed recipe scores **0.8310** here against the **0.821** that
+the README reports from the full-scale leave-one-image-out study.
+
+## The ranking
+
+| architecture | LOO IoU@0.5 | fold sd |
+|---|---|---|
+| **17-feature MLP + 273-d hybrid MLP, mean probability (deployed)** | **0.8310** | 0.0445 |
+| 273-d hybrid MLP alone | 0.8057 | 0.0610 |
+| 17 hand-crafted features alone | 0.7397 | **0.0164** |
+| 256-d SAM embedding alone | 0.7261 | 0.1253 |
+
+Neither half is usable alone and the pair beats the hybrid that contains both. Best variant
+found across all 78: 0.8392, which did not survive reseeding (below).
+
+## Why the deployed shape is right
+
+**The ensemble's +0.025 is feature-set diversity, not variance reduction.** Averaging two
+273-d hybrids that differ only in random seed scores 0.8071 — barely above one of them. The
+gain needs a genuinely different feature set, and the two models' errors are only 0.24–0.47
+correlated.
+
+**Equal weights are a real optimum, not a convention.** Sweeping the 17-feature model's
+weight: `0.8057 / 0.8145 / 0.8221 / 0.8310 / 0.8111 / 0.7803 / 0.7397` at w = 0, .25, .4,
+**.5**, .6, .75, 1. w=0.5 wins on 4 of 4 folds against both neighbours. A learned stacker is
+*worse* (0.8150), because it weights the hybrid ~7.5 against ~2.8 for the 17-feature arm and
+so discards the insurance exactly when it is needed.
+
+**The 17 hand-crafted features are the cross-image stabiliser.** They are the weakest single
+model but by far the most stable across folds (sd 0.0164 against 0.061–0.125 for anything
+containing SAM). On the one out-of-distribution image, SAM-only collapses to **0.5231** while
+17-only holds **0.7184**. They also must sit *inside* the same model as the SAM dims, not
+merely beside it: pairing 17-only with a pure-SAM model scores 0.7956 versus 0.8310 for
+pairing it with the hybrid.
+
+**One image decides every ranking.** `LARGE_343_75` is genuinely out of distribution —
+centroid displacement from its training images is 1.130 sd in 17-feature space against
+0.251–0.384 for the others. It is the hardest fold for all 78 variants, its across-run range
+is 0.474–0.809 against 0.021–0.031 sd for the other three, and essentially every mean
+difference in the table is that one fold moving.
+
+## What does not work, and why
+
+**PCA cannot shrink the SAM block.** The whitened-PCA ladder is flat from k=8 to k=256
+(0.782 / 0.771 / 0.788 / 0.764 / 0.772 / 0.789), which suggests SAM's usable signal is
+low-dimensional. But the decisive control is full-rank PCA-256, which discards *no*
+information and differs from the raw 273-d input only by a rotation plus rescaling — it still
+scores 0.7889 against 0.8057. So the ~0.02 deficit is **the transform, not the truncation**:
+`StandardScaler` forces unit variance per column, so any PCA basis arrives whitened, which
+inflates a long tail of near-noise directions (32 dims = 89% of variance, 127 needed for 99%)
+and destroys the high-variance-first prior that L2-regularised training has on correlated raw
+inputs. Inside the production ensemble, swapping the hybrid for `[17 | PCA-32]` costs 0.0132
+with the baseline ahead on 4/4 folds. PCA *is* finding real structure — it beats a random
+32-d projection on 4/4 folds, 0.7884 vs 0.7587 — it just cannot be cashed in.
+
+**The estimator barely matters on the 273-d design.** LogisticRegression 0.7840, ExtraTrees
+0.7910, HGB 0.7997, RandomForest 0.8039, MLP(64,32) 0.7941 — a 0.020 band, *narrower than
+the MLP's own reseeding spread of 0.026*. The SAM dims make the boundary close to linearly
+separable; capacity is not the binding constraint. On the 17-d design the estimator matters
+enormously (MLP 0.7397 vs HGB 0.6757, and HGB collapses to 0.5463 on the unseen image because
+trees threshold on absolute values that shift between specimens).
+
+**Rebalancing SAM against the 17 features is a provable no-op.** The motivating arithmetic is
+real — after per-column standardisation the 17 features hold 17/273 = 6.2% of input energy —
+but a diagonal per-block gain is inside every estimator's hypothesis space, so it just
+rescales its first-layer weights. Proof without noise: logistic regression is convex and
+deterministic, and gives 0.7840 at the production ratio versus 0.7837 at ratio 1.0, a delta
+of 0.0003.
+
+**Calibration and thresholding are a dead end.** Total oracle headroom — threshold chosen on
+the answer sheet — is **+0.0045**, one third of this project's reseeding noise, and three of
+the four folds have *literally zero*. Raw 0.5 is structurally near-optimal because two biases
+cancel: balanced 50/50 training inflates crack posteriors (pushing the honest cut up to an
+equivalent raw 0.75, which costs −0.034), while IoU is monotone in F1 so the optimum sits
+near F1*/2 = 0.455 (pushing it down). Calibration does fix the area bias — predicted area
+matches true area to 1–2% relative, against ~7% over-prediction raw — and buys no IoU.
+
+## The one candidate, and why it is not recommended
+
+Adding a **273-d HistGradientBoosting model as a third ensemble member** was the only variant
+to claim a win: 0.8392 against 0.8310, on 4/4 folds.
+
+It survived a leakage audit and it is not a single-fold artifact — paired against identical
+base fits it gives +0.0082 / +0.0083 / +0.0076 across seeds (gap sd 0.0003), positive on
+12/12 fold comparisons. An attribution control confirms the third member must be a *different
+estimator family*: swapping the HGB for a reseeded 273-d MLP scores 0.8260, **below**
+baseline, so "a third vote helps" is false.
+
+It still should not be adopted, for three independent reasons.
+
+1. **The level is not reproducible.** Reseeded, the claim averages 0.8322 and 3 of 5 fresh
+   seeds fall *below* the 0.8310 baseline headline. Excluding its own lucky seed its
+   remaining seeds average 0.8308 — i.e. −0.0002. The baseline's own reseeds span
+   0.8164–0.8359.
+2. **It is worse on the image that matters most.** On confirmed crack-free specimen it looked
+   excellent — false positives 0.146% → 0.086%, a 41% relative cut, lower on 4/4 seeds with
+   non-overlapping ranges. But HGB is the highest-precision member, so averaging it in lowers
+   every probability, which cuts false positives simply by predicting less. At **matched
+   false-positive rate** the advantage is +0.018 / +0.008 / +0.019 on the three
+   in-distribution folds and **−0.025 on the out-of-distribution one** — mean +0.005. The
+   273-d HGB scores 0.6692 on `LARGE_343_75` against 0.86–0.88 elsewhere, so giving it a
+   one-third vote drags exactly the fold that resembles a new specimen.
+3. **It costs a third model** at inference across 71 images of 3–32 MP, and a new estimator
+   family in the artifact.
+
+For the question actually asked — which combination works best *for all* the images,
+including ones not yet seen — reason 2 decides it.
+
+## Two code-level findings
+
+**The retrain and the shipped baseline disagree on MLP shape, and it does not matter.**
+`pipeline.py` fits MLP(128,64) max_iter=400 while the shipped models are (64,32) max_iter=300.
+Measured on the 273-d design: 0.7923 for (128,64) versus 0.7941 for (64,32) as a 3-seed mean —
+indistinguishable. The larger net buys nothing and costs ~50% more fit time, so aligning the
+retrain down to (64,32) is a free simplification, not an accuracy change.
+
+**A float32/float64 summation difference moved IoU by 0.021.** A hand-rolled
+`(x - x.mean(0)) / x.std(0)` accumulates in float32 on these arrays; sklearn's
+`StandardScaler` accumulates in float64. Max discrepancy was 2.1e-3 on a unit-variance
+column — 0.2% of a standard deviation — and it was enough to move MLP early stopping into a
+different basin: 0.8057 → 0.7843, with the hard fold dropping 0.735 → 0.674. **Anyone
+comparing architectures across two scripts that both "standardise then fit an MLP" may be
+reading a numerics artefact rather than an architecture difference.**
+
+## Where the headroom actually is
+
+1. **Spatial post-processing** — the largest untested lever, and *structurally* unevaluable
+   in this harness, whose test rows are uniformly scattered pixels with no neighbours. The
+   signature is present: precision 0.850/0.862 on the two hard folds with predicted/true area
+   at 1.07/1.06 is scattered false-positive speckle, which connected-component pruning or
+   hysteresis linking removes at near-zero recall cost. Note the app's existing
+   post-processing is off by default because *shape validation plus a minimum-size filter*
+   measured −0.084 IoU; a gentler dual-threshold linking rule is a different thing and has
+   never been tried.
+2. **More ground truth.** Four `_gt.npy` files against 71 labelled images, and one atypical,
+   different-magnification frame decides every ranking above. A fifth and sixth ground-truth
+   image would be worth more than any architecture change in this document.
+3. **Vary the training-set size.** All 78 runs used a 90,000-row cap, never varied once. HGB
+   and the 273-d MLP are the members most likely to be data-starved there, so the third-member
+   effect could grow or vanish at full scale.
+
+**Do not spend more effort on** feature-set selection, SAM dimensionality reduction, block
+rescaling, estimator choice on the 273-d design, calibration, or thresholding. Each is
+measured above and each is a no-op or a loss.
+
+## Reproducing
+
+The harness and fold builders live in the session scratch directory, not the repo, because
+they read the 2.1 GB reference feature stacks and are not part of the app. `exp_harness.py`
+carries the protocol in its docstring; `build_folds.py` samples the folds;
+`build_fp_holdout.py` builds the crack-free false-positive set — sampling only pixels ≥256 px
+inside its window, because a cropped feature stack disagrees with the full-image stack out to
+exactly that distance (4.4e-2 at the edge, 1.1e-3 at 128 px, 0 at 256 px).
+
+The owner's 71 correction masks were SHA-256 fingerprinted before the run and verified
+**71/71 byte-identical** afterwards. No agent read or wrote anything under `app_data/`
+except the derived SAM embedding cache.

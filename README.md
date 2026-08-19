@@ -115,6 +115,10 @@ both ends. Some frames over-predict substantially -- wide red bands around a cra
 than the crack itself. There is no ground truth outside B2, so outside B2 those numbers
 are unverified and your eye is the only judge. `docs/SAM_COMPARISON.md` has the full study
 and `docs/HANDOFF.md` records four approaches that were tried and reverted.
+`docs/SAM_COMBINATION_SWEEP.md` tests 78 feature/classifier/ensembling combinations
+under leave-one-image-out and finds none that beats the deployed one — it is worth
+reading before trying to improve the model, because it also says which six avenues
+are measured dead ends.
 
 ## Run it
 
