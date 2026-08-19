@@ -125,6 +125,81 @@ def make_test_tiff():
     return "SELFTEST_IMAGE.tif", buf.getvalue()
 
 
+def check_model_picker(B, focus=None):
+    """Switching to a model already computed for an image must be instant, not a re-predict.
+
+    CALLED BEFORE THIS TEST UPLOADS ANYTHING, and that is the whole point. A model other
+    than the current one can never hold a prediction for an image this run just created,
+    so while this check lived after the upload it required something impossible and
+    skipped on every single run -- coverage that read as present and was not. That is the
+    same blind spot the dedented-P.ingest bug hid in, so it is worth keeping honest.
+
+    Run before the uploads, a fully cached model does exist, and the strict assertion
+    holds: neither trip may queue a prediction job.
+    """
+    try:
+        _, ml = req(B, "/api/models", timeout=120)
+        models = ml.get("models") or []
+        cur = next((m for m in models if m.get("current")), None)
+        check("model list offers the current model", cur is not None,
+              f"{len(models)} model(s): " + ", ".join(m["label"] for m in models[:3]))
+        if cur is None:
+            return
+
+        # Every model must carry its MEASURED false-positive rate on the crack-free
+        # specimens, or an explicit null. The picker showed nothing but a name until a
+        # user switched to a model that marks 22% of blank specimen as crack and had no
+        # way to find that out from the interface.
+        measured = [m for m in models if m.get("clean_fp") is not None]
+        check("model list reports measured background error",
+              all("clean_fp" in m and "fp_warn" in m for m in models),
+              f"{len(measured)}/{len(models)} measurable: " +
+              ", ".join(f"{m['label'].split()[-1]}={m['clean_fp']*100:.2f}%" for m in measured[:4]))
+        if len(measured) >= 2:
+            best = min(m["clean_fp"] for m in measured)
+            expect = {m["id"]: m["clean_fp"] > max(best * 5, best + 0.01) for m in measured}
+            check("a model much worse on crack-free specimen is flagged",
+                  all(m["fp_warn"] == expect[m["id"]] for m in measured),
+                  f"flagged {sum(1 for m in measured if m['fp_warn'])} of {len(measured)}, "
+                  f"best {best*100:.2f}%")
+            worst = max(measured, key=lambda m: m["clean_fp"])
+            if worst["clean_fp"] > max(best * 5, best + 0.01):
+                check("the worst measured model is the one flagged", worst["fp_warn"],
+                      f"{worst['label']} at {worst['clean_fp']*100:.1f}%")
+        # Only switch to a model ALREADY cached for every loaded image. Switching to an
+        # uncached one queues a real prediction pass -- correct product behaviour, awful
+        # test: with 71 images that once spent 48 minutes re-predicting the library and
+        # left the app on another model while it did.
+        ready = [m for m in models
+                 if not m.get("current") and m.get("cached_for") == m.get("n_images")]
+        others = [m for m in models if not m.get("current")]
+        if not others:
+            skip("switching models is instant when cached",
+                 "only one model exists until you retrain")
+        elif not ready:
+            skip("switching models is instant when cached",
+                 f"{len(others)} other model(s) exist but none is computed for all "
+                 f"{cur.get('n_images')} image(s); switching would queue a real "
+                 f"prediction pass rather than exercise the cache")
+        else:
+            t0 = time.time()
+            body = dict(id=ready[0]["id"])
+            if focus:
+                body["focus"] = focus
+            _, away = req(B, "/api/model/select", "POST", body, timeout=120)
+            _, back = req(B, "/api/model/select", "POST", dict(id=cur["id"]), timeout=120)
+            dt = time.time() - t0
+            check("switching models is instant when cached",
+                  away.get("ok") is True and not away.get("job")
+                  and back.get("ok") is True and not back.get("job"),
+                  f"round trip in {dt:.2f}s with no prediction job, "
+                  f"{len(back.get('instant') or [])} image(s) from cache")
+            check("switching back restores the original model",
+                  S_label(back) == cur["label"], f"{S_label(back)}")
+    except Exception as e:                                      # noqa: BLE001
+        check("model picker", False, str(e))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://127.0.0.1:8800")
@@ -145,6 +220,11 @@ def main():
     check("model loaded", "NOT LOADED" not in m.get("description", ""), m.get("description", ""))
     gt_ok = bool(m.get("ground_truth_available"))
     check("ground truth present (needed to validate a retrain)", gt_ok)
+
+    # Before uploading anything: the picker check needs a model cached for every image,
+    # which stops being true the moment this run adds one.
+    _, pre = req(B, "/api/images")
+    check_model_picker(B, focus=(pre["images"][0]["id"] if pre.get("images") else None))
 
     # ---- upload + ingest
     fname, content = make_test_tiff()
@@ -415,48 +495,8 @@ def main():
     except Exception as e:
         check("overlay caching", False, str(e))
 
-    # ---- model picker. Switching to a model already computed for an image must be
-    # instant (a hard link), not a re-prediction.
-    try:
-        _, ml = req(B, "/api/models", timeout=120)
-        models = ml.get("models") or []
-        cur = next((m for m in models if m.get("current")), None)
-        check("model list offers the current model", cur is not None,
-              f"{len(models)} model(s): " + ", ".join(m["label"] for m in models[:3]))
-        # Only switch to a model that is ALREADY cached for every loaded image.
-        # Switching to an uncached one queues a real prediction pass, which is the
-        # correct product behaviour but a terrible test: with 71 images loaded this
-        # test spent 48 minutes re-predicting the whole library, and left the app on
-        # a different model while it did. Testing "cached switches are instant"
-        # requires a cached model, so if there is not one, say so and move on.
-        ready = [m for m in models
-                 if not m.get("current") and m.get("cached_for") == m.get("n_images")]
-        others = [m for m in models if not m.get("current")]
-        if not others:
-            skip("switching models is instant when cached",
-                 "only one model exists until you retrain")
-        elif not ready:
-            skip("switching models is instant when cached",
-                 f"{len(others)} other model(s) exist but none is computed for all "
-                 f"{cur.get('n_images')} image(s); switching would queue a real "
-                 f"prediction pass rather than exercise the cache")
-        else:
-            # Switch away and back; both trips must need no prediction job because
-            # every image's result for both models is already on disk.
-            t0 = time.time()
-            _, away = req(B, "/api/model/select", "POST",
-                          dict(id=ready[0]["id"], focus=iid), timeout=120)
-            _, back = req(B, "/api/model/select", "POST", dict(id=cur["id"]), timeout=120)
-            dt = time.time() - t0
-            check("switching models is instant when cached",
-                  away.get("ok") is True and not away.get("job")
-                  and back.get("ok") is True and not back.get("job"),
-                  f"round trip in {dt:.2f}s with no prediction job, "
-                  f"{len(back.get('instant') or [])} image(s) from cache")
-            check("switching back restores the original model",
-                  S_label(back) == cur["label"], f"{S_label(back)}")
-    except Exception as e:
-        check("model picker", False, str(e))
+    # ---- model picker moved to check_model_picker(), called BEFORE any upload.
+    #      See that function for why placement matters.
 
     # ---- the UNCACHED half of a model switch, checked structurally.
     #

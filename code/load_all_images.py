@@ -84,9 +84,19 @@ def main():
     print(f"SAM embeddings available to reuse: {n_emb}/{len(files)}"
           + ("" if n_emb == len(files) else "  -- the rest will be embedded, which is slow"))
     if args.dry_run:
-        for f in files[:5]:
-            print(f"  would load {os.path.basename(f)}"
+        # Apply the SAME skip rule the real run applies. It used to print "would load"
+        # for every file regardless, so a dry run against a full library announced 71
+        # loads and the real run then skipped all 71 -- a dry run that does not predict
+        # the real run is worse than no dry run at all.
+        todo = [f for f in files
+                if (by_name.get(os.path.basename(f)) or {}).get("status") != "ready"]
+        skip = len(files) - len(todo)
+        print(f"  would load {len(todo)}, skip {skip} already in the app")
+        for f in todo[:6]:
+            print(f"    load {os.path.basename(f)[:58]}"
                   f"  emb={'cached' if find_cached_embedding(f) else 'MISSING'}")
+        if len(todo) > 6:
+            print(f"    ... and {len(todo) - 6} more")
         return 0
 
     t0 = time.time()

@@ -421,6 +421,66 @@ def _score(model, progress=None):
     return float(np.mean(ious)), float(np.mean(recs))
 
 
+CLEAN_FP_CACHE = os.path.join(S.DATA, "models", "clean_fp.json")
+
+
+def clean_fp_measured(model_key):
+    """Mean predicted area on the crack-free specimens for a model, from cached probs only.
+
+    Returns (fraction, n_specimens) or (None, 0) when this model has not been run over all
+    of them. Never predicts -- it reads the per-model prediction cache, so it is cheap
+    enough to call from /api/models on every page load.
+
+    WHY THIS IS SURFACED IN THE UI. The picker used to list every model in the registry
+    with nothing but a name and a cache count, and two of the entries in a real user's
+    history mark 22% of crack-free specimen as crack -- they predate the false-positive
+    gate, so they deployed legitimately and then stayed selectable forever. Someone
+    switched to one of them, got visibly worse masks with no explanation available
+    anywhere in the interface, and reported it as "why does it show older model". A number
+    next to the name is the whole fix: the bad ones read 22%, the good ones read 0.1-0.2%.
+
+    Memoised on disk, keyed by model_key plus the correction mtimes that could change an
+    effective mask, so a stale figure cannot outlive the thing it measured.
+    """
+    todo = [m for m in S.list_images()
+            if any(k.lower() in (m.get("filename") or "").lower() for k in CLEAN_SPECIMENS)]
+    if not todo:
+        return None, 0
+    stamp = 0.0
+    for m in todo:
+        cp = S.path(m["id"], "correction.npy")
+        if os.path.exists(cp):
+            stamp = max(stamp, os.path.getmtime(cp))
+    key = f"{model_key}|{len(todo)}|{stamp:.3f}"
+
+    cache = {}
+    if os.path.exists(CLEAN_FP_CACHE):
+        try:
+            with open(CLEAN_FP_CACHE) as f:
+                cache = json.load(f)
+        except (OSError, ValueError):
+            cache = {}
+    if key in cache:
+        v = cache[key]
+        return (v[0], v[1]) if v else (None, 0)
+
+    fracs = []
+    for m in todo:
+        a = S.load_npy_at(S.prob_cache_path(m["id"], model_key), mmap=True)
+        if a is None:
+            return None, 0                      # incomplete: do not cache a partial answer
+        fracs.append(float((np.asarray(a) > 0.5).mean()))
+        del a
+    val = [float(np.mean(fracs)), len(fracs)]
+    cache[key] = val
+    cache = {k: v for k, v in list(cache.items())[-40:]}        # bounded
+    try:
+        S.write_json(CLEAN_FP_CACHE, cache)
+    except OSError:
+        pass
+    return val[0], val[1]
+
+
 def gather_training_data(progress=None):
     """Every corrected pixel across every uploaded image, plus the shipped
     ground truth, as hybrid [17 | 256] features.

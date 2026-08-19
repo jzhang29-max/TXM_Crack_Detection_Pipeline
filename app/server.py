@@ -545,9 +545,21 @@ def api_models():
         for iid in ids:
             S.migrate_prob_cache(iid)
         ready = sum(1 for iid in ids if S.has_prob_for(iid, e["id"]))
+        # Measured false-positive rate on the crack-free specimens, from cached
+        # predictions only. This is what tells a user that two of the entries in their
+        # history mark 22% of blank specimen as crack; without it the picker lists four
+        # names with nothing to choose between them.
+        fp, n_clean = P.clean_fp_measured(e["id"])
         out.append(dict(id=e["id"], label=e.get("label") or e["id"],
                         created=e.get("created"), kind=e.get("kind", "ensemble"),
-                        current=e["current"], cached_for=ready, n_images=len(ids)))
+                        current=e["current"], cached_for=ready, n_images=len(ids),
+                        clean_fp=fp, clean_n=n_clean))
+    best = min([m["clean_fp"] for m in out if m["clean_fp"] is not None], default=None)
+    for m in out:
+        # "Much worse than the best measured model", not an absolute threshold: what counts
+        # as a lot of background depends on the specimen set in front of you.
+        m["fp_warn"] = bool(best is not None and m["clean_fp"] is not None
+                            and m["clean_fp"] > max(best * 5, best + 0.01))
     return jsonify(ok=True, models=out)
 
 

@@ -151,6 +151,7 @@ button:disabled{opacity:.4;cursor:default}
     <div class="k">Model</div>
     <select id="mpick" title="Switch models. Already-computed results appear instantly."></select>
     <div class="v" id="mdesc">loading…</div>
+    <div id="mfp"></div>
     <div id="scope"></div>
   </div>
 </aside>
@@ -252,19 +253,59 @@ async function loadModel(){
 // The picker lists every model the user has, newest first, and says which ones are
 // already computed for the images loaded -- because that is exactly the difference
 // between switching instantly and waiting for a prediction.
+let MODELS=[];
 async function loadModelList(){
   const r=await j("/api/models").catch(()=>null);
   const sel=$("#mpick");
   if(!r||!r.ok||!r.models){sel.style.display="none";return;}
   sel.style.display="";
+  MODELS=r.models;
   sel.innerHTML=r.models.map(m=>{
     const n=m.n_images, ready=m.cached_for;
     const state=n===0?"":ready===n?" · ready":ready?` · ${ready}/${n} ready`:" · needs a pass";
-    return `<option value="${m.id}"${m.current?" selected":""}>${m.label}${state}</option>`;
+    // The measured background number goes in the OPTION, not only in a tooltip. Two
+    // models in a real history mark 22% of crack-free specimen as crack; they predate
+    // the false-positive gate, so they deployed legitimately and stay selectable, and
+    // with only a name to go on there is nothing in the interface to warn anyone off.
+    const fp=m.clean_fp==null?" · bg not measured":` · ${fpText(m.clean_fp)} bg`;
+    return `<option value="${m.id}"${m.current?" selected":""}>${m.label}${state}${fp}</option>`;
   }).join("");
+  showFpNote(r.models.find(m=>m.current));
+}
+function fpText(f){return f>=0.01?`${(f*100).toFixed(0)}%`:`${(f*100).toFixed(2)}%`;}
+function showFpNote(m){
+  const el=$("#mfp");
+  if(!el)return;
+  if(!m){el.innerHTML="";return;}
+  if(m.clean_fp==null){
+    el.innerHTML=`<div style="color:var(--ink3);font-size:11.5px;margin-top:4px">`+
+      `Never run over the crack-free specimens, so its background error is unmeasured.</div>`;
+    return;
+  }
+  const best=Math.min(...MODELS.filter(x=>x.clean_fp!=null).map(x=>x.clean_fp));
+  el.innerHTML=m.fp_warn
+    ? `<div style="color:var(--bad);font-size:11.5px;margin-top:4px">Marks `+
+      `<b>${fpText(m.clean_fp)}</b> of crack-free specimen as crack — `+
+      `${Math.round(m.clean_fp/Math.max(best,1e-9))}× the best model you have. `+
+      `Measured on ${m.clean_n} specimens with no cracks in them.</div>`
+    : `<div style="color:var(--ink3);font-size:11.5px;margin-top:4px">`+
+      `Marks ${fpText(m.clean_fp)} of crack-free specimen as crack `+
+      `(${m.clean_n} specimens, measured).</div>`;
 }
 async function switchModel(id){
   const sel=$("#mpick"),prev=[...sel.options].find(o=>o.defaultSelected)?.value;
+  // Ask once before moving onto a model the crack-free specimens say is much worse.
+  // Somebody did exactly this by accident and spent an afternoon wondering why their
+  // masks had got worse; a dropdown is far too easy a way to do that silently.
+  const want=MODELS.find(m=>m.id===id);
+  if(want&&want.fp_warn&&!confirm(
+      `${want.label} marks ${fpText(want.clean_fp)} of crack-free specimen as crack, `+
+      `measured on ${want.clean_n} specimens that contain no cracks.\n\n`+
+      `It predates the false-positive check, which is why it is still in the list. `+
+      `Switch to it anyway?`)){
+    if(prev)sel.value=prev;
+    return;
+  }
   sel.disabled=true;say("switching model…");
   const r=await post("/api/model/select",{id,focus:CUR});
   if(!r.ok){sel.disabled=false;say(`could not switch — ${r.error}`,"var(--bad)");await loadModelList();return;}

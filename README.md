@@ -5,11 +5,19 @@ what the model found, fix what it got wrong, press Retrain. That is the whole lo
 
 ## What it looks like
 
-![The app](docs/img/app.png)
+One window, three regions. The **sidebar** lists your images with the result burned into
+each thumbnail, `% crack`, and a marker for anything still on an older model. The
+**toolbar** is the three correction tools (Add crack, Erase, Flip region), the two view
+toggles, Advanced, Export and Retrain. The **model picker** is bottom left, under the
+image list. Every stroke saves itself — there is no save button.
 
-Sidebar lists your images with the result burned into each thumbnail; the toolbar is the
-three correction tools, the two view toggles, and Retrain. The model picker is bottom
-left. Every stroke saves itself -- there is no save button.
+The figures below are generated from the app's own data by
+`python3 code/make_readme_figures.py`, so they cannot drift from what the code does. A
+screenshot of the window is the one thing that tool cannot produce; there was one here,
+and it was removed because it had gone stale in a way that misrepresented the tool — it
+was rendered by a model since measured at 22% false positives on crack-free specimen, and
+it predated the display contrast change described below. Replacing it needs someone at a
+browser, which is the honest reason it is absent rather than wrong.
 
 ### Every upload is destitched and flat-fielded automatically
 
@@ -149,7 +157,7 @@ needs the first four entries:
 |---|---|
 | `run_app.sh` | the only command you need |
 | `app/` | the server and the single-file frontend |
-| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`, `backup_labels.py`, `make_readme_figures.py`) |
+| `code/` | the feature extraction, preprocessing and measurement modules the app imports, plus the batch utilities (`load_all_images.py`, `import_research_corrections.py`, `backup_labels.py`, `clean_gt_conflicting_labels.py`, `make_readme_figures.py`) |
 | `images/` | **all 71 raw TXM images**, bit-exact. Deflate-compressed float32 TIFF with the floating-point predictor: 2.26 GB instead of 3.40 GB, every file under GitHub's 100 MB limit (two of the originals were 122 MB and could not be pushed at all). Verified 71/71 identical to the originals. Read them with `tifffile` or GDAL; if a tool cannot handle predictor 3, re-save with `tifffile.imwrite(out, tifffile.imread(src))` |
 | `models/`, `dataset_cache/`, `paint/corrections/` | the shipped models, the 4 reference ground-truth images, and the correction labels |
 | `docs/` | how the model was arrived at. `HANDOFF.md` is the development record including four approaches that were adopted and then reverted; `SAM_COMPARISON.md` is the zero-shot SAM study |
@@ -250,8 +258,26 @@ images is **instant** — predictions are cached per (image, model) and hard-lin
 models cost N predictions on disk rather than 2N. A model that has not seen an image yet
 gets a prediction pass, and the image you are looking at is predicted first.
 
-This is also how you roll back: select an earlier model. **Check which model you are on
-before trusting an overlay** — see the warning under *How well does it do*.
+**Each entry also shows its measured background error** — the share of crack-free
+specimen it marks as crack, averaged over the six specimens confirmed to contain no
+cracks, computed from cached predictions so it costs nothing to display:
+
+```
+retrained 20260818_123934 · ready · 0.14% bg
+retrained 20260817_123341 · ready · 22% bg
+retrained 20260817_000321 · 4/71 ready · bg not measured
+shipped baseline · ready · 0.19% bg
+```
+
+That number exists because the picker used to show names only. Two models in a real
+history mark **22%** of blank specimen as crack — they predate the false-positive half of
+the gate, so they deployed legitimately and remain selectable forever. Someone switched to
+one by accident, got visibly worse masks, and there was nothing anywhere in the interface
+that could have told them why. Selecting a model measured much worse than the best one you
+have now asks for confirmation first, and says by how much. A model never run over those
+six specimens reads `bg not measured` rather than a made-up number.
+
+This is also how you roll back: select an earlier model.
 
 ### 6. Retrain
 
