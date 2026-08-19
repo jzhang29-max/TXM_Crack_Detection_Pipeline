@@ -11,6 +11,7 @@ through /api/job/<id>, so the browser never blocks on a 20-second SAM pass.
 """
 
 import io
+import hashlib
 import os
 import sys
 import threading
@@ -160,6 +161,23 @@ def _to8(arr, limits):
 @app.route("/api/image/<iid>/display.png")
 def api_display(iid):
     which = request.args.get("view", "display")
+    src = S.path(iid, "display.npy" if which == "display" else "img.npy")
+    # An ETag, because this is the one large payload with neither a disk cache nor an HTTP
+    # one. send_file on a BytesIO sets no ETag and no Last-Modified, so the browser has no
+    # validator and must refetch in full every time -- at 0.75 bytes/pixel that is 21.8 MB
+    # for the 32 MP mosaic, and flipping between two of them ten times to compare moved
+    # 482 MB of pixels the browser already had. The tag covers everything that changes the
+    # bytes: the file's mtime and size, the view, and the stretch limits.
+    if os.path.exists(src):
+        st = os.stat(src)
+        lim = P.display_limits(iid) if which == "display" else (0.0, 1.0)
+        etag = ('W/"' + hashlib.sha1(
+            f"{st.st_mtime_ns}:{st.st_size}:{which}:{lim[0]:.6f}:{lim[1]:.6f}".encode()
+        ).hexdigest()[:20] + '"')
+        if request.headers.get("If-None-Match") == etag:
+            return "", 304, {"ETag": etag, "Cache-Control": "no-cache"}
+    else:
+        etag = None
     arr = S.load_npy(iid, "display.npy" if which == "display" else "img.npy")
     if arr is None:
         return jsonify(ok=False, error="not ingested"), 404
@@ -170,7 +188,11 @@ def api_display(iid):
     buf = io.BytesIO()
     Image.fromarray(a).save(buf, format="PNG", optimize=False, compress_level=1)
     buf.seek(0)
-    return send_file(buf, mimetype="image/png")
+    resp = send_file(buf, mimetype="image/png")
+    if etag:
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "no-cache"   # revalidate, but allow a 304
+    return resp
 
 
 @app.route("/api/image/<iid>/thumb.png")
@@ -719,9 +741,14 @@ def _overlay_png_bytes(iid, mask):
     """
     from PIL import Image
     disp = S.load_npy(iid, "display.npy")
+    processed = disp is not None
     if disp is None:
         disp = S.load_npy(iid, "img.npy")
-    g = (np.clip(np.asarray(disp), 0, 1) * 255).astype(np.uint8)
+    # THE SAME stretch as the canvas. This did its own raw clip while api_display and
+    # api_thumb both go through P.display_limits, so the PNG a researcher put in a talk was
+    # 3-6x flatter than the picture they approved on screen -- and this function's own
+    # docstring promises the two agree.
+    g = _to8(disp, P.display_limits(iid) if processed else (0.0, 1.0))
     rgb = np.stack([g] * 3, -1).astype(np.float32)
     red = np.array([230.0, 40.0, 40.0], np.float32)
     cyan = np.array([40.0, 190.0, 210.0], np.float32)

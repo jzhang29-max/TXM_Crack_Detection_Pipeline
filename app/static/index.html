@@ -61,7 +61,12 @@ button:disabled{opacity:.4;cursor:default}
 .item .th{width:38px;height:30px;flex:0 0 38px;border-radius:4px;background:#0b0d10;
   object-fit:contain;background:#0b0d10;border:1px solid var(--line)}
 .item .tx{min-width:0;flex:1}
-.item .nm{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Two lines, not one clipped line. Shortened labels run 13-45 characters and ~24 fit per
+   line in this column, so a single nowrap line still cut the distinguishing tail off the
+   longer ones -- which is the whole problem this was meant to solve. line-clamp keeps rows
+   compact while letting every label be read in full. */
+.item .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  line-clamp:2;font-size:12px;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}
 .item .sub{display:block;font-size:11px;color:var(--ink3);margin-top:1px}
 .item .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:0 0 6px}
 .item .dot.busy{background:var(--warn)}
@@ -255,6 +260,31 @@ let STROKE_MODE="crack",READY=false,LASTK=0,FITTED=true;
 // app's own origin. Escape at the point of rendering; never trust the round trip.
 const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,
   c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Sidebar labels. With the owner's real 71 files, showing the first 28 characters gave
+// 26 distinct labels for 71 rows and one string repeated 27 times -- the list is the app's
+// only navigation and it could not be used to find a specimen. Every filename here shares
+// a long prefix ("Average_mosaic_260619_HC_316L_...") and a tile suffix, so the fix is to
+// drop the tokens that are identical across EVERY loaded image, plus the imNNNofNNN tile
+// index, and to strip the whole .xrm.bim.bim.tif extension chain. Measured on those 71
+// files: 71/71 distinct, 13-45 characters, all of which fit two lines. Recomputed per
+// load, so it adapts to whatever someone drops in rather than hard-coding this dataset.
+const _stem=n=>{let b=String(n).split("/").pop();
+  for(;;){const m=b.match(/^(.*)(\.[A-Za-z0-9]{1,6})$/); if(!m)break; b=m[1];} return b;};
+const _toks=n=>_stem(n).split("_").filter(Boolean);
+let SHORT=new Map();
+function buildShortNames(list){
+  SHORT=new Map();
+  const tl=list.map(im=>_toks(im.filename||im.id));
+  if(!tl.length)return;
+  let common=new Set(tl[0]);
+  for(const t of tl.slice(1))common=new Set([...common].filter(x=>t.includes(x)));
+  const drop=new Set([...common].filter(x=>!/^\d+$/.test(x)));   // keep bare numbers
+  const tile=/^img\d+of\d+$/i;
+  list.forEach((im,i)=>{
+    const short=tl[i].filter(t=>!drop.has(t)&&!tile.test(t)).join("_");
+    SHORT.set(im.id, short||_stem(im.filename||im.id));
+  });
+}
 const say=(t,c)=>{const e=$("#msg");e.textContent=t;e.style.color=c||"var(--ink2)";};
 const tag=t=>{$("#tag").textContent=t||"";$("#tag").style.display=t?"":"none";};
 const j=async(u,o)=>(await fetch(u,o)).json();
@@ -469,6 +499,7 @@ async function loadList(keep){
   const eh=$("#exphint");
   if(eh)eh.textContent="Exports what you see now, with your corrections applied."+
     (IMAGES.length>8?` The .zip covers ${IMAGES.length} images and takes a few minutes.`:"");
+  buildShortNames(IMAGES);
   const L=$("#list");L.innerHTML="";
   for(const im of IMAGES){
     const el=document.createElement("div");
@@ -488,7 +519,9 @@ async function loadList(keep){
     const old=im.stale?` · <span style="color:var(--warn)">older model</span>`:"";
     el.innerHTML=`<span class="dot${ready?"":" busy"}"></span>`+
       (ready?`<img class="th" src="/api/image/${im.id}/thumb.png?w=128" loading="lazy">`:`<span class="th"></span>`)+
-      `<span class="tx"><span class="nm">${esc(im.filename||im.id)}</span><span class="sub">${pct}${cor}${old}</span></span>`+
+      `<span class="tx"><span class="nm" title="${esc(im.filename||im.id)}">`+
+        `${esc(SHORT.get(im.id)||im.filename||im.id)}</span>`+
+        `<span class="sub">${pct}${cor}${old}</span></span>`+
       `<button class="x" title="Remove ${esc(im.filename||im.id)} from the app (your original file is untouched)">\u00d7</button>`;
     el.setAttribute("aria-label",
       `${im.filename||im.id}, ${pct}${cor?", edited":""}${im.stale?", older model":""}`);

@@ -498,6 +498,30 @@ def main():
     # ---- model picker moved to check_model_picker(), called BEFORE any upload.
     #      See that function for why placement matters.
 
+    # ---- display.png must be revalidatable. It is the largest payload in the app and had
+    #      no ETag and no Last-Modified, so every image switch refetched it in full: 30 MB
+    #      for the 32 MP mosaic, 0.64 GB to browse 71 images once.
+    try:
+        st, _ = req(B, f"/api/image/{iid}/display.png", timeout=300)
+        import urllib.request as _u
+        r = _u.Request(B.rstrip("/") + f"/api/image/{iid}/display.png")
+        with _u.urlopen(r, timeout=300) as resp:
+            tag = resp.headers.get("ETag")
+            resp.read()
+        check("display.png carries an ETag", bool(tag), str(tag))
+        if tag:
+            r2 = _u.Request(B.rstrip("/") + f"/api/image/{iid}/display.png")
+            r2.add_header("If-None-Match", tag)
+            try:
+                with _u.urlopen(r2, timeout=300) as resp2:
+                    code, n = resp2.status, len(resp2.read())
+            except urllib.error.HTTPError as e:
+                code, n = e.code, len(e.read())
+            check("an unchanged display.png revalidates to 304 with no body",
+                  code == 304 and n == 0, f"http {code}, {n} bytes")
+    except Exception as e:                                      # noqa: BLE001
+        check("display.png caching", False, str(e))
+
     # ---- a crafted image id must never reach the filesystem. Before store.path()
     #      validated its argument, DELETE /api/image/%2e%2e handed shutil.rmtree the whole
     #      app_data directory -- every correction mask, the model registry and the retrain
