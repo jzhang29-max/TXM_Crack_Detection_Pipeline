@@ -343,17 +343,33 @@ async function loadRetrainReport(){
     (L.backfilled?" · reconstructed from job logs":"")+`</span>`+
     (ok?"":`<div class="cav" style="color:var(--bad)">${L.reason||"did not pass the gate"}</div>`)+
     `<table>`+
-    `<tr><td>ground-truth IoU</td><td class="n">${(i.iou??0).toFixed(3)} → `+
+    // The held-out number FIRST, because it is the only one that answers "how will this do
+    // on an image it has not seen". The in-sample IoU below it is ~0.11 higher on this data
+    // and reading it first is how people conclude a model is better than it is.
+    (L.heldout?`<tr><td><b>held-out IoU</b> (${L.heldout.k}-fold by image)</td>`+
+      `<td class="n"><b>${L.heldout.mean_iou.toFixed(3)}</b> `+
+      `<span style="color:var(--ink3)">±${L.heldout.std_iou.toFixed(3)}, `+
+      `worst ${L.heldout.min_iou.toFixed(3)}</span></td></tr>`:"")+
+    `<tr><td>ground-truth IoU <span style="color:var(--ink3)">(in-sample)</span></td>`+
+      `<td class="n">${(i.iou??0).toFixed(3)} → `+
       `${(c.iou??0).toFixed(3)}${delta(i.iou,c.iou,true)}</td></tr>`+
     `<tr><td>recall</td><td class="n">${(i.recall??0).toFixed(3)} → `+
       `${(c.recall??0).toFixed(3)}${delta(i.recall,c.recall,true)}</td></tr>`+
     `<tr><td>background marked crack</td><td class="n">${pct(L.incumbent_clean_fp)} → `+
       `${pct(L.candidate_clean_fp)}${delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp")}</td></tr>`+
     `</table>`+
-    `<div class="cav">IoU is measured on the same four ground-truth `+
-      `images the model trains on, so read it as a floor, not proof it generalises. `+
-      `<b>Background</b> is the independent check: ${L.clean_specimens||0} specimens with no `+
-      `cracks in them, where every marked pixel is wrong.</div>`+
+    (L.heldout
+      ? `<div class="cav"><b>Held-out IoU</b> refits the model ${L.heldout.k} times, each time `+
+        `leaving one whole ground-truth image out, so train and test never share an image. `+
+        `That is the number to trust. The in-sample IoU above is measured on images the model `+
+        `trained on and runs about 0.11 higher — random pixel-level k-fold is worse still, `+
+        `inflating it by the same amount, because neighbouring pixels share features.</div>`
+      : `<div class="cav">IoU is measured on the same four ground-truth images the model `+
+        `trains on, so read it as a floor, not proof it generalises.`+
+        (L.heldout_error?` Cross-validation failed: ${L.heldout_error}`:"")+`</div>`)+
+    `<div class="cav"><b>Background</b> is the other independent check: `+
+      `${L.clean_specimens||0} specimens with no cracks in them, where every marked pixel `+
+      `is wrong.</div>`+
     trendTxt+
     `<span class="more" onclick="toggleReportDetail()">what it trained on, per specimen…</span>`+
     `<div class="det" id="rdet" style="display:none"></div>`;
@@ -380,6 +396,11 @@ function toggleReportDetail(){
     `<tr><td>gate tolerances</td><td class="n">IoU ${L.iou_tol} · background `+
       `${((L.fp_tol||0)*100).toFixed(1)}pp</td></tr>`+
     `</table>`+
+    (L.heldout?`<div class="cav" style="margin-top:5px">held-out IoU per image `+
+      `(refit ${L.heldout.k}x, ${px(L.heldout.rows_per_image)} px sampled per image)</div><table>`+
+      L.heldout.per_fold.map(f=>`<tr><td>${f.held_out}</td><td class="n">`+
+        `${f.iou.toFixed(3)} <span style="color:var(--ink3)">P ${f.precision.toFixed(2)} `+
+        `R ${f.recall.toFixed(2)}</span></td></tr>`).join("")+`</table>`:"")+
     (rows?`<div class="cav" style="margin-top:5px">per crack-free specimen</div><table>${rows}</table>`:"");
   d.style.display="";
 }

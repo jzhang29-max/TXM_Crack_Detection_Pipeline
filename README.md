@@ -294,9 +294,10 @@ hour or two and people reload:
 
 ```
 Retrain deployed · 2026-08-19 10:27:22
-  ground-truth IoU          0.939 → 0.940   ≈ same
-  recall                    0.985 → 0.986   +0.001
-  background marked crack   0.24% → 0.26%   +0.03pp
+  held-out IoU (4-fold by image)   0.815   ±0.052, worst 0.755
+  ground-truth IoU (in-sample)     0.939 → 0.940   ≈ same
+  recall                           0.985 → 0.986   +0.001
+  background marked crack          0.24% → 0.26%   +0.03pp
 
 IoU is measured on the same four ground-truth images the model trains on, so read it
 as a floor, not proof it generalises. Background is the independent check: 6 specimens
@@ -304,6 +305,27 @@ with no cracks in them, where every marked pixel is wrong.
 
 background over the last 3 retrains: 0.14% → 0.24% → 0.26%
 ```
+
+**Held-out IoU comes first because it is the only number that answers "how will this do on
+an image it has not seen".** It refits the model once per ground-truth image, each time
+leaving that whole image out, so train and test never share an image. On this data it reads
+**0.815** against the in-sample **0.939** — the gap is the overfitting, and it is large.
+
+Do **not** replace this with ordinary k-fold. Shuffling pixels into folds leaks and leaks in
+the flattering direction, because the 17 hand-crafted features come from neighbourhoods
+reaching 256 px and a SAM embedding is a bilinear lookup into a 64×64 grid per 1024 px tile,
+so a 16×16 block of pixels shares essentially one embedding vector. Measured with the
+deployed architecture on identical rows:
+
+| protocol | mean IoU | fold sd |
+|---|---|---|
+| the gate's in-sample figure | 0.939 | — |
+| random 4-fold, pixels shuffled | 0.930 | **0.003** |
+| grouped 4-fold, split by image | **0.824** | 0.050 |
+
+Random k-fold inflates the score by **0.106** and reports a fold spread of 0.003 while doing
+it — four genuinely different specimens cannot agree that closely, and that tightness is the
+tell. `python3 code/crossval.py --demo-leak` reproduces both columns.
 
 The trend line is the point. All of this was already measured and then thrown away with the
 job, so the interface said only "retrain complete" — and three consecutive retrains here

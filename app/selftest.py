@@ -509,6 +509,21 @@ def main():
             need = ["candidate", "incumbent", "candidate_clean_fp", "incumbent_clean_fp",
                     "deployed", "when"]
             missing = [k for k in need if L.get(k) is None]
+            # The held-out number is the one a person should read. If it is present it must
+            # be BELOW the in-sample IoU -- above it would mean the grouping leaked and the
+            # honest number is not honest.
+            ho = L.get("heldout")
+            if ho:
+                ins = (L.get("candidate") or {}).get("iou")
+                check("held-out IoU is grouped by image and below the in-sample figure",
+                      ho.get("grouped_by") == "image" and ho.get("k", 0) >= 2
+                      and (ins is None or ho["mean_iou"] < ins),
+                      f"{ho.get('k')}-fold by {ho.get('grouped_by')}: "
+                      f"{ho.get('mean_iou')} vs in-sample {ins} "
+                      f"(sd {ho.get('std_iou')}, worst {ho.get('min_iou')})")
+            else:
+                skip("held-out IoU is grouped by image and below the in-sample figure",
+                     "no cross-validated score recorded for the last retrain yet")
             check("retrain report is kept after the job is gone", not missing,
                   f"{rr.get('n_total')} recorded; last {L.get('stamp')} "
                   f"IoU {(L.get('incumbent') or {}).get('iou', 0):.3f}->"

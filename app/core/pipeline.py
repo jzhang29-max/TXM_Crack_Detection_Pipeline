@@ -485,6 +485,131 @@ def clean_fp_measured(model_key):
     return val[0], val[1]
 
 
+# 60k rather than 30k: the per-fold FITS are capped at CV_TRAIN_CAP either way, so a
+# bigger sample costs only sampling and prediction time (a few seconds) and halves the
+# sampling noise in the number people will read. At 30k this measured 0.8107 against
+# 0.8241 from a 120k-row harness -- a 0.013 gap that is pure sample size.
+CV_ROWS_PER_IMAGE = 60000
+CV_TRAIN_CAP = 90000
+
+
+def _gt_rows(stem, n, rng):
+    """n pixels sampled UNIFORMLY from one ground-truth image, as [17 | 256] features.
+
+    Uniform, not class-balanced, so the sample's crack fraction equals the real image's and
+    IoU measured on it is an unbiased estimate of the whole-image value.
+    """
+    gt = np.asarray(np.load(os.path.join(GT_CACHE, f"{stem}_gt.npy"), mmap_mode="r")).astype(bool)
+    feat_p = os.path.join(GT_CACHE, f"{stem}_features.npy")
+    if not os.path.exists(feat_p):
+        return None
+    feat = np.load(feat_p, mmap_mode="r")
+    if feat.shape[:2] != gt.shape:
+        return None
+    H_, W_ = gt.shape
+    idx = np.sort(rng.choice(H_ * W_, min(n, H_ * W_), replace=False))
+    rr, cc = np.unravel_index(idx, (H_, W_))
+    x17 = np.asarray(feat[rr, cc, :], np.float32)
+    del feat
+    block = x17
+    if get_model().needs_sam():
+        coords, embs = gt_embedding(stem)
+        if coords is not None:
+            b = np.zeros((len(rr), embs.shape[1]), np.float32)
+            todo = np.ones(len(rr), bool)
+            for t in range(len(coords) - 1, -1, -1):
+                y0, x0 = int(coords[t][0]), int(coords[t][1])
+                sel = (todo & (rr >= y0) & (rr < y0 + M.TILE)
+                       & (cc >= x0) & (cc < x0 + M.TILE))
+                if sel.any():
+                    b[sel] = M.interp_tile(embs[t], rr[sel] - y0, cc[sel] - x0)
+                    todo &= ~sel
+            block = np.concatenate([x17, b], axis=1)
+    return block, gt.ravel()[idx], x17.shape[1]
+
+
+def crossval_grouped(progress=None):
+    """Honest generalisation estimate: k-fold GROUPED BY IMAGE, k = number of GT images.
+
+    WHY NOT ORDINARY k-FOLD. Splitting pixels at random leaks, badly. The 17 hand-crafted
+    features are computed from neighbourhoods reaching 256 px, and a SAM embedding is a
+    bilinear lookup into a 64x64 grid per 1024-px tile, so a 16x16 block of pixels shares
+    essentially one embedding vector. A randomly held-out pixel therefore almost always has
+    a training pixel a few pixels away carrying the same measurement. Measured on this data
+    with the deployed architecture: random 4-fold gives IoU 0.930 with a fold sd of 0.003,
+    grouping by image gives 0.824 with a fold sd of 0.050. Random k-fold does not merely
+    fail to reveal overfitting, it inflates the score by 0.106 and reports a suspiciously
+    tight spread while doing it.
+
+    Grouping by image is the coarsest split the data supports and the only one where train
+    and test share no neighbourhood. With four ground-truth images it is leave-one-image-out.
+
+    WHAT THIS NUMBER IS AND IS NOT. It measures THE ARCHITECTURE PLUS THE GROUND TRUTH, at
+    a capped row count, refit from scratch per fold. It is not the deployed model's own
+    score -- that model saw all four images, so it has no honest score and never can.
+    Read this as "what a model built this way scores on an image it has not seen".
+
+    n = 4, and the fold sd is ~0.05. Differences under ~0.015 are reseeding noise.
+    """
+    if not _gt_available():
+        return None
+    from sklearn.model_selection import GroupKFold
+    rng = np.random.RandomState(0)
+    Xs, ys, gs = [], [], []
+    for gi, stem in enumerate(GT_STEMS):
+        if progress:
+            progress(f"cross-validation: sampling {stem}", gi, len(GT_STEMS))
+        got = _gt_rows(stem, CV_ROWS_PER_IMAGE, rng)
+        if got is None:
+            continue
+        block, y, n17 = got
+        Xs.append(block); ys.append(y); gs.append(np.full(len(y), gi))
+    if len(Xs) < 2:
+        return None
+    X = np.concatenate(Xs); y = np.concatenate(ys); g = np.concatenate(gs)
+    del Xs, ys, gs
+    k = len(np.unique(g))
+
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    def _clf():
+        return Pipeline([("scaler", StandardScaler()),
+                         ("mlp", MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300,
+                                               random_state=0, early_stopping=True,
+                                               n_iter_no_change=8))])
+
+    per_fold = []
+    for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=g), 1):
+        held = GT_STEMS[int(g[te][0])]
+        if progress:
+            progress(f"cross-validation fold {f}/{k}: holding out {held}", f, k)
+        if len(tr) > CV_TRAIN_CAP:
+            tr = np.random.RandomState(7).choice(tr, CV_TRAIN_CAP, replace=False)
+        # The deployed architecture: mean probability of a 17-feature model and the hybrid.
+        probs = []
+        for cols in (slice(0, n17), slice(0, X.shape[1])):
+            probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
+        prob = np.mean(probs, axis=0)
+        pred = prob >= 0.5
+        tp = int((pred & y[te]).sum()); fp = int((pred & ~y[te]).sum())
+        fn = int((~pred & y[te]).sum())
+        per_fold.append(dict(held_out=held, n=int(len(te)),
+                             iou=round(tp / max(tp + fp + fn, 1), 4),
+                             precision=round(tp / max(tp + fp, 1), 4),
+                             recall=round(tp / max(tp + fn, 1), 4)))
+    ious = [f["iou"] for f in per_fold]
+    return dict(k=k, per_fold=per_fold,
+                mean_iou=round(float(np.mean(ious)), 4),
+                std_iou=round(float(np.std(ious)), 4),
+                min_iou=round(float(np.min(ious)), 4),
+                mean_precision=round(float(np.mean([f["precision"] for f in per_fold])), 4),
+                mean_recall=round(float(np.mean([f["recall"] for f in per_fold])), 4),
+                rows_per_image=CV_ROWS_PER_IMAGE, train_cap=CV_TRAIN_CAP,
+                grouped_by="image")
+
+
 RETRAIN_HISTORY = os.path.join(S.DATA, "models", "retrain_history.json")
 HISTORY_KEEP = 20
 
@@ -539,6 +664,8 @@ def record_retrain(result, stamp=None):
                             if (m.get("corrected_crack_px") or 0)
                             or (m.get("corrected_not_px") or 0)),
         iou_tol=IOU_TOL, fp_tol=FP_TOL,
+        heldout=result.get("heldout"),
+        heldout_error=result.get("heldout_error"),
     )
     hist = retrain_history()
     hist.append(entry)
@@ -821,6 +948,18 @@ def retrain(deploy=True, progress=None):
                       reason=(None if passes else
                               "; ".join(bits) + ". Not deployed. The model file is kept "
                               "so you can inspect it."))
+    # The honest number. Everything above is in-sample -- the candidate trains on the same
+    # four ground-truth images the gate scores it on -- so it cannot answer "how will this do
+    # on an image it has not seen". This can, at the cost of ~1 minute on a 90 minute job.
+    try:
+        if progress:
+            progress("cross-validation (grouped by image)", 0, 1)
+        result["heldout"] = crossval_grouped(progress=progress)
+    except Exception as e:                                      # noqa: BLE001
+        # Never let the honest-number pass sink a retrain that already succeeded.
+        result["heldout"] = None
+        result["heldout_error"] = f"{type(e).__name__}: {e}"
+
     # Record the scorecard whether or not it deployed. A REJECTED retrain is the most
     # useful entry in the history -- it is the one a person will want to look at again.
     record_retrain(result, stamp=stamp)
