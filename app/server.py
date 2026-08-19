@@ -66,6 +66,21 @@ def _job(fn, label):
 
 
 # ------------------------------------------------------------------- static
+@app.errorhandler(ValueError)
+def _bad_value(e):
+    """A crafted image id should read as "no such image", not a 500 with a traceback.
+
+    store.path() now raises ValueError on any id that is not [A-Za-z0-9._-] -- that is what
+    stops DELETE /api/image/%2e%2e from handing shutil.rmtree the whole app_data directory.
+    Every route funnels through it, so catching the exception here means no endpoint has to
+    remember to validate, including ones added later.
+    """
+    if "bad image id" in str(e) or "refusing to delete" in str(e):
+        return jsonify(ok=False, error="no such image"), 404
+    app.logger.exception("unhandled ValueError")
+    return jsonify(ok=False, error=str(e)), 500
+
+
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")

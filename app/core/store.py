@@ -24,6 +24,7 @@ Layout:
 import hashlib
 import json
 import os
+import re
 import shutil
 import threading
 import time
@@ -54,7 +55,28 @@ def new_id(filename, content=None):
     return f"{_slug(filename)}__{h}"
 
 
+# An image id reaches this module straight out of a URL segment, and every filesystem
+# access in the app funnels through path(). Unvalidated, ".." was enough to walk out of
+# app_data/images: path("..") resolves to app_data itself and path("../..") to the whole
+# repository, both with os.path.isdir() true -- so DELETE /api/image/%2e%2e handed
+# delete_image() a live directory and shutil.rmtree took every correction mask, the model
+# registry and the retrain history with it. Werkzeug unquotes the path before routing and
+# its default converter regex is [^/]+, which ".." matches, so the segment arrives intact.
+#
+# Validated HERE rather than at each route, because a single chokepoint cannot be forgotten
+# by the next endpoint someone adds. Real ids are _slug() + a content hash, so they only
+# ever contain [A-Za-z0-9._-]; every existing id passes unchanged.
+_SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,160}$")
+
+
+def valid_id(image_id):
+    sid = str(image_id)
+    return bool(_SAFE_ID.match(sid)) and ".." not in sid
+
+
 def path(image_id, *parts):
+    if not valid_id(image_id):
+        raise ValueError(f"bad image id: {image_id!r}")
     return os.path.join(IMAGES, image_id, *parts)
 
 
@@ -364,7 +386,13 @@ def reconcile_statuses():
 
 
 def delete_image(image_id):
-    d = path(image_id)
+    d = path(image_id)                      # raises on a crafted id before we get here
+    # Independent of the id check, and deliberately so: this is the only rmtree in the app,
+    # and it should be impossible for it to run anywhere but inside images/ no matter what
+    # future change reaches it.
+    root = os.path.realpath(IMAGES) + os.sep
+    if not os.path.realpath(d).startswith(root):
+        raise ValueError(f"refusing to delete outside {IMAGES}: {d!r}")
     if os.path.isdir(d):
         shutil.rmtree(d)
         return True

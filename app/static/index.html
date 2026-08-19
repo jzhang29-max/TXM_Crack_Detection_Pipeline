@@ -249,6 +249,12 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let IMAGES=[],CUR=null,MODE="crack",DRAW=false,PTS=[],POLL=null,BUSY=false;
 let STROKE_MODE="crack",READY=false,LASTK=0,FITTED=true;
 
+// Uploaded filenames are attacker-influenced text that persists in meta.json and is
+// re-rendered on every page load. They were interpolated raw into innerHTML, so a file
+// named `<img src=x onerror=fetch('/api/image/..',{method:'DELETE'})>.tif` executed in the
+// app's own origin. Escape at the point of rendering; never trust the round trip.
+const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,
+  c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const say=(t,c)=>{const e=$("#msg");e.textContent=t;e.style.color=c||"var(--ink2)";};
 const tag=t=>{$("#tag").textContent=t||"";$("#tag").style.display=t?"":"none";};
 const j=async(u,o)=>(await fetch(u,o)).json();
@@ -300,7 +306,7 @@ async function loadModelList(){
     // the false-positive gate, so they deployed legitimately and stay selectable, and
     // with only a name to go on there is nothing in the interface to warn anyone off.
     const fp=m.clean_fp==null?" · bg not measured":` · ${fpText(m.clean_fp)} bg`;
-    return `<option value="${m.id}"${m.current?" selected":""}>${m.label}${state}${fp}</option>`;
+    return `<option value="${m.id}"${m.current?" selected":""}>${esc(m.label)}${state}${fp}</option>`;
   }).join("");
   showFpNote(r.models.find(m=>m.current));
 }
@@ -367,7 +373,7 @@ async function loadRetrainReport(){
       (L.deployed?`deployed`:`<span style="color:var(--bad)">not deployed</span>`)+
       ` ${(L.when||"").slice(11,16)} · `+
       `<span class="more" onclick="toggleReportDetail()">details</span></div>`+
-    (L.deployed?"":`<div class="cav" style="color:var(--bad)">${L.reason||""}</div>`)+
+    (L.deployed?"":`<div class="cav" style="color:var(--bad)">${esc(L.reason||"")}</div>`)+
     `<div class="det" id="rdet" style="display:none"></div>`;
 }
 let RDET_OPEN=false;
@@ -380,7 +386,7 @@ function toggleReportDetail(){
   RDET_OPEN=true;
   const L=RREPORT.last;
   const rows=(L.clean_fp_by_specimen||[]).map(x=>
-    `<tr><td>${(x.image||"").slice(22,52)}</td><td class="n">${pct(x.before)} → `+
+    `<tr><td>${esc((x.image||"").slice(22,52))}</td><td class="n">${pct(x.before)} → `+
     `${pct(x.after)}${delta(x.before,x.after,false,"pp")}</td></tr>`).join("");
   d.innerHTML=
     `<div class="cav">`+
@@ -482,8 +488,8 @@ async function loadList(keep){
     const old=im.stale?` · <span style="color:var(--warn)">older model</span>`:"";
     el.innerHTML=`<span class="dot${ready?"":" busy"}"></span>`+
       (ready?`<img class="th" src="/api/image/${im.id}/thumb.png?w=128" loading="lazy">`:`<span class="th"></span>`)+
-      `<span class="tx"><span class="nm">${im.filename||im.id}</span><span class="sub">${pct}${cor}${old}</span></span>`+
-      `<button class="x" title="Remove ${im.filename||im.id} from the app (your original file is untouched)">\u00d7</button>`;
+      `<span class="tx"><span class="nm">${esc(im.filename||im.id)}</span><span class="sub">${pct}${cor}${old}</span></span>`+
+      `<button class="x" title="Remove ${esc(im.filename||im.id)} from the app (your original file is untouched)">\u00d7</button>`;
     el.setAttribute("aria-label",
       `${im.filename||im.id}, ${pct}${cor?", edited":""}${im.stale?", older model":""}`);
     el.onclick=()=>show(im.id);

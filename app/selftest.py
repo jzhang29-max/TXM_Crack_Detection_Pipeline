@@ -498,6 +498,36 @@ def main():
     # ---- model picker moved to check_model_picker(), called BEFORE any upload.
     #      See that function for why placement matters.
 
+    # ---- a crafted image id must never reach the filesystem. Before store.path()
+    #      validated its argument, DELETE /api/image/%2e%2e handed shutil.rmtree the whole
+    #      app_data directory -- every correction mask, the model registry and the retrain
+    #      history in one request.
+    try:
+        # This check runs before the pruning block that also imports from core, so it must
+        # put core on the path itself rather than depend on ordering.
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "core"))
+        import store as _St
+        bad = ["..", "../..", ".", "a/../..", "", "/etc/passwd"]
+        refused = 0
+        for b in bad:
+            try:
+                _St.path(b)
+            except ValueError:
+                refused += 1
+        check("a crafted image id cannot escape app_data", refused == len(bad),
+              f"{refused}/{len(bad)} refused by store.path()")
+        real = [m["id"] for m in _St.list_images()]
+        check("every real image id still passes validation",
+              all(_St.valid_id(i) for i in real), f"{len(real)} ids")
+        # And over HTTP it must read as "no such image", not a 500 traceback. req() returns
+        # (status, body) for 4xx as well -- it deliberately does not raise on those -- so
+        # read the status rather than expecting an exception.
+        st, body = req(B, "/api/image/%2e%2e", "DELETE", timeout=30)
+        check("DELETE with a traversal id answers 404, not 500", st == 404,
+              f"http {st}, {str(body)[:60]}")
+    except Exception as e:                                      # noqa: BLE001
+        check("crafted image ids are refused", False, str(e))
+
     # ---- speck pruning: it must actually prune, and it must NEVER be able to remove
     #      crack the user painted by hand. The second is the safety property, and it holds
     #      only because prune_specks runs BEFORE corrections are layered on -- swap those
