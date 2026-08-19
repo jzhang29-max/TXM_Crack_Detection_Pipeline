@@ -235,7 +235,10 @@ def api_mask(iid):
     # test. Verified the utime does currently save it; keying on the model means it no
     # longer has to.
     mkey = S.read_meta(iid).get("model_key") or "nomodel"
-    tag = f"{mkey}_{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
+    # MIN_BLOB_PX is in the tag: speck pruning changes every mask, so a cache written
+    # before the rule existed -- or under a different threshold -- must not be served.
+    tag = (f"{mkey}_{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
+           f"_p{0 if pp else P.MIN_BLOB_PX}")
     cache = S.path(iid, "overlays", f"{tag}.png")
     srcs = [S.path(iid, "prob.npy"), S.path(iid, "correction.npy")]
     # Strictly older, not "not newer". Filesystem timestamps are coarse enough that an

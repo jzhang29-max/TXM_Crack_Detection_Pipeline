@@ -498,6 +498,41 @@ def main():
     # ---- model picker moved to check_model_picker(), called BEFORE any upload.
     #      See that function for why placement matters.
 
+    # ---- speck pruning: it must actually prune, and it must NEVER be able to remove
+    #      crack the user painted by hand. The second is the safety property, and it holds
+    #      only because prune_specks runs BEFORE corrections are layered on -- swap those
+    #      two lines in effective_mask and this check is what catches it.
+    try:
+        import numpy as _np
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "core"))
+        import store as _S
+        import pipeline as _P
+        check("speck pruning is on by default with a measured threshold",
+              getattr(_P, "MIN_BLOB_PX", 0) >= 1000,
+              f"MIN_BLOB_PX = {getattr(_P, 'MIN_BLOB_PX', None)}")
+        painted = [m for m in _S.list_images() if (_S.correction_counts(m["id"])[0] or 0) > 10000]
+        if not painted:
+            skip("pruning never deletes hand-painted crack", "no image has painted crack")
+        else:
+            worst, worst_name = 1.0, ""
+            for m in painted[:12]:
+                corr = _S.load_npy(m["id"], "correction.npy", mmap=True)
+                eff = _P.effective_mask(m["id"])
+                if corr is None or eff is None:
+                    continue
+                pnt = _np.asarray(corr) == 1
+                tot = int(pnt.sum())
+                if tot:
+                    frac = float((pnt & eff).sum()) / tot
+                    if frac < worst:
+                        worst, worst_name = frac, (m.get("filename") or "")[:34]
+                del corr, eff, pnt
+            check("pruning never deletes hand-painted crack", worst >= 0.999999,
+                  f"worst of {min(len(painted), 12)} images: {worst*100:.4f}% kept "
+                  f"({worst_name})")
+    except Exception as e:                                      # noqa: BLE001
+        check("speck pruning", False, str(e))
+
     # ---- the retrain scorecard must be persisted, not just live in memory.
     try:
         _, rr = req(B, "/api/retrain_report", timeout=60)

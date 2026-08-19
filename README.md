@@ -421,11 +421,18 @@ full study, including 33 verified citations.
   p=0.125, so nothing here can be statistically significant. Treat differences
   under ~0.015 IoU as indistinguishable from reseeding — that is the measured
   run-to-run noise.
-- **Post-processing is off by default and is under suspicion.** The
-  shape-validation and minimum-size filter measurably removes thin crack: on one
-  ground-truth image it costs 0.084 IoU and 0.072 recall, and hand-painted stroke
-  recall drops from ~0.87 at a raw threshold to 0.14–0.40 after it. Toggle it on
-  if you want the old behaviour.
+- **Specks under 2000 px are pruned, and that is measured.** A minimum-area filter
+  improves held-out IoU 0.8317 → 0.8391 on 4 of 4 leave-one-image-out folds and cuts
+  false positives on crack-free specimen from 0.264% to 0.106%. It runs *before* your
+  corrections are applied, so it can never remove crack you painted — `selftest.py`
+  asserts that. 2000 rather than the top-scoring 5000 because your own 30.2 M crack
+  labels show 5000 costs the worst image 12.4% of its confirmed crack. Details in
+  `docs/SAM_COMBINATION_SWEEP.md`.
+- **The LEGACY post-processing is still off by default and still under suspicion.** That
+  is a different, compound rule — blur, closing, ring rejection, eccentricity *and*
+  hysteresis growth — which measured −0.084 IoU and drops hand-painted stroke recall from
+  ~0.87 to 0.14–0.40. Isolating its pieces showed the size filter was never the harmful
+  part; hysteresis linking was measured separately and is the worst rule of the six.
 - **Retrain refuses to deploy a regression.** A candidate must hold IoU within
   0.01 *and* not raise its false-positive rate on the crack-free specimens by more
   than 0.5 points. Every regression this project has had passed a single-metric check —

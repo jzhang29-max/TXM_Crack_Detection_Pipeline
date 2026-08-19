@@ -138,14 +138,9 @@ reading a numerics artefact rather than an architecture difference.**
 
 ## Where the headroom actually is
 
-1. **Spatial post-processing** — the largest untested lever, and *structurally* unevaluable
-   in this harness, whose test rows are uniformly scattered pixels with no neighbours. The
-   signature is present: precision 0.850/0.862 on the two hard folds with predicted/true area
-   at 1.07/1.06 is scattered false-positive speckle, which connected-component pruning or
-   hysteresis linking removes at near-zero recall cost. Note the app's existing
-   post-processing is off by default because *shape validation plus a minimum-size filter*
-   measured −0.084 IoU; a gentler dual-threshold linking rule is a different thing and has
-   never been tried.
+1. ~~**Spatial post-processing**~~ — **TESTED, and it was right.** See the section below;
+   a minimum-area filter is now on by default. It was the largest remaining lever and it
+   beat every architecture change in this document.
 2. **More ground truth.** Four `_gt.npy` files against 71 labelled images, and one atypical,
    different-magnification frame decides every ranking above. A fifth and sixth ground-truth
    image would be worth more than any architecture change in this document.
@@ -169,3 +164,72 @@ exactly that distance (4.4e-2 at the edge, 1.1e-3 at 128 px, 0 at 256 px).
 The owner's 71 correction masks were SHA-256 fingerprinted before the run and verified
 **71/71 byte-identical** afterwards. No agent read or wrote anything under `app_data/`
 except the derived SAM embedding cache.
+
+
+---
+
+# Follow-up: spatial post-processing, the one lever this sweep could not test
+
+The sweep flagged this as its biggest blind spot, and correctly: its test rows were 120,000
+pixels sampled uniformly and scattered, so no test pixel had neighbours. **You cannot
+measure a neighbourhood operation on data with the neighbourhoods removed.**
+
+Retested properly on **full-resolution probability maps** from models that never saw the
+image they are scored on — four leave-one-image-out refits, predicting every pixel of each
+ground-truth frame. Parameters are chosen by **nested** cross-validation: for each held-out
+image the parameter is picked on the other three, so nothing is tuned on the answer sheet.
+
+| rule | held-out IoU | vs none | folds won | crack-free FP |
+|---|---|---|---|---|
+| none | 0.8317 | — | — | 0.264% |
+| **minimum area** | **0.8420** | **+0.0103** | **4 of 4** | **0.037%** |
+| elongation filter | 0.8386 | +0.0068 | 4 of 4 | 0.199% |
+| morphological closing | 0.8315 | −0.0002 | 2 of 4 | 0.267% |
+| hysteresis linking | 0.8313 | −0.0005 | 1 of 4 | 0.502% |
+| hysteresis + minimum area | 0.8219 | −0.0099 | 1 of 4 | 1.105% |
+
+Two conclusions, and the second is the interesting one.
+
+**Hysteresis linking does not work here.** It was the untested rule with the most appeal —
+trust confident pixels, let them recruit weaker neighbours — and it is the *worst* of the
+six, roughly doubling false positives on crack-free specimen. A weak cluster with no
+confident core still grows if it is connected to itself.
+
+**The size filter was never the harmful part of the legacy rule.** The app's existing
+post-processing measured −0.084 IoU and is off by default, and it bundles a blur, a closing,
+ring rejection via Euler number, an eccentricity test *and* hysteresis growth. Isolating the
+pieces shows minimum-area alone is a clear win. The compound rule was hiding it.
+
+## Choosing the threshold, using the owner's own labels
+
+Every metric improves monotonically with area, so IoU alone would say 5000. But all four
+ground-truth images are wide-open cracks — 65 px median width — and are structurally
+incapable of revealing what this filter could destroy: a thin crack whose every component is
+small. The legacy rule carries exactly that warning (stroke recall 0.869 raw vs 0.14–0.40
+post-processed).
+
+The owner's 30.2 M hand-drawn crack pixels across 56 images, including specimen groups with
+no ground truth at all, are the only data that can answer it:
+
+| min area | held-out IoU | crack-free FP | worst image's confirmed crack kept |
+|---|---|---|---|
+| none | 0.8317 | 0.264% | 100.0% |
+| 1000 | 0.8371 | 0.144% | 97.3% |
+| **2000 (shipped)** | **0.8391** | **0.106%** | **97.3%** |
+| 5000 | 0.8420 | 0.037% | **87.6%** ← cliff |
+
+**2000, not the top-scoring 5000.** At 5000 the worst single image loses 12.4% of the crack
+its owner confirmed; 2000 costs the same 2.7% that 1000 does. Trading 0.003 IoU for a
+researcher's work is not a trade worth making.
+
+## What it does in the app
+
+`pipeline.MIN_BLOB_PX = 2000`, applied in `effective_mask` **before** the correction layer,
+which is the safety property that matters: **pruning can never remove crack you painted
+yourself**, because your labels are re-applied on top of the pruned mask. `selftest.py`
+asserts this, and it is the check that fires if those two lines are ever swapped.
+
+Measured across all 71 loaded images, mean predicted area moves 8.713% → 8.552% — barely,
+because real cracks are orders of magnitude too large to prune. The change lands almost
+entirely where it should: on `B2_amb_mosaic_2`, a confirmed crack-free specimen, 100% of the
+predicted area was specks and the frame now reads 0.000%.

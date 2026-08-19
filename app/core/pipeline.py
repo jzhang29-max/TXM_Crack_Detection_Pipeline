@@ -277,7 +277,8 @@ def ingest(image_id, progress=None, force=False):
             S.save_npy(image_id, "correction.npy", np.zeros(img01.shape, np.uint8))
         cached = S.load_npy(image_id, "prob.npy", mmap=True)
         S.write_meta(image_id, dict(status="ready", model=mdl.describe(),
-                                    predicted_area=float((np.asarray(cached) > 0.5).mean()),
+                                    predicted_area=float(prune_specks(
+                                        np.asarray(cached) > 0.5).mean()),
                                     ingested=time.time()))
         return True
 
@@ -299,7 +300,10 @@ def ingest(image_id, progress=None, force=False):
         S.save_npy(image_id, "correction.npy", np.zeros(img01.shape, np.uint8))
 
     S.write_meta(image_id, dict(status="ready", model=mdl.describe(),
-                                predicted_area=float((prob > 0.5).mean()),
+                                # The pruned figure, because that is the mask the user is
+                                # shown. Reporting the raw area next to a pruned overlay
+                                # makes the sidebar disagree with the picture beside it.
+                                predicted_area=float(prune_specks(prob > 0.5).mean()),
                                 ingested=time.time()))
     return True
 
@@ -320,12 +324,49 @@ def get_model():
     return _model_cache["obj"]
 
 
-def effective_mask(image_id, threshold=0.5, postprocess=False):
+# Drop predicted blobs smaller than this many pixels. MEASURED, and the measurement is
+# the whole argument for it:
+#
+#   min area   held-out IoU   folds won   crack-free FP   worst image's confirmed crack kept
+#   none         0.8317           -          0.264%                100.0%
+#   1000         0.8371        4 of 4        0.144%                 97.3%
+#   2000         0.8391        4 of 4        0.106%                 97.3%
+#   5000         0.8420        4 of 4        0.037%                 87.6%   <- cliff
+#
+# IoU is leave-one-image-out on full-resolution probability maps from models that never saw
+# the image they are scored on -- a neighbourhood operation cannot be evaluated on the
+# sampled scattered pixels the architecture sweep used. Every metric improves monotonically
+# up to 2000, and it wins on all four folds, not on the mean.
+#
+# 2000 rather than the top-scoring 5000 because of the third column, which came from the
+# owner's own 30.2 M hand-drawn crack pixels: at 5000 the worst single image loses 12.4% of
+# the crack its owner confirmed, while 2000 costs the same 2.7% as 1000 does. The extra
+# 0.003 IoU is not worth deleting a researcher's work.
+#
+# THIS IS NOT THE LEGACY POST-PROCESSING. M.postprocess bundles a blur, a closing, ring
+# rejection, an eccentricity test and hysteresis growth, and measured -0.084 IoU, which is
+# why its toggle is off by default. Isolating the pieces shows the size filter was never the
+# harmful part.
+MIN_BLOB_PX = 2000
+
+
+def prune_specks(mask, min_px=None):
+    """Drop connected components below `min_px`. Never touches anything else."""
+    from skimage import morphology
+    n = MIN_BLOB_PX if min_px is None else min_px
+    if not n or not mask.any():
+        return mask
+    return morphology.remove_small_objects(mask, min_size=int(n))
+
+
+def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True):
     """Model prediction with the user's corrections applied on top."""
     prob = S.load_npy(image_id, "prob.npy")
     if prob is None:
         return None
     mask = M.postprocess(prob) if postprocess else (prob > threshold)
+    if prune and not postprocess:
+        mask = prune_specks(mask)
     corr = S.load_npy(image_id, "correction.npy")
     if corr is not None and corr.shape == mask.shape:
         mask = mask.copy()
