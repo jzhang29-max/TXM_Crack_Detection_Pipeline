@@ -293,18 +293,18 @@ page or restarting the server does not lose it, which matters because a retrain 
 hour or two and people reload:
 
 ```
-Retrain deployed · 2026-08-19 10:27:22
-  held-out IoU (4-fold by image)   0.815   ±0.052, worst 0.755
-  ground-truth IoU (in-sample)     0.939 → 0.940   ≈ same
-  recall                           0.985 → 0.986   +0.001
-  background marked crack          0.24% → 0.26%   +0.03pp
+held out     0.815  ±0.05
+background   0.26%  +0.03pp
+in-sample    0.940  ≈ same
+deployed 10:27 · details
 
-IoU is measured on the same four ground-truth images the model trains on, so read it
-as a floor, not proof it generalises. Background is the independent check: 6 specimens
-with no cracks in them, where every marked pixel is wrong.
-
-background over the last 3 retrains: 0.14% → 0.24% → 0.26%
 ```
+
+Three numbers, deliberately. Hovering any row explains it and gives the before/after and
+the trend; **details** expands to what it trained on, the per-image held-out scores and the
+per-specimen background figures. An earlier version of this card put all of that on screen
+at once — 998 characters in a 250 px column, with the background figure repeated four
+times — which is not a scorecard, it is a wall.
 
 **Held-out IoU comes first because it is the only number that answers "how will this do on
 an image it has not seen".** It refits the model once per ground-truth image, each time

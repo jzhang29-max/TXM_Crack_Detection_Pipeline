@@ -288,24 +288,17 @@ async function loadModelList(){
 }
 function fpText(f){return f>=0.01?`${(f*100).toFixed(0)}%`:`${(f*100).toFixed(2)}%`;}
 function showFpNote(m){
-  const el=$("#mfp");
-  if(!el)return;
-  if(!m){el.innerHTML="";return;}
-  if(m.clean_fp==null){
-    el.innerHTML=`<div style="color:var(--ink3);font-size:11.5px;margin-top:4px">`+
-      `Never run over the crack-free specimens, so its background error is unmeasured.</div>`;
-    return;
-  }
+  // Only ever shows a WARNING. The good-case sentence that used to live here repeated the
+  // background figure already in the dropdown and in the scorecard table -- three copies of
+  // one number in a 250 px column.
+  const el=$("#mfp"); if(!el)return;
+  if(!m||!m.fp_warn){el.innerHTML="";return;}
   const best=Math.min(...MODELS.filter(x=>x.clean_fp!=null).map(x=>x.clean_fp));
-  el.innerHTML=m.fp_warn
-    ? `<div style="color:var(--bad);font-size:11.5px;margin-top:4px">Marks `+
-      `<b>${fpText(m.clean_fp)}</b> of crack-free specimen as crack — `+
-      `${Math.round(m.clean_fp/Math.max(best,1e-9))}× the best model you have. `+
-      `Measured on ${m.clean_n} specimens with no cracks in them.</div>`
-    : `<div style="color:var(--ink3);font-size:11.5px;margin-top:4px">`+
-      `Marks ${fpText(m.clean_fp)} of crack-free specimen as crack `+
-      `(${m.clean_n} specimens, measured).</div>`;
+  el.innerHTML=`<div style="color:var(--bad);font-size:11.5px;margin-top:4px">`+
+    `Marks <b>${fpText(m.clean_fp)}</b> of crack-free specimen as crack — `+
+    `${Math.round(m.clean_fp/Math.max(best,1e-9))}× the best model you have.</div>`;
 }
+
 // After a retrain, show what it actually measured. All of this was already computed and
 // then discarded with the job: three retrains here drifted 0.137% -> 0.238% -> 0.264% on
 // crack-free specimen while ground-truth IoU sat flat, and the app said only "complete".
@@ -328,50 +321,35 @@ async function loadRetrainReport(){
   const r=await j("/api/retrain_report").catch(()=>null);
   if(!r||!r.ok||!r.last){el.innerHTML="";return;}
   RREPORT=r; RDET_OPEN=false;
-  const L=r.last, c=L.candidate||{}, i=L.incumbent||{};
-  const ok=L.deployed;
-  const head=ok
-    ? `<span class="hd" style="color:var(--ok)">Retrain deployed</span>`
-    : `<span class="hd" style="color:var(--bad)">Retrain rejected</span>`;
-  // The trend is the point. One retrain's number means little; three in a row drifting
-  // one way is the thing a person needs to see and cannot get from a single figure.
+  const L=r.last, c=L.candidate||{}, i=L.incumbent||{}, H=L.heldout;
   const trend=(r.history||[]).map(h=>h.candidate_clean_fp).filter(v=>v!=null);
-  const trendTxt=trend.length>1
-    ? `<div class="cav">background over the last ${trend.length} retrains: `+
-      trend.map(v=>pct(v)).join(" → ")+`</div>` : "";
-  el.innerHTML=head+` <span style="color:var(--ink3)">· ${L.when||""}`+
-    (L.backfilled?" · reconstructed from job logs":"")+`</span>`+
-    (ok?"":`<div class="cav" style="color:var(--bad)">${L.reason||"did not pass the gate"}</div>`)+
+  // Three numbers. Everything that was prose is now a title= tooltip or lives in the
+  // expander: this column is 250 px wide and had 998 characters of text in it.
+  const row=(label,val,tip,extra)=>
+    `<tr title="${tip}"><td>${label}</td><td class="n">${val}${extra||""}</td></tr>`;
+  el.innerHTML=
     `<table>`+
-    // The held-out number FIRST, because it is the only one that answers "how will this do
-    // on an image it has not seen". The in-sample IoU below it is ~0.11 higher on this data
-    // and reading it first is how people conclude a model is better than it is.
-    (L.heldout?`<tr><td><b>held-out IoU</b> (${L.heldout.k}-fold by image)</td>`+
-      `<td class="n"><b>${L.heldout.mean_iou.toFixed(3)}</b> `+
-      `<span style="color:var(--ink3)">±${L.heldout.std_iou.toFixed(3)}, `+
-      `worst ${L.heldout.min_iou.toFixed(3)}</span></td></tr>`:"")+
-    `<tr><td>ground-truth IoU <span style="color:var(--ink3)">(in-sample)</span></td>`+
-      `<td class="n">${(i.iou??0).toFixed(3)} → `+
-      `${(c.iou??0).toFixed(3)}${delta(i.iou,c.iou,true)}</td></tr>`+
-    `<tr><td>recall</td><td class="n">${(i.recall??0).toFixed(3)} → `+
-      `${(c.recall??0).toFixed(3)}${delta(i.recall,c.recall,true)}</td></tr>`+
-    `<tr><td>background marked crack</td><td class="n">${pct(L.incumbent_clean_fp)} → `+
-      `${pct(L.candidate_clean_fp)}${delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp")}</td></tr>`+
+    (H?row("held out", `<b>${H.mean_iou.toFixed(3)}</b>`,
+        `${H.k}-fold grouped by image: the model is refit ${H.k} times, each time leaving one `+
+        `whole ground-truth image out, so train and test never share an image. `+
+        `sd ${H.std_iou.toFixed(3)}, worst image ${H.min_iou.toFixed(3)}. `+
+        `This is the number to trust.`,
+        ` <span style="color:var(--ink3)">±${H.std_iou.toFixed(2)}</span>`):"")+
+    row("background", pct(L.candidate_clean_fp),
+        `Share of confirmed crack-free specimen marked as crack, over ${L.clean_specimens||0} `+
+        `specimens with nothing to find. Was ${pct(L.incumbent_clean_fp)}.`+
+        (trend.length>1?` Last ${trend.length} retrains: ${trend.map(v=>pct(v)).join(" → ")}.`:""),
+        delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp"))+
+    row("in-sample", (c.iou??0).toFixed(3),
+        `Ground-truth IoU, measured on the same four images the model trains on, so it runs `+
+        `about 0.11 high. Recall ${(c.recall??0).toFixed(3)}. Kept only for comparison.`,
+        delta(i.iou,c.iou,true))+
     `</table>`+
-    (L.heldout
-      ? `<div class="cav"><b>Held-out IoU</b> refits the model ${L.heldout.k} times, each time `+
-        `leaving one whole ground-truth image out, so train and test never share an image. `+
-        `That is the number to trust. The in-sample IoU above is measured on images the model `+
-        `trained on and runs about 0.11 higher — random pixel-level k-fold is worse still, `+
-        `inflating it by the same amount, because neighbouring pixels share features.</div>`
-      : `<div class="cav">IoU is measured on the same four ground-truth images the model `+
-        `trains on, so read it as a floor, not proof it generalises.`+
-        (L.heldout_error?` Cross-validation failed: ${L.heldout_error}`:"")+`</div>`)+
-    `<div class="cav"><b>Background</b> is the other independent check: `+
-      `${L.clean_specimens||0} specimens with no cracks in them, where every marked pixel `+
-      `is wrong.</div>`+
-    trendTxt+
-    `<span class="more" onclick="toggleReportDetail()">what it trained on, per specimen…</span>`+
+    `<div class="cav">`+
+      (L.deployed?`deployed`:`<span style="color:var(--bad)">not deployed</span>`)+
+      ` ${(L.when||"").slice(11,16)} · `+
+      `<span class="more" onclick="toggleReportDetail()">details</span></div>`+
+    (L.deployed?"":`<div class="cav" style="color:var(--bad)">${L.reason||""}</div>`)+
     `<div class="det" id="rdet" style="display:none"></div>`;
 }
 let RDET_OPEN=false;
@@ -386,7 +364,16 @@ function toggleReportDetail(){
   const rows=(L.clean_fp_by_specimen||[]).map(x=>
     `<tr><td>${(x.image||"").slice(22,52)}</td><td class="n">${pct(x.before)} → `+
     `${pct(x.after)}${delta(x.before,x.after,false,"pp")}</td></tr>`).join("");
-  d.innerHTML=`<table>`+
+  d.innerHTML=
+    `<div class="cav">`+
+    (L.heldout
+      ? `<b>Held out</b> is the honest number: refit ${L.heldout.k}× leaving one whole image `+
+        `out each time. <b>In-sample</b> is measured on images the model trained on and runs `+
+        `~0.11 higher; ordinary pixel-level k-fold is worse still, inflating it by the same `+
+        `amount because neighbouring pixels share features.`
+      : `The IoU above is in-sample — same images the model trained on.`)+
+    `</div>`+
+    `<table>`+
     `<tr><td>trained on</td><td class="n">${L.rows!=null?px(L.rows)+" pixels":"—"} · `+
       `${L.n_features||"—"} features</td></tr>`+
     // "0 crack px" would be a confident lie for an entry that simply has no count.
@@ -439,13 +426,14 @@ function scope(){
   const n=IMAGES.filter(i=>i.corrected_crack_px||i.corrected_not_px).length;
   const el=$("#scope"), btn=$("#retrain");
   if(!ck&&!nk){
-    el.innerHTML=`<b style="color:var(--ink2)">Retrain</b> learns from your corrections.<br>Paint some first.`;
+    el.innerHTML=`<b style="color:var(--ink2)">Retrain</b> needs corrections — paint some first.`;
     btn.disabled=true; return;
   }
   btn.disabled=BUSY;
   const one=(!ck||!nk)?`<br><span style="color:var(--warn)">Paint some ${ck?"Erase":"Add crack"} too — retraining needs both.</span>`:"";
-  el.innerHTML=`<b style="color:var(--ink2)">Retrain</b> will use ${px(ck)} crack + `+
-    `${px(nk)} not-crack pixels from ${n} image${n==1?"":"s"}, plus 4 reference images.${one}`;
+  el.innerHTML=`<span title="Plus the 4 shipped reference images">`+
+    `<b style="color:var(--ink2)">Retrain</b>: ${px(ck)} + ${px(nk)} px, `+
+    `${n} image${n==1?"":"s"}</span>${one}`;
 }
 
 /* ---------- image list ---------- */
