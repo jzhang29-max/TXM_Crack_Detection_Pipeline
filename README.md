@@ -288,6 +288,33 @@ This is also how you roll back: select an earlier model.
 Trains on every correction across every image, plus the reference ground truth, then
 deploys only if it passes both halves of the gate.
 
+**Every retrain leaves a scorecard** under the model picker, and it persists — reloading the
+page or restarting the server does not lose it, which matters because a retrain takes an
+hour or two and people reload:
+
+```
+Retrain deployed · 2026-08-19 10:27:22
+  ground-truth IoU          0.939 → 0.940   ≈ same
+  recall                    0.985 → 0.986   +0.001
+  background marked crack   0.24% → 0.26%   +0.03pp
+
+IoU is measured on the same four ground-truth images the model trains on, so read it
+as a floor, not proof it generalises. Background is the independent check: 6 specimens
+with no cracks in them, where every marked pixel is wrong.
+
+background over the last 3 retrains: 0.14% → 0.24% → 0.26%
+```
+
+The trend line is the point. All of this was already measured and then thrown away with the
+job, so the interface said only "retrain complete" — and three consecutive retrains here
+drifted 0.137% → 0.238% → 0.264% on crack-free specimen while ground-truth IoU sat flat at
+0.936–0.940. No single retrain looked wrong; the sequence did. A rejected retrain is
+recorded too, with the reason, since that is the entry you most want to re-read.
+
+Clicking through shows what it trained on and the per-specimen breakdown, because a mean
+that moves 0.14% → 0.26% does not say whether one specimen fell apart or everything softened
+slightly.
+
 Two caps decide how much of your work is used, and they are worth knowing:
 
 - **30,000 crack pixels per image.** More than that on one image is discarded, so strokes

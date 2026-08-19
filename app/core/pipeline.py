@@ -133,7 +133,7 @@ def _score_clean(model, progress=None, cache_key=None):
     ~50 s per specimen for information already on disk -- enough to push a retrain past
     the self test's timeout. The candidate has no cache yet and must be computed.
     """
-    fracs = []
+    fracs, detail = [], []
     todo = [m for m in S.list_images()
             if any(k.lower() in (m.get("filename") or "").lower() for k in CLEAN_SPECIMENS)]
     for i, m in enumerate(todo, 1):
@@ -143,7 +143,9 @@ def _score_clean(model, progress=None, cache_key=None):
         if cache_key:
             cached = S.load_npy_at(S.prob_cache_path(m["id"], cache_key), mmap=True)
             if cached is not None:
-                fracs.append(float((np.asarray(cached) > 0.5).mean()))
+                f = float((np.asarray(cached) > 0.5).mean())
+                fracs.append(f)
+                detail.append(dict(image=name, fp=round(f, 6)))
                 del cached
                 continue
         img = S.load_npy(m["id"], "img.npy")
@@ -155,11 +157,13 @@ def _score_clean(model, progress=None, cache_key=None):
             z = np.load(zp)
             emb = (z["coords"], z["emb"])
         prob = model.predict(img, emb=emb)
-        fracs.append(float((prob > 0.5).mean()))
+        f = float((prob > 0.5).mean())
+        fracs.append(f)
+        detail.append(dict(image=name, fp=round(f, 6)))
         del img, prob, emb
     if not fracs:
-        return None, 0
-    return float(np.mean(fracs)), len(fracs)
+        return None, 0, []
+    return float(np.mean(fracs)), len(fracs), detail
 
 # Extensions the uploader accepts. Kept here next to the reader that has to cope
 # with them so the two cannot drift apart.
@@ -481,6 +485,70 @@ def clean_fp_measured(model_key):
     return val[0], val[1]
 
 
+RETRAIN_HISTORY = os.path.join(S.DATA, "models", "retrain_history.json")
+HISTORY_KEEP = 20
+
+
+def retrain_history():
+    """Every retrain this app has scored, oldest first. [] if none yet."""
+    if not os.path.exists(RETRAIN_HISTORY):
+        return []
+    try:
+        with open(RETRAIN_HISTORY) as f:
+            h = json.load(f)
+        return h if isinstance(h, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def record_retrain(result, stamp=None):
+    """Append one retrain's scorecard to the on-disk history.
+
+    WHY THIS EXISTS. retrain() already measured everything a person needs to judge the
+    model -- ground-truth IoU and recall for both candidate and incumbent, false positives
+    on every crack-free specimen, what it trained on, whether each half of the gate passed
+    -- and then threw all of it away. It lived only in the in-memory JOBS dict, so a page
+    reload, a server restart or simply the next retrain erased it, and the interface said
+    nothing except "retrain complete". Three consecutive retrains here drifted 0.137% ->
+    0.238% -> 0.264% on crack-free specimen while ground-truth IoU sat flat at 0.936-0.940,
+    and nobody could have seen that from the app. A number you measure and discard is worse
+    than one you never measured, because it feels like you checked.
+
+    Kept to the last HISTORY_KEEP entries so the file cannot grow without bound.
+    """
+    info = result.get("info") or {}
+    entry = dict(
+        stamp=stamp,
+        when=time.strftime("%Y-%m-%d %H:%M:%S"),
+        deployed=bool(result.get("deployed")),
+        passes_gate=bool(result.get("passes_gate")),
+        reason=result.get("reason"),
+        gate_detail=result.get("gate_detail"),
+        candidate=result.get("candidate"),
+        incumbent=result.get("incumbent"),
+        candidate_clean_fp=result.get("candidate_clean_fp"),
+        incumbent_clean_fp=result.get("incumbent_clean_fp"),
+        clean_specimens=result.get("clean_specimens"),
+        clean_fp_by_specimen=result.get("clean_fp_by_specimen"),
+        seconds=result.get("seconds"),
+        rows=info.get("n_px"),
+        n_features=info.get("n_features"),
+        crack_fraction=info.get("crack_fraction"),
+        correction_crack_px=info.get("correction_crack_px"),
+        labelled_images=sum(1 for m in S.list_images()
+                            if (m.get("corrected_crack_px") or 0)
+                            or (m.get("corrected_not_px") or 0)),
+        iou_tol=IOU_TOL, fp_tol=FP_TOL,
+    )
+    hist = retrain_history()
+    hist.append(entry)
+    try:
+        S.write_json(RETRAIN_HISTORY, hist[-HISTORY_KEEP:])
+    except OSError:
+        pass
+    return entry
+
+
 def gather_training_data(progress=None):
     """Every corrected pixel across every uploaded image, plus the shipped
     ground truth, as hybrid [17 | 256] features.
@@ -671,6 +739,7 @@ def retrain(deploy=True, progress=None):
         result.update(deployed=False,
                       reason="no ground truth available to validate against; "
                              "model saved but not deployed")
+        record_retrain(result, stamp=stamp)
         return result
 
     cand_entry = dict(kind="ensemble", path_17=M.DEFAULT_17, path_hybrid=out,
@@ -693,11 +762,19 @@ def retrain(deploy=True, progress=None):
     # specimen group cannot see that: over-prediction on OTHER specimens costs it nothing.
     if progress:
         progress("false-positive check on crack-free specimens", 0, 1)
-    fp_inc, n_clean = _score_clean(inc, progress=progress,
-                                   cache_key=S.model_key(S.registry().get('current')))
-    fp_cand, _ = _score_clean(cand, progress=progress)
+    fp_inc, n_clean, det_inc = _score_clean(
+        inc, progress=progress, cache_key=S.model_key(S.registry().get('current')))
+    fp_cand, _, det_cand = _score_clean(cand, progress=progress)
+    # Per-specimen, not just the mean. A mean that moves 0.14% -> 0.26% says nothing about
+    # WHERE, and in practice the rise concentrates on one or two specimens -- which is the
+    # difference between "slightly softer everywhere" and "one specimen fell apart".
+    by_spec = []
+    lookup = {d["image"]: d["fp"] for d in det_inc}
+    for d in det_cand:
+        by_spec.append(dict(image=d["image"], before=lookup.get(d["image"]), after=d["fp"]))
     result.update(clean_specimens=n_clean,
-                  incumbent_clean_fp=fp_inc, candidate_clean_fp=fp_cand)
+                  incumbent_clean_fp=fp_inc, candidate_clean_fp=fp_cand,
+                  clean_fp_by_specimen=by_spec)
 
     iou_ok = i1 >= i0 - IOU_TOL
     if n_clean and fp_inc is not None and fp_cand is not None:
@@ -744,4 +821,7 @@ def retrain(deploy=True, progress=None):
                       reason=(None if passes else
                               "; ".join(bits) + ". Not deployed. The model file is kept "
                               "so you can inspect it."))
+    # Record the scorecard whether or not it deployed. A REJECTED retrain is the most
+    # useful entry in the history -- it is the one a person will want to look at again.
+    record_retrain(result, stamp=stamp)
     return result

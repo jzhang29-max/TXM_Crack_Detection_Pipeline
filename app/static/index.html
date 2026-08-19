@@ -76,6 +76,18 @@ button:disabled{opacity:.4;cursor:default}
   border-radius:6px;cursor:pointer}
 #mpick:hover{border-color:#3d4552}
 #mpick:disabled{opacity:.5;cursor:default}
+#rreport{margin-top:9px;font-size:11.5px;line-height:1.45}
+#rreport .hd{font-weight:600;letter-spacing:.01em}
+#rreport table{width:100%;border-collapse:collapse;margin:5px 0 3px}
+#rreport td{padding:1px 0;color:var(--ink2)}
+#rreport td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+#rreport .cav{color:var(--ink3);margin-top:4px}
+#rreport .more{color:var(--ink3);cursor:pointer;text-decoration:underline;
+  text-decoration-style:dotted;margin-top:3px;display:inline-block}
+#rreport .more:hover{color:var(--ink2)}
+#rreport .det{margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
+#rreport .up{color:var(--warn)}
+#rreport .dn{color:var(--ok)}
 #scope{font-size:11.5px;color:var(--ink3);margin-top:8px;line-height:1.5}
 
 /* ---------------- main ---------------- */
@@ -152,6 +164,7 @@ button:disabled{opacity:.4;cursor:default}
     <select id="mpick" title="Switch models. Already-computed results appear instantly."></select>
     <div class="v" id="mdesc">loading…</div>
     <div id="mfp"></div>
+    <div id="rreport"></div>
     <div id="scope"></div>
   </div>
 </aside>
@@ -249,6 +262,7 @@ async function loadModel(){
   $("#mdesc").innerHTML=`<b>${m.current.kind==="ensemble"?"SAM + 17-feature ensemble":"single model"}</b>`+
     (m.ground_truth_available?"":`<div style="color:var(--warn);font-size:11.5px;margin-top:4px">No ground truth — retraining cannot be validated.</div>`);
   await loadModelList();
+  await loadRetrainReport();
 }
 // The picker lists every model the user has, newest first, and says which ones are
 // already computed for the images loaded -- because that is exactly the difference
@@ -291,6 +305,83 @@ function showFpNote(m){
     : `<div style="color:var(--ink3);font-size:11.5px;margin-top:4px">`+
       `Marks ${fpText(m.clean_fp)} of crack-free specimen as crack `+
       `(${m.clean_n} specimens, measured).</div>`;
+}
+// After a retrain, show what it actually measured. All of this was already computed and
+// then discarded with the job: three retrains here drifted 0.137% -> 0.238% -> 0.264% on
+// crack-free specimen while ground-truth IoU sat flat, and the app said only "complete".
+let RREPORT=null;
+function pct(v,d){return v==null?"—":`${(v*100).toFixed(d==null?2:d)}%`;}
+function delta(before,after,higherIsBetter,mode){
+  if(before==null||after==null)return "";
+  const d=after-before;
+  // IoU and recall move by ~0.004, which in percentage points rounds to "+0.0pp" and tells
+  // the reader nothing. Absolute for those, percentage points for the area fraction.
+  const small=Math.abs(d)<(mode==="pp"?5e-5:5e-4);
+  if(small)return ` <span style="color:var(--ink3)">≈ same</span>`;
+  const good=higherIsBetter?d>0:d<0;
+  const sign=d>0?"+":"−";
+  const txt=mode==="pp"?`${(Math.abs(d)*100).toFixed(2)}pp`:Math.abs(d).toFixed(3);
+  return ` <span class="${good?"dn":"up"}">${sign}${txt}</span>`;
+}
+async function loadRetrainReport(){
+  const el=$("#rreport"); if(!el)return;
+  const r=await j("/api/retrain_report").catch(()=>null);
+  if(!r||!r.ok||!r.last){el.innerHTML="";return;}
+  RREPORT=r; RDET_OPEN=false;
+  const L=r.last, c=L.candidate||{}, i=L.incumbent||{};
+  const ok=L.deployed;
+  const head=ok
+    ? `<span class="hd" style="color:var(--ok)">Retrain deployed</span>`
+    : `<span class="hd" style="color:var(--bad)">Retrain rejected</span>`;
+  // The trend is the point. One retrain's number means little; three in a row drifting
+  // one way is the thing a person needs to see and cannot get from a single figure.
+  const trend=(r.history||[]).map(h=>h.candidate_clean_fp).filter(v=>v!=null);
+  const trendTxt=trend.length>1
+    ? `<div class="cav">background over the last ${trend.length} retrains: `+
+      trend.map(v=>pct(v)).join(" → ")+`</div>` : "";
+  el.innerHTML=head+` <span style="color:var(--ink3)">· ${L.when||""}`+
+    (L.backfilled?" · reconstructed from job logs":"")+`</span>`+
+    (ok?"":`<div class="cav" style="color:var(--bad)">${L.reason||"did not pass the gate"}</div>`)+
+    `<table>`+
+    `<tr><td>ground-truth IoU</td><td class="n">${(i.iou??0).toFixed(3)} → `+
+      `${(c.iou??0).toFixed(3)}${delta(i.iou,c.iou,true)}</td></tr>`+
+    `<tr><td>recall</td><td class="n">${(i.recall??0).toFixed(3)} → `+
+      `${(c.recall??0).toFixed(3)}${delta(i.recall,c.recall,true)}</td></tr>`+
+    `<tr><td>background marked crack</td><td class="n">${pct(L.incumbent_clean_fp)} → `+
+      `${pct(L.candidate_clean_fp)}${delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp")}</td></tr>`+
+    `</table>`+
+    `<div class="cav">IoU is measured on the same four ground-truth `+
+      `images the model trains on, so read it as a floor, not proof it generalises. `+
+      `<b>Background</b> is the independent check: ${L.clean_specimens||0} specimens with no `+
+      `cracks in them, where every marked pixel is wrong.</div>`+
+    trendTxt+
+    `<span class="more" onclick="toggleReportDetail()">what it trained on, per specimen…</span>`+
+    `<div class="det" id="rdet" style="display:none"></div>`;
+}
+let RDET_OPEN=false;
+function toggleReportDetail(){
+  const d=$("#rdet"); if(!d||!RREPORT)return;
+  // Track open/closed explicitly rather than reading style.display back. Reading it means
+  // the first click depends on the inline style being the exact string "none", which is
+  // true today and silently inverts the toggle the moment the styling moves to CSS.
+  if(RDET_OPEN){RDET_OPEN=false;d.style.display="none";return;}
+  RDET_OPEN=true;
+  const L=RREPORT.last;
+  const rows=(L.clean_fp_by_specimen||[]).map(x=>
+    `<tr><td>${(x.image||"").slice(22,52)}</td><td class="n">${pct(x.before)} → `+
+    `${pct(x.after)}${delta(x.before,x.after,false,"pp")}</td></tr>`).join("");
+  d.innerHTML=`<table>`+
+    `<tr><td>trained on</td><td class="n">${L.rows!=null?px(L.rows)+" pixels":"—"} · `+
+      `${L.n_features||"—"} features</td></tr>`+
+    // "0 crack px" would be a confident lie for an entry that simply has no count.
+    `<tr><td>your labels</td><td class="n">${L.correction_crack_px!=null?px(L.correction_crack_px)+" crack px":"—"}`+
+      `${L.labelled_images?" · "+L.labelled_images+" images":""}</td></tr>`+
+    `<tr><td>fit + validate</td><td class="n">${L.seconds!=null?dur(L.seconds):"—"}</td></tr>`+
+    `<tr><td>gate tolerances</td><td class="n">IoU ${L.iou_tol} · background `+
+      `${((L.fp_tol||0)*100).toFixed(1)}pp</td></tr>`+
+    `</table>`+
+    (rows?`<div class="cav" style="margin-top:5px">per crack-free specimen</div><table>${rows}</table>`:"");
+  d.style.display="";
 }
 async function switchModel(id){
   const sel=$("#mpick"),prev=[...sel.options].find(o=>o.defaultSelected)?.value;
@@ -552,8 +643,15 @@ function watch(jid,what){
     const res=s.result||{};
     if(res.info!==undefined||res.error){                       // a retrain result
       if(!res.ok){say(res.error||"retraining refused","var(--warn)");scope();return;}
-      let m=`Retrained on ${res.info.n_px.toLocaleString()} pixels`;
-      if(res.incumbent)m+=` · accuracy ${res.incumbent.iou.toFixed(3)} → ${res.candidate.iou.toFixed(3)}`;
+      let m=`Retrained on ${px(res.info.n_px||0)} pixels`;
+      // NOT "accuracy". That IoU is measured on the same four images the model trains on,
+      // and calling an in-sample number "accuracy" in the one line a user actually reads is
+      // how a model that marks 22% of blank specimen as crack came to be trusted. Show the
+      // background figure beside it, and leave the interpretation to the card below.
+      if(res.incumbent)m+=` · IoU ${res.incumbent.iou.toFixed(3)} → ${res.candidate.iou.toFixed(3)}`;
+      if(res.candidate_clean_fp!=null)
+        m+=` · background ${(res.incumbent_clean_fp*100).toFixed(2)}% → `+
+           `${(res.candidate_clean_fp*100).toFixed(2)}%`;
       await loadModel();
       if(res.deployed){
         // The retrain job now re-applies the new model to every image server-side,

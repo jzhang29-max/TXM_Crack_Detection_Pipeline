@@ -620,6 +620,19 @@ def api_model_select():
                    pending=todo, job=jid)
 
 
+@app.route("/api/retrain_report")
+def api_retrain_report():
+    """The last retrain's scorecard, plus the trend across earlier ones.
+
+    Separate from /api/job/<id> on purpose: a job lives in memory, so its numbers vanished
+    on the next reload or restart -- and a retrain takes an hour or two, which is exactly
+    long enough that a person reloads the page before reading them.
+    """
+    hist = P.retrain_history()
+    return jsonify(ok=True, last=(hist[-1] if hist else None),
+                   history=hist[-8:], n_total=len(hist))
+
+
 @app.route("/api/rollback", methods=["POST"])
 def api_rollback():
     ok = S.rollback()
@@ -637,7 +650,22 @@ def api_jobs():
     to a job still running after a page reload.
     """
     js = sorted(JOBS.values(), key=lambda j: j.get("started", 0), reverse=True)
-    return jsonify(jobs=js[:20])
+    return jsonify(jobs=[_with_elapsed(j) for j in js[:20]])
+
+
+def _with_elapsed(j):
+    """Add a live `seconds` to a job dict.
+
+    `seconds` used to be written only when a job finished, so a RUNNING job reported no
+    elapsed time at all and anything reading that field saw null -- which is exactly when
+    you want it. The frontend was unaffected because it derives elapsed from `started`
+    itself, but every other consumer (the self test, a polling script, a person with curl)
+    read null and reasonably concluded the timer was broken. Report it live and let
+    `started` remain the source of truth.
+    """
+    if j.get("seconds") is None and j.get("started"):
+        j = dict(j, seconds=round(time.time() - j["started"], 1))
+    return j
 
 
 @app.route("/api/job/<jid>")
@@ -645,7 +673,7 @@ def api_job(jid):
     j = JOBS.get(jid)
     if not j:
         return jsonify(ok=False, error="unknown job"), 404
-    return jsonify(j)
+    return jsonify(_with_elapsed(j))
 
 
 # ------------------------------------------------------------------ exports

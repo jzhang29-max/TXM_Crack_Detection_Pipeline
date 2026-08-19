@@ -498,6 +498,27 @@ def main():
     # ---- model picker moved to check_model_picker(), called BEFORE any upload.
     #      See that function for why placement matters.
 
+    # ---- the retrain scorecard must be persisted, not just live in memory.
+    try:
+        _, rr = req(B, "/api/retrain_report", timeout=60)
+        if not (rr.get("history") or []):
+            skip("retrain report is kept after the job is gone",
+                 "no retrain has run on this install yet")
+        else:
+            L = rr.get("last") or {}
+            need = ["candidate", "incumbent", "candidate_clean_fp", "incumbent_clean_fp",
+                    "deployed", "when"]
+            missing = [k for k in need if L.get(k) is None]
+            check("retrain report is kept after the job is gone", not missing,
+                  f"{rr.get('n_total')} recorded; last {L.get('stamp')} "
+                  f"IoU {(L.get('incumbent') or {}).get('iou', 0):.3f}->"
+                  f"{(L.get('candidate') or {}).get('iou', 0):.3f}, "
+                  f"bg {(L.get('incumbent_clean_fp') or 0)*100:.2f}%->"
+                  f"{(L.get('candidate_clean_fp') or 0)*100:.2f}%"
+                  + (f"; MISSING {missing}" if missing else ""))
+    except Exception as e:                                      # noqa: BLE001
+        check("retrain report is kept after the job is gone", False, str(e))
+
     # ---- the UNCACHED half of a model switch, checked structurally.
     #
     # The check above can only ever exercise the cached path: it deliberately picks a
