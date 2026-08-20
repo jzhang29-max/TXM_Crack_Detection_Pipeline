@@ -403,9 +403,13 @@ async function loadRetrainReport(){
         `specimens with nothing to find. Was ${pct(L.incumbent_clean_fp)}.`+
         (trend.length>1?` Last ${trend.length} retrains: ${trend.map(v=>pct(v)).join(" → ")}.`:""),
         delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp"))+
-    row("in-sample", (c.iou??0).toFixed(3),
-        `Ground-truth IoU, measured on the same four images the model trains on, so it runs `+
-        `about 0.11 high. Recall ${(c.recall??0).toFixed(3)}. Kept only for comparison.`,
+    row("reference", (c.iou??0).toFixed(3),
+        `IoU on the four dense reference frames. These are now a HELD-OUT test set -- nothing `+
+        `trains on them, or on corrections from their specimens -- so this is a real `+
+        `generalisation number, not the in-sample one it used to be. Recall `+
+        `${(c.recall??0).toFixed(3)}.`+
+        ((L.gate_detail&&L.gate_detail.incumbent_recipe!==L.gate_detail.recipe)
+          ? ` The before-value is not comparable: that model trained on these frames.` : ``),
         delta(i.iou,c.iou,true))+
     `</table>`+
     `<div class="cav">`+
@@ -430,15 +434,18 @@ function toggleReportDetail(){
   d.innerHTML=
     `<div class="cav">`+
     (L.heldout
-      ? `<b>Held out</b> is the honest number: refit ${L.heldout.k}× leaving one whole image `+
-        `out each time. <b>In-sample</b> is measured on images the model trained on and runs `+
-        `~0.11 higher; ordinary pixel-level k-fold is worse still, inflating it by the same `+
-        `amount because neighbouring pixels share features.`
-      : `The IoU above is in-sample — same images the model trained on.`)+
+      ? `<b>Held out</b> refits ${L.heldout.k}× leaving one whole image out each time. `+
+        `<b>Reference</b> is the four dense frames, which nothing trains on any more -- so `+
+        `both numbers are now generalisation numbers. Ordinary pixel-level k-fold would `+
+        `inflate either by ~0.11, because neighbouring pixels share features.`
+      : `<b>Reference</b> is the four dense frames, held out of training entirely.`)+
     `</div>`+
     `<table>`+
     `<tr><td>trained on</td><td class="n">${L.rows!=null?px(L.rows)+" pixels":"—"} · `+
-      `${L.n_features||"—"} features</td></tr>`+
+      `${L.n_features||"—"} features${L.recipe?" · "+esc(L.recipe):""}</td></tr>`+
+    ((L.reference_held_out&&L.reference_held_out.length)
+      ? `<tr><td>held out of training</td><td class="n">`+
+        `${L.reference_held_out.length} image(s) of the reference specimens</td></tr>` : ``)+
     // "0 crack px" would be a confident lie for an entry that simply has no count.
     `<tr><td>your labels</td><td class="n">${L.correction_crack_px!=null?px(L.correction_crack_px)+" crack px":"—"}`+
       `${L.labelled_images?" · "+L.labelled_images+" images":""}</td></tr>`+

@@ -70,6 +70,37 @@ def _discover_gt_stems():
 
 GT_STEMS = _discover_gt_stems()
 
+# THE REFERENCE FRAMES ARE THE TEST SET, NOT TRAINING DATA.
+#
+# Until this change every model trained on the four dense B2 frames and was then validated
+# against those same four, so the gate was grading with part of the answer key in the
+# training set. Measured cost of taking them out (code/experiment_no_gt.py, 3 repeats,
+# leave-one-group-out over AM/HC, B2, B3, wrought): cross-group AUC 0.871 without them
+# against 0.863 with, a difference at the +-0.008 noise floor -- i.e. nothing. Measured cost
+# on the B2 frames themselves: IoU 0.741 against 0.768, real but small. What is bought is a
+# gate whose number means something.
+#
+# Excluded by SPECIMEN, not by image. All four frames are also loaded in the app with the
+# owner's own corrections, and b2_343_75 and b2_343_75_LARGE are two fields of view of one
+# specimen -- so training on one while testing on the other leaks, and the leak flatters.
+# Five of 71 images are held out this way. Measured to cost nothing: raising the training
+# budget from 150 k rows to 500 k did not improve either test (0.856 vs 0.871 cross-group
+# AUC), so this project is not short of labels.
+REFERENCE_SPECIMENS = ("333_75", "336_25", "338_13", "343_75")
+
+# Tag on every model the retrainer produces, so the gate can tell whether the model it is
+# comparing against was trained under the same rules. A model trained WITH the reference
+# frames scores them in-sample; comparing a clean candidate to it on those frames would
+# reject the clean one for being honest.
+RECIPE = "hgb_hybrid_nogt"
+MIN_ABS_IOU = 0.60
+
+
+def is_reference_image(filename):
+    """True if this image belongs to a specimen the reference frames come from."""
+    n = (filename or "").lower()
+    return any(t in n for t in REFERENCE_SPECIMENS)
+
 IOU_TOL = 0.01
 FP_TOL = 0.005
 
@@ -413,8 +444,12 @@ def get_model():
     r = S.registry()["current"]
     key = json.dumps(r, sort_keys=True)
     if _model_cache["key"] != key:
+        # "path_17" present but empty means "no 17-feature member", which is different
+        # from absent (legacy entry -> the shipped default). `or` cannot express that:
+        # it turned an explicit opt-out back into the default, and CrackModel would then
+        # run the 17-feature model on every band and discard the result.
         _model_cache["obj"] = M.CrackModel(
-            path_17=r.get("path_17") or M.DEFAULT_17,
+            path_17=(r["path_17"] if "path_17" in r else M.DEFAULT_17),
             path_hybrid=r.get("path_hybrid") or M.DEFAULT_HYBRID,
             ensemble=(r.get("kind", "ensemble") == "ensemble"))
         _model_cache["key"] = key
@@ -560,7 +595,8 @@ def gt_embedding(stem, progress=None):
 
 
 def _score(model, progress=None):
-    """(mean IoU, mean recall) on the shipped ground truth."""
+    """(mean IoU, mean recall) on the four reference frames -- a HELD-OUT set since the
+    recipe change: nothing trains on them, or on corrections from their specimens."""
     from generate_benchmark_report import metrics_from_pred
     ious, recs = [], []
     for i, stem in enumerate(GT_STEMS):
@@ -789,15 +825,18 @@ def crossval_grouped(progress=None):
     n_groups = len(np.unique(g))
     k = min(CV_MAX_FOLDS, n_groups)
 
-    from sklearn.neural_network import MLPClassifier
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.ensemble import HistGradientBoostingClassifier
 
     def _clf():
-        return Pipeline([("scaler", StandardScaler()),
-                         ("mlp", MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300,
-                                               random_state=0, early_stopping=True,
-                                               n_iter_no_change=8))])
+        """Same class as the deployed model, so this number describes what is deployed.
+
+        It used to fit an MLP pair and average them, which stopped matching the deployed
+        model the moment that became a single HistGradientBoosting -- and a held-out figure
+        measuring a different architecture than the one shipping is worse than none, because
+        it reads as if it had been checked.
+        """
+        return HistGradientBoostingClassifier(max_iter=300, early_stopping=True,
+                                              random_state=0)
 
     per_fold = []
     for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=g), 1):
@@ -811,11 +850,8 @@ def crossval_grouped(progress=None):
             progress(f"cross-validation fold {f}/{k}: holding out {held}", f, k)
         if len(tr) > CV_TRAIN_CAP:
             tr = np.random.RandomState(7).choice(tr, CV_TRAIN_CAP, replace=False)
-        # The deployed architecture: mean probability of a 17-feature model and the hybrid.
-        probs = []
-        for cols in (slice(0, n17), slice(0, X.shape[1])):
-            probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
-        prob = np.mean(probs, axis=0)
+        # The deployed architecture: one model on the full [17 | 256] hybrid vector.
+        prob = _clf().fit(X[tr], y[tr]).predict_proba(X[te])[:, 1]
         pred = prob >= 0.5
         tp = int((pred & y[te]).sum()); fp = int((pred & ~y[te]).sum())
         fn = int((~pred & y[te]).sum())
@@ -893,6 +929,9 @@ def record_retrain(result, stamp=None):
                             if (m.get("corrected_crack_px") or 0)
                             or (m.get("corrected_not_px") or 0)),
         iou_tol=IOU_TOL, fp_tol=FP_TOL,
+        recipe=info.get("recipe"),
+        reference_held_out=info.get("reference_held_out"),
+        trained_on_images=info.get("trained_on_images"),
         heldout=result.get("heldout"),
         heldout_error=result.get("heldout_error"),
         false_indications=result.get("false_indications"),
@@ -907,8 +946,10 @@ def record_retrain(result, stamp=None):
 
 
 def gather_training_data(progress=None):
-    """Every corrected pixel across every uploaded image, plus the shipped
-    ground truth, as hybrid [17 | 256] features.
+    """Every corrected pixel across every uploaded image, as hybrid [17 | 256] features.
+
+    NOT the shipped ground truth, and not corrections on the specimens it comes from:
+    those four frames are the held-out test set. See REFERENCE_SPECIMENS.
 
     Class balance is computed from what actually exists rather than hard-coded:
     it is the single knob that has caused four regressions in this project, and
@@ -917,62 +958,25 @@ def gather_training_data(progress=None):
     import destitch  # noqa: F401  (ensures code/ is importable before heavy work)
     Xs, ys = [], []
 
-    items = [m for m in S.list_images() if m.get("corrected_crack_px") or m.get("corrected_not_px")]
+    labelled = [m for m in S.list_images()
+                if m.get("corrected_crack_px") or m.get("corrected_not_px")]
+    items = [m for m in labelled if not is_reference_image(m.get("filename"))]
+    held_out = [m.get("filename") for m in labelled if is_reference_image(m.get("filename"))]
     n_crack_total = sum(m.get("corrected_crack_px", 0) for m in items)
     per_img_cap = 30000
     corr_crack = sum(min(per_img_cap, m.get("corrected_crack_px", 0)) for m in items)
     n_bg_imgs = sum(1 for m in items if m.get("corrected_not_px", 0) > 0)
 
-    boot_crack = 0
-    if _gt_available():
-        for stem in GT_STEMS:
-            gt = np.load(os.path.join(GT_CACHE, f"{stem}_gt.npy")).astype(bool)
-            boot_crack += min(100000, int(gt.sum()))
-            del gt
     neg_cap = max(500, int(round(corr_crack / n_bg_imgs))) if n_bg_imgs else per_img_cap
 
     rng = np.random.RandomState(0)
 
-    # shipped ground truth. Needs SAM embeddings too, or its samples are 17-dim
-    # while the corrections are 273-dim and get silently dropped for width -- which
-    # is exactly what happened on the first real retrain: all 4 ground-truth blocks
-    # were discarded, leaving only force-crack correction pixels, a 100%-crack
-    # training set, and a model that scored IoU 0.003. Compute once, cache forever.
-    if _gt_available():
-        for stem in GT_STEMS:
-            feat = os.path.join(GT_CACHE, f"{stem}_features.npy")
-            if not os.path.exists(feat):
-                continue
-            gt = np.load(os.path.join(GT_CACHE, f"{stem}_gt.npy")).astype(bool)
-            f17 = np.load(feat, mmap_mode="r")
-            ci = np.flatnonzero(gt); bi = np.flatnonzero(~gt)
-            nc = min(100000, len(ci)); nb = min(100000, len(bi))
-            idx = np.concatenate([rng.choice(ci, nc, replace=False),
-                                  rng.choice(bi, nb, replace=False)])
-            rr, cc = np.unravel_index(idx, gt.shape)
-            a = np.asarray(f17[rr, cc, :], np.float32)
-            del f17
+    # NO GROUND-TRUTH ROWS. They used to be sampled here, 100 k crack + 100 k background
+    # per stem, and they were the largest single block in the training set. They are the
+    # test set now -- see REFERENCE_SPECIMENS above for what that cost and what it bought.
+    # Corrections on the same specimens are excluded too, a few lines up, because those
+    # would leak the test set back in through the side door.
 
-            block = a
-            if get_model().needs_sam():
-                coords, embs = gt_embedding(stem, progress=progress)
-                if coords is not None:
-                    b = np.zeros((len(rr), embs.shape[1]), np.float32)
-                    todo = np.ones(len(rr), bool)
-                    for t in range(len(coords) - 1, -1, -1):
-                        y0, x0 = int(coords[t][0]), int(coords[t][1])
-                        sel = (todo & (rr >= y0) & (rr < y0 + M.TILE)
-                               & (cc >= x0) & (cc < x0 + M.TILE))
-                        if sel.any():
-                            b[sel] = M.interp_tile(embs[t], rr[sel] - y0, cc[sel] - x0)
-                            todo &= ~sel
-                    block = np.concatenate([a, b], axis=1)
-                    del b
-            Xs.append(block)
-            ys.append(np.concatenate([np.ones(nc, bool), np.zeros(nb, bool)]))
-            del gt, a
-            if progress:
-                progress(f"ground truth {stem}", 1, 1)
 
     # user corrections
     for k, m in enumerate(items, 1):
@@ -1050,7 +1054,11 @@ def gather_training_data(progress=None):
 
     info = dict(n_px=int(len(y)), n_features=int(target), crack_fraction=float(y.mean()),
                 neg_cap=neg_cap, correction_crack_px=int(n_crack_total),
-                blocks_dropped_for_width=dropped, bootstrap_crack=boot_crack)
+                blocks_dropped_for_width=dropped,
+                # recorded per retrain so a scorecard is self-describing: a number measured
+                # under one recipe cannot be silently compared to one measured under another
+                gt_in_training=False, recipe=RECIPE,
+                trained_on_images=len(items), reference_held_out=held_out)
     # `w` is gone: it was built, concatenated and returned, and retrain() never passed it to
     # clf.fit -- 43 MB of sample weights computed and thrown away every retrain.
     return X, y, info
@@ -1059,9 +1067,7 @@ def gather_training_data(progress=None):
 def retrain(deploy=True, progress=None):
     """Train a new hybrid on all current corrections, validate, maybe deploy."""
     import joblib
-    from sklearn.neural_network import MLPClassifier
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.ensemble import HistGradientBoostingClassifier
 
     t0 = time.time()
     # Built here rather than at startup, so a fresh clone is running in seconds and
@@ -1099,11 +1105,23 @@ def retrain(deploy=True, progress=None):
 
     if progress:
         progress("fitting", 0, 1)
-    clf = Pipeline([("scaler", StandardScaler(copy=False)),
-                    ("mlp", MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=400,
-                                          random_state=0))])
-    # copy=False so StandardScaler standardises in place instead of returning a second
-    # 5.9 GB array inside fit.
+    # HistGradientBoosting on the 273-d hybrid, as ONE model rather than an MLP averaged
+    # with a 17-feature MLP. Measured (code/experiment_no_gt.py, 3 repeats, identical rows):
+    #
+    #   model                          B2 frames AUC   cross-group AUC
+    #   HistGradientBoosting(17+SAM)       0.981           0.897
+    #   hybrid MLP(17+SAM)                 0.972           0.893
+    #   the old mean-probability ensemble  0.977           0.863
+    #   17-feature MLP alone               0.959           0.782
+    #
+    # +0.034 cross-group AUC over the ensemble is four times the +-0.008 noise floor, and it
+    # gives up nothing on B2. The reason is the 17-feature member: at 0.782 cross-group it is
+    # far the weakest of the four, and averaging it in drags the mean down. Dropping it also
+    # halves inference -- the old ensemble ran both models over every band.
+    #
+    # No StandardScaler: a tree ensemble is invariant to per-feature scaling, so the 5.9 GB
+    # in-place standardisation the MLP needed is simply gone.
+    clf = HistGradientBoostingClassifier(max_iter=300, early_stopping=True, random_state=0)
     clf.fit(X, y)
     del X, y
 
@@ -1112,7 +1130,7 @@ def retrain(deploy=True, progress=None):
     # info already carries n_features; splat it first and let explicit keys win,
     # rather than passing n_features twice (which is a TypeError, not a merge).
     bundle = dict(info)
-    bundle.update(model=clf, kind="sam17_hybrid", trained=stamp)
+    bundle.update(model=clf, kind="sam17_hybrid", trained=stamp, recipe=RECIPE)
     joblib.dump(bundle, out)
 
     result = dict(ok=True, path=out, info=info, warning=warn,
@@ -1126,13 +1144,14 @@ def retrain(deploy=True, progress=None):
         record_retrain(result, stamp=stamp)
         return result
 
-    cand_entry = dict(kind="ensemble", path_17=M.DEFAULT_17, path_hybrid=out,
+    # kind != "ensemble" and an explicitly EMPTY path_17: this model is the hybrid alone.
+    cand_entry = dict(kind="hgb_hybrid", path_17="", path_hybrid=out, recipe=RECIPE,
                       label=f"retrained {stamp}", created=stamp)
     inc = get_model()
     if progress:
         progress("validating incumbent", 0, 1)
     i0, r0 = _score(inc, progress=progress)
-    cand = M.CrackModel(path_17=cand_entry["path_17"], path_hybrid=out, ensemble=True)
+    cand = M.CrackModel(path_17="", path_hybrid=out, ensemble=False)
     if progress:
         progress("validating candidate", 0, 1)
     i1, r1 = _score(cand, progress=progress)
@@ -1164,7 +1183,27 @@ def retrain(deploy=True, progress=None):
     except Exception:                                           # noqa: BLE001
         result["false_indications"] = None
 
-    iou_ok = i1 >= i0 - IOU_TOL
+    # WHETHER i0 IS EVEN A VALID BASELINE.
+    #
+    # i0 and i1 are both measured on the four reference frames. The candidate never trained
+    # on them, so i1 is held out. But any model produced before this recipe trained ON them,
+    # so its i0 is in-sample -- and comparing a clean candidate against an in-sample
+    # incumbent rejects the candidate for being honest. That is not a tolerance to widen; the
+    # two numbers are not the same quantity.
+    #
+    # So: same recipe -> the usual no-regression test. Different recipe -> the comparison is
+    # void, and the candidate has to clear an absolute floor instead, with the reason
+    # recorded rather than the check quietly skipped.
+    inc_recipe = (S.registry().get("current") or {}).get("recipe")
+    same_recipe = (inc_recipe == RECIPE)
+    if same_recipe:
+        iou_ok = i1 >= i0 - IOU_TOL
+        iou_basis = f"no-regression against an incumbent measured the same way ({inc_recipe})"
+    else:
+        iou_ok = i1 >= MIN_ABS_IOU
+        iou_basis = (f"absolute floor {MIN_ABS_IOU:.2f}: the incumbent's {i0:.3f} is IN-SAMPLE "
+                     f"(recipe {inc_recipe or 'pre-recipe'}, trained on the reference frames) "
+                     f"so it is not a valid baseline for a held-out {i1:.3f}")
 
     # The held-out half of the gate. i1 vs i0 above is IN-SAMPLE -- the candidate trains on
     # the same four ground-truth images it is scored on -- so "IoU did not drop" can be
@@ -1198,6 +1237,8 @@ def retrain(deploy=True, progress=None):
     result["passes_gate"] = passes
     result["gate_detail"] = dict(
         iou_ok=bool(iou_ok), fp_ok=bool(fp_ok), heldout_ok=bool(ho_ok),
+        iou_basis=iou_basis, recipe=RECIPE, incumbent_recipe=inc_recipe,
+        reference_frames_held_out=True,
         heldout_prev=ho_prev, heldout_now=ho_now,
         fp_checked_on=n_clean,
         note=(None if n_clean else
@@ -1226,7 +1267,8 @@ def retrain(deploy=True, progress=None):
     else:
         bits = []
         if not iou_ok:
-            bits.append(f"IoU regressed {i0:.3f} -> {i1:.3f} (tolerance {IOU_TOL})")
+            bits.append(f"IoU {i1:.3f} on the held-out reference frames failed the check "
+                        f"[{iou_basis}]")
         if not ho_ok:
             bits.append(f"held-out IoU regressed {ho_prev:.3f} -> {ho_now:.3f} "
                         f"(tolerance {IOU_TOL}) -- this one is grouped by image, so it "

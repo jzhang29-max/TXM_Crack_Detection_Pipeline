@@ -150,12 +150,18 @@ Run it after a labelling session. Keyed by filename, not image id.
 
 ## What the model is
 
-A mean-probability ensemble of two MLPs:
+**273 features per pixel** — Meta's Segment Anything ViT-H image embedding (256 channels)
+concatenated with 17 hand-crafted ones: intensity, Gaussian-smoothed intensity at σ=2…64,
+gradient magnitude, Laplacian, and local-standard-deviation texture.
 
-- **17 hand-crafted features → MLP.** Intensity, Gaussian-smoothed intensity at σ=2…64,
-  gradient magnitude, Laplacian, and local-standard-deviation texture.
-- **SAM + those 17 → MLP.** Meta's Segment Anything ViT-H image embedding (256 channels)
-  concatenated with the same 17 features.
+Retraining in the app fits a single **HistGradientBoosting** on those 273 features. The
+shipped baseline is an older mean-probability ensemble of two MLPs; the single model measured
+better on both tests and runs about twice as fast — see
+[docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
+
+The four dense reference frames in `dataset_cache/` are a **held-out test set**: nothing
+trains on them, or on corrections from their specimens, so the retrain gate's number is a
+real generalisation number.
 
 ## How well it does
 
@@ -172,8 +178,8 @@ The model's output beside the hand-labelled truth for the same window.
   the same images.
 
 Full per-specimen breakdowns, the validation protocol and a 78-variant architecture sweep
-are in `docs/` — `SAM_COMBINATION_SWEEP.md`, `SAM_COMPARISON.md`, `PUBLISHABILITY.md` and
-`HANDOFF.md`.
+are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
+`SAM_COMPARISON.md`, `PUBLISHABILITY.md` and `HANDOFF.md`.
 
 ## Security
 
