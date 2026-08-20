@@ -233,3 +233,60 @@ Measured across all 71 loaded images, mean predicted area moves 8.713% → 8.552
 because real cracks are orders of magnitude too large to prune. The change lands almost
 entirely where it should: on `B2_amb_mosaic_2`, a confirmed crack-free specimen, 100% of the
 predicted area was specks and the frame now reads 0.000%.
+
+
+## Follow-up, 2026-08-19: three things the sweep did not cover
+
+An independent seven-dimension audit and a literature review challenged three of this
+document's conclusions. All three were re-measured on full held-out probability maps
+(a model refit per fold, predicting the whole frame, not sampled pixels).
+
+**Spatial post-processing DOES help — the sweep could not see it.** The original sweep's
+test rows were 120k uniformly scattered pixels, so no test pixel had neighbours and a
+neighbourhood operation was unmeasurable. Under nested cross-validation on whole masks,
+with the parameter chosen on the other three images and applied to the held-out one:
+
+| rule | held-out IoU | vs none | folds won | false positives on crack-free specimen |
+|---|---|---|---|---|
+| none | 0.8317 | — | — | 0.264% |
+| **min-area 2000 px** | **0.8391** | **+0.0074** | **4/4** | **0.106%** |
+| elongation filter | 0.8386 | +0.0068 | 4/4 | 0.199% |
+| closing | 0.8315 | −0.0002 | 2/4 | 0.267% |
+| hysteresis (dual threshold) | 0.8313 | −0.0005 | 1/4 | 0.502% |
+| hysteresis + min-area | 0.8219 | −0.0099 | 1/4 | 1.105% |
+
+Hysteresis linking — the rule the app had never tried and the one this document guessed
+might be the win — is the *worst* of the six, and it doubles false positives. Dropping
+small components is the win, and it is the same move the published 3D concrete-CT work
+reached for to fix "many false positives in the areas without crack".
+
+**The min-area filter's justification was pixel-weighted, which cannot see the harm it
+might do.** Per COMPONENT rather than per pixel: 98.7% of ground-truth crack objects are
+below 2000 px. That sounds alarming and is not, for a reason worth recording — with **no
+filter at all** the model recovers only **28.0%** of ground-truth objects (984/3517), so
+those fragments are overwhelmingly never detected in the first place rather than destroyed
+by the filter. The filter costs 1.9 points of object recall (67 objects, median width
+**1.0 px**, 90th percentile 2.4 px) and buys +0.0074 IoU and a 2.5x reduction in false
+alarms. A variant that spares small-but-elongated components was tested to protect thin
+cracks specifically: it keeps 38 more objects but scores 0.8332 and 0.212% — giving up most
+of both gains. The shipped rule stands.
+
+Caveat that cannot be resolved with this data: the ground truth contains no thin cracks
+(median width ~65 px), so "the lost fragments are noise" and "the lost fragments are the
+thin cracks we miss" are not distinguishable here. Thin-crack labels would settle it.
+
+**Orientation-selective features do NOT help, and this document's "features are a dead
+end" was previously too broad.** The sweep only ever recombined the existing 17 features
+with SAM; it never added a new feature family. Every one of the 17 is isotropic by
+construction — Gaussian smooths, gradient magnitudes, Laplacians, local std — while a crack
+is a thin oriented structure, and Fiji's Trainable Weka Segmentation ships Hessian,
+structure tensor and ridge filters as standard. So this was a real gap in the earlier
+conclusion.
+
+Tested: 18 added features — Hessian eigenvalues and their difference at sigma 1/2/4/8,
+structure-tensor coherence at the same scales, plus Frangi and Sato vesselness — appended
+to both branches, on the SAME rows (verified pixel-identical by matching the raw-intensity
+column and the labels). Result **0.8270 against 0.8308, −0.0038, winning 1 of 4 folds.**
+No help. The same caveat applies: ridge filters should matter most at the thin widths this
+ground truth does not contain, so this refutes "orientation features help here", not
+"orientation features help".

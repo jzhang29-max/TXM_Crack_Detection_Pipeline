@@ -116,3 +116,6 @@ dataset_cache/*
 # per-file hard limit -- two of the originals were 122 MB and could not be pushed
 # at all. Read them with tifffile/GDAL; if a tool cannot handle predictor 3, see
 # the note in README.
+
+# Derived cross-validation cache: 968 MB, rebuilt by code/build_label_folds.py
+paint/label_folds.npz
