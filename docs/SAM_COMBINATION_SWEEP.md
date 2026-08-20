@@ -491,3 +491,47 @@ Sampling is uniform inside the specimen **on purpose**. Choosing model-uncertain
 find more crack per tile and feel more productive, and would also make the ground truth a
 biased sample, so IoU computed on it would not estimate the frame's IoU. Active learning
 belongs on *training* tiles, with an untouched uniform set kept for evaluation.
+
+
+## The NDT view: probability of detection, and false calls per frame
+
+Every tool surveyed for this project reports pixel overlap — IoU, Dice, sometimes a
+validation curve. Pixel overlap cannot answer the two questions an engineer asks, and those
+two questions behave nothing like IoU. Measured held-out (each image scored by a model that
+never saw it, a flaw counted as detected if *any* of it is marked):
+
+| flaw size | detected | share of all crack pixels |
+|---|---|---|
+| under 500 px | **25.3%** (874/3451) | 0.3% |
+| 500 – 2 k | 28.6% (6/21) | 0.4% |
+| 2 k – 20 k | 69.2% (18/26) | 3.1% |
+| **over 20 k** | **100.0%** (19/19) | **96.2%** |
+
+**It finds every large flaw and a quarter of the small ones** — and the last column is why
+this is invisible in an IoU: flaws under 500 px are 0.3% of crack area, so missing three
+quarters of them barely moves a pixel-overlap score. A model can hold IoU 0.83 while failing
+at small-flaw detection, and this project's headline number did exactly that without saying
+so.
+
+And false calls, on the six specimens confirmed to contain no crack:
+
+| specimen | indications | area |
+|---|---|---|
+| B2_2_1_lbf | 5 | 0.262% |
+| B2_2_9_lbf | 2 | 0.048% |
+| B2_amb_mosaic_2 | **0** | 0.000% |
+| b3_amb | 2 | 0.048% |
+| b3_3_18lbf | **11** | 0.224% |
+| wrought_0_cycles | 4 | 0.052% |
+| **mean** | **4.0 per frame** | 0.106% |
+
+"0.106% of area" tells a user nothing about whether they will dismiss one artifact or thirty.
+**4.0 indications per frame, worst frame 11, one specimen completely clean** does. It is the
+same quantity MIL-HDBK-1823A's false-call analysis is built around, and it is now recorded in
+every retrain scorecard (`pipeline.false_indications()`, reading cached predictions so it is
+free) and shown in the model card. `code/detection_report.py` prints the full table.
+
+This is the axis on which the tool leads, and these two metrics are what make the lead
+concrete rather than rhetorical: not "we also validate", but "we report probability of
+detection against flaw size and false calls per frame, after every retrain, and refuse to
+deploy a model that regresses either".

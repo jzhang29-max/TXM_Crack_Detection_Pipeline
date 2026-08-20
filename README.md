@@ -395,6 +395,23 @@ per-specimen background figures. An earlier version of this card put all of that
 at once — 998 characters in a 250 px column, with the background figure repeated four
 times — which is not a scorecard, it is a wall.
 
+**Two numbers here that pixel overlap cannot give you**, and that no comparable tool
+reports. Measured held-out, a flaw counted as detected if *any* of it is marked:
+
+| flaw size | detected | share of all crack pixels |
+|---|---|---|
+| under 500 px | **25.3%** | 0.3% |
+| 500 – 2 k | 28.6% | 0.4% |
+| 2 k – 20 k | 69.2% | 3.1% |
+| **over 20 k** | **100.0%** | **96.2%** |
+
+It finds every large flaw and a quarter of the small ones — and the last column is why an IoU
+hides this: small flaws are 0.3% of crack area, so missing three quarters of them barely
+moves the score. And **4.0 false indications per frame** (worst 11, one of six specimens
+completely clean) on material confirmed to contain no crack, because "0.106% of area" does not
+tell you whether you will dismiss one artifact or thirty. `code/detection_report.py` prints
+both; the false-call figure is in every retrain scorecard.
+
 **Held-out IoU comes first because it is the only number that answers "how will this do on
 an image it has not seen".** It refits the model once per ground-truth image, each time
 leaving that whole image out, so train and test never share an image. On this data it reads

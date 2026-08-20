@@ -680,6 +680,42 @@ def _gt_rows(stem, n, rng):
     return block, gt.ravel()[idx], x17.shape[1]
 
 
+def false_indications(model_key=None, threshold=0.5):
+    """Spurious INDICATIONS per frame on confirmed crack-free specimens, not just area.
+
+    The NDT question that a pixel-area fraction cannot answer. "0.106% of area" tells an
+    engineer nothing about whether they will be chasing one artifact or thirty; "4.0
+    indications per frame" does, and it is the quantity MIL-HDBK-1823A's false-call analysis
+    is built around. No segmentation tool surveyed for this project reports it -- they report
+    IoU or Dice, which is silent on material that contains nothing to find.
+
+    Counts connected components of the pruned mask, since that is what a person would have to
+    look at and dismiss. Reads cached predictions only, so it costs nothing to include in
+    every retrain scorecard.
+    """
+    from skimage import measure
+    key = model_key or S.model_key(S.registry().get("current"))
+    per = []
+    for m in S.list_images():
+        fn = m.get("filename") or ""
+        if not any(k.lower() in fn.lower() for k in CLEAN_SPECIMENS):
+            continue
+        a = S.load_npy_at(S.prob_cache_path(m["id"], key), mmap=True)
+        if a is None:
+            continue
+        mk = prune_specks(np.asarray(a) > threshold)
+        per.append(dict(image=fn, indications=int(measure.label(mk).max()),
+                        area_fraction=round(float(mk.mean()), 6)))
+        del a, mk
+    if not per:
+        return None
+    n = [p["indications"] for p in per]
+    return dict(per_specimen=per, n_specimens=len(per),
+                mean_indications=round(float(np.mean(n)), 2),
+                max_indications=int(max(n)), zero_specimens=int(sum(1 for v in n if v == 0)),
+                mean_area_fraction=round(float(np.mean([p["area_fraction"] for p in per])), 6))
+
+
 def crossval_grouped(progress=None):
     """Honest generalisation estimate: k-fold GROUPED BY IMAGE, k = number of GT images.
 
@@ -859,6 +895,7 @@ def record_retrain(result, stamp=None):
         iou_tol=IOU_TOL, fp_tol=FP_TOL,
         heldout=result.get("heldout"),
         heldout_error=result.get("heldout_error"),
+        false_indications=result.get("false_indications"),
     )
     hist = retrain_history()
     hist.append(entry)
@@ -1122,6 +1159,10 @@ def retrain(deploy=True, progress=None):
     result.update(clean_specimens=n_clean,
                   incumbent_clean_fp=fp_inc, candidate_clean_fp=fp_cand,
                   clean_fp_by_specimen=by_spec)
+    try:
+        result["false_indications"] = false_indications()
+    except Exception:                                           # noqa: BLE001
+        result["false_indications"] = None
 
     iou_ok = i1 >= i0 - IOU_TOL
 

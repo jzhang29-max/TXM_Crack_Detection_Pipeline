@@ -396,6 +396,14 @@ async function loadRetrainReport(){
         `sd ${H.std_iou.toFixed(3)}, worst image ${H.min_iou.toFixed(3)}. `+
         `This is the number to trust.`,
         ` <span style="color:var(--ink3)">±${H.std_iou.toFixed(2)}</span>`):"")+
+    (L.false_indications?row("false calls",
+        `${L.false_indications.mean_indications}<span style="color:var(--ink3)">/frame</span>`,
+        `Spurious indications per frame on ${L.false_indications.n_specimens} specimens `+
+        `confirmed to contain no crack -- connected regions someone would have to look at `+
+        `and dismiss, not an area fraction. Worst frame `+
+        `${L.false_indications.max_indications}; `+
+        `${L.false_indications.zero_specimens} of ${L.false_indications.n_specimens} `+
+        `completely clean. This is the NDT question an IoU cannot answer.`):"")+
     row("background", pct(L.candidate_clean_fp),
         `Share of confirmed crack-free specimen marked as crack, over ${L.clean_specimens||0} `+
         `specimens with nothing to find. Was ${pct(L.incumbent_clean_fp)}.`+
