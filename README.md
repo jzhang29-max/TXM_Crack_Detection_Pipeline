@@ -172,6 +172,43 @@ To check your install rather than trust it:
 python3 app/selftest.py
 ```
 
+## Extending the ground truth
+
+Dense ground truth exists for **four images, all specimen group B2**. That is the project's
+binding limitation: held out, the model recovers **39.7%** of the crack the owner marked on
+AM/HC against 75.5–81.6% for the same number of random images — the specimen group, not the
+training-set size. Closing it needs dense annotation, and the path is wired:
+
+```bash
+python3 code/export_annotation_tiles.py --group AM/HC --tiles 30   # uniform-random tiles
+python3 code/annotation_tiles.py load                             # into the app, NO prediction
+#   ... paint every pixel: Add crack for crack, Erase for not-crack ...
+python3 code/annotation_tiles.py status                           # which tiles are dense enough
+python3 code/annotation_tiles.py import                           # -> dataset_cache
+python3 code/crossval.py                                          # the first honest AM/HC number
+```
+
+Three design choices in there are load-bearing, and each is measured:
+
+- **Tiles, not frames.** A held-out IoU is a statistic, so a uniformly-random tile sample
+  estimates it without bias and with a quotable interval. 27 tiles of 512×512 is 7.1 M pixels
+  — about 0.9× one 8 MP frame — but spread across all 27 AM/HC frames.
+- **Sampled uniformly, not where the model is unsure.** Picking uncertain tiles finds more
+  crack per tile and would make the ground truth a *biased* sample, so IoU on it would not
+  estimate the frame's IoU. Active learning belongs on training tiles; keep the uniform set
+  for evaluation.
+- **Loaded without a prediction.** A labeller shown the model's mask is being asked to agree
+  with it, and 98.3% of this project's existing crack labels are confirmations of exactly
+  that. `annotation_tiles.py load` ingests with `predict=False` so the canvas is blank.
+
+`import` refuses a tile with less than 95% of its pixels judged, because a sparse tile
+imported as dense counts every unpainted crack pixel as background. Measured on this
+project's own sparse corrections, treating them as dense gives a mean IoU of **0.06**.
+
+`pipeline.GT_STEMS` discovers stems from `dataset_cache/` rather than being hardcoded, so a
+newly imported tile is picked up by the retrain gate, the cross-validation and the scorecard
+at once.
+
 ## Security, plainly
 
 **This app has no authentication and is not built to be exposed.** It binds `127.0.0.1`

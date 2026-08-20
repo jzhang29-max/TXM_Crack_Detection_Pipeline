@@ -43,7 +43,32 @@ import model as M            # noqa: E402
 # that exists (4 images), used to validate a retrain. If it is absent the gate
 # degrades to "warn and refuse to auto-deploy" rather than silently passing.
 GT_CACHE = os.path.join(PROJECT, "dataset_cache")
-GT_STEMS = ["333_75_um_zoom", "336_25", "338_13", "LARGE_343_75"]
+# The four that ship with the repo. Kept as the floor rather than the whole list, because
+# any new densely-annotated stem dropped into dataset_cache has to be picked up by the gate,
+# the cross-validation and the feature builder at once -- and hardcoding meant adding ground
+# truth required editing four call sites, which is how a stem gets used by one and missed by
+# another.
+GT_STEMS_SHIPPED = ["333_75_um_zoom", "336_25", "338_13", "LARGE_343_75"]
+
+
+def _discover_gt_stems():
+    """Every stem in dataset_cache that has BOTH an image and a mask."""
+    found = list(GT_STEMS_SHIPPED)
+    try:
+        for f in sorted(os.listdir(GT_CACHE)):
+            if not f.endswith("_gt.npy"):
+                continue
+            stem = f[: -len("_gt.npy")]
+            if stem in found:
+                continue
+            if os.path.exists(os.path.join(GT_CACHE, f"{stem}_img.npy")):
+                found.append(stem)
+    except OSError:
+        pass
+    return found
+
+
+GT_STEMS = _discover_gt_stems()
 
 IOU_TOL = 0.01
 FP_TOL = 0.005
@@ -214,7 +239,7 @@ def read_any_image(src):
 
 
 # ------------------------------------------------------------------- ingest
-def ingest(image_id, progress=None, force=False):
+def ingest(image_id, progress=None, force=False, predict=True):
     """Prepare one uploaded image for viewing and correcting."""
     def rep(stage, k=1, n=1):
         S.write_meta(image_id, dict(status=stage))
@@ -284,6 +309,15 @@ def ingest(image_id, progress=None, force=False):
                                     ingested=time.time()))
         return True
 
+    if not predict:
+        # Annotation-only ingest: preprocess and stop. No SAM, no classifier, no prob.npy.
+        # Deliberate -- a labeller shown the model's mask is being asked to agree with it,
+        # and 98.3% of this project's existing crack labels are confirmations of exactly
+        # that. Dense ground truth has to be drawn without it.
+        S.write_meta(image_id, dict(status="ready", model="annotation only (no prediction)",
+                                    annotation_only=True, predicted_area=0.0,
+                                    ingested=time.time()))
+        return
     embp = S.path(image_id, "emb.npz")
     sam_note = None
     if mdl.needs_sam() and (M.sam_unavailable_reason or M.sam_disabled_by_env()) \
@@ -426,7 +460,19 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True):
     """Model prediction with the user's corrections applied on top."""
     prob = S.load_npy(image_id, "prob.npy")
     if prob is None:
-        return None
+        # No prediction: an annotation-only image, ingested deliberately without one so the
+        # labeller is not anchored by the model's opinion. Their own strokes must still be
+        # visible, so start from an empty mask rather than bailing out -- returning None
+        # here made the overlay endpoint render nothing and the painting invisible.
+        corr0 = S.load_npy(image_id, "correction.npy", mmap=True)
+        if corr0 is None:
+            return None
+        mask = np.zeros(np.asarray(corr0).shape, bool)
+        del corr0
+        corr = S.load_npy(image_id, "correction.npy")
+        if corr is not None:
+            mask[corr == 1] = True
+        return mask
     mask = M.postprocess(prob) if postprocess else (prob > threshold)
     if prune and not postprocess:
         mask = prune_specks(mask)
