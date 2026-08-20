@@ -52,16 +52,55 @@ SAM_MODEL_ID = "facebook/sam-vit-huge"
 _sam = None
 
 
+class SamUnavailable(RuntimeError):
+    """SAM cannot be used in this process, and the reason is in str(self).
+
+    Its own exception type because the caller has a real fallback -- predict with the
+    17-feature model alone -- and needs to distinguish "SAM is not reachable" from a bug
+    inside the embedding pass, which must still surface as an error.
+    """
+
+
+# Latched, not retried per image. A machine behind a firewall would otherwise pay one
+# failed 2.4 GB download attempt per image, 71 times, before showing the same message.
+sam_unavailable_reason = None
+
+
+def sam_disabled_by_env():
+    return os.environ.get("TXM_NO_SAM", "").strip().lower() in ("1", "true", "yes")
+
+
 def _get_sam():
-    """Load SAM once per process. Downloads ~2.4 GB on first ever use."""
-    global _sam
+    """Load SAM once per process. Downloads ~2.4 GB on first ever use.
+
+    Raises SamUnavailable instead of a bare ImportError/OSError, so ingest can degrade to
+    the 17-feature model rather than failing the image. run_app.sh has always told users
+    the app "falls back to the 17-feature model alone" when SAM is missing; until this
+    existed that promise was false, and a researcher on a network that blocks
+    huggingface.co got a red job error on every single image with no way to reach the
+    0.744-IoU model sitting in models/pixel_hgb_final.joblib.
+    """
+    global _sam, sam_unavailable_reason
+    if sam_unavailable_reason:
+        raise SamUnavailable(sam_unavailable_reason)
+    if sam_disabled_by_env():
+        sam_unavailable_reason = "disabled by TXM_NO_SAM=1"
+        raise SamUnavailable(sam_unavailable_reason)
     if _sam is None:
-        import torch
-        from transformers import SamModel, SamProcessor
-        dev = ("mps" if torch.backends.mps.is_available()
-               else "cuda" if torch.cuda.is_available() else "cpu")
-        proc = SamProcessor.from_pretrained(SAM_MODEL_ID)
-        model = SamModel.from_pretrained(SAM_MODEL_ID).to(dev).eval()
+        try:
+            import torch
+            from transformers import SamModel, SamProcessor
+        except Exception as e:                                  # noqa: BLE001
+            sam_unavailable_reason = f"{type(e).__name__}: {e}".split("\n")[0][:180]
+            raise SamUnavailable(sam_unavailable_reason) from e
+        try:
+            dev = ("mps" if torch.backends.mps.is_available()
+                   else "cuda" if torch.cuda.is_available() else "cpu")
+            proc = SamProcessor.from_pretrained(SAM_MODEL_ID)
+            model = SamModel.from_pretrained(SAM_MODEL_ID).to(dev).eval()
+        except Exception as e:                                  # noqa: BLE001
+            sam_unavailable_reason = f"{type(e).__name__}: {e}".split("\n")[0][:180]
+            raise SamUnavailable(sam_unavailable_reason) from e
         _sam = (proc, model, dev, torch)
     return _sam
 

@@ -346,3 +346,22 @@ dominated by imported research negatives covering large background regions.
 about AM/HC needs either dense annotation there or a model trained to transfer. This is the
 measurement that was missing, and it argues the top priority is annotation in AM/HC rather
 than any further work on the architecture.
+
+
+## Launch-readiness fixes, measured
+
+| what | before | after |
+|---|---|---|
+| retrain peak memory, assembling the training matrix | ~17.7 GB transient (three live copies) | **8.55 GB resident**, 6.77 GB footprint, matrix 4.58 GB |
+| `display.png` on the 32 MP mosaic, revisited | 30,034,329 bytes, 0.39 s | **304, 0 bytes, 0.001 s** |
+| sidebar labels, 71 real filenames | 26 distinct, one string repeated 27x | **71/71 distinct**, 13-45 chars |
+| `DELETE /api/image/%2e%2e` | `shutil.rmtree` on all of `app_data` | **404**, all 71 images intact |
+| SAM unreachable | red job error on every image | **17-feature model**, reason shown per image |
+| truncated `emb.npz` | image permanently unusable | **detected, deleted, recomputed** |
+| server dies mid-retrain | green "Retraining complete" | **red, "did not finish", buttons restored** |
+
+The retrain matrix is 4,191,206 rows x 273 float32 = 4.58 GB, verified contiguous, finite,
+and 0.5000 crack fraction, built in 714 s. Peak resident 8.55 GB rather than 4.58 GB because
+the per-image 17-feature stacks are transient and the largest is 2.18 GB on its own; that one
+is deliberately left alone, since banding a Gaussian filter bank needs a halo sized to the
+largest sigma and getting it wrong changes predictions silently.

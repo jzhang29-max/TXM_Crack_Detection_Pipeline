@@ -285,9 +285,28 @@ def ingest(image_id, progress=None, force=False):
         return True
 
     embp = S.path(image_id, "emb.npz")
+    sam_note = None
+    if mdl.needs_sam() and (M.sam_unavailable_reason or M.sam_disabled_by_env()) \
+            and not os.path.exists(embp):
+        # Already known unreachable in this process: skip straight to the 17-feature model
+        # rather than attempting a 2.4 GB download once per image.
+        sam_note = M.sam_unavailable_reason or "disabled by TXM_NO_SAM=1"
+        mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
     if mdl.needs_sam() and (force or not os.path.exists(embp)):
         rep("SAM embedding")
-        coords, emb = M.embed_image(img01, progress=lambda k, n: rep("SAM embedding", k, n))
+        try:
+            coords, emb = M.embed_image(img01,
+                                        progress=lambda k, n: rep("SAM embedding", k, n))
+        except M.SamUnavailable as e:
+            # The fallback run_app.sh has always promised. Predict with the 17-feature
+            # model alone (mean IoU 0.744 against 0.821 for the ensemble) and record WHY in
+            # meta, so the sidebar and the model line say so instead of it being silent.
+            sam_note = str(e)
+            rep(f"SAM unavailable ({sam_note}) -- using the 17-feature model")
+            mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
+            coords = emb = None
+        if coords is None:
+            pass
         # Written atomically, the same temp+fsync+replace dance store.save_npy does twenty
         # lines away. This used to be a bare np.savez straight onto the final path, and a
         # SAM embedding is 8-59 MB: quit or lose power during that write and the file is a
@@ -296,19 +315,20 @@ def ingest(image_id, progress=None, force=False):
         # re-dropping produces the same content-hash id, and the only escape (Remove and
         # re-drop) silently discards that image's corrections. The same corrupt file then
         # killed the next retrain an hour in, while gathering features.
-        tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
-        try:
-            with open(tmp, "wb") as fh:
-                np.savez(fh, coords=coords, emb=emb)
-                fh.flush()
-                os.fsync(fh.fileno())
-            os.replace(tmp, embp)
-        except BaseException:
+        if coords is not None:
+            tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
             try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+                with open(tmp, "wb") as fh:
+                    np.savez(fh, coords=coords, emb=emb)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                os.replace(tmp, embp)
+            except BaseException:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+                raise
         del coords, emb
 
     rep("predicting")
@@ -342,7 +362,7 @@ def ingest(image_id, progress=None, force=False):
     if S.load_npy(image_id, "correction.npy", mmap=True) is None:
         S.save_npy(image_id, "correction.npy", np.zeros(img01.shape, np.uint8))
 
-    S.write_meta(image_id, dict(status="ready", model=mdl.describe(),
+    S.write_meta(image_id, dict(status="ready", model=mdl.describe() + (f"  [SAM unavailable: {sam_note}]" if sam_note else ""),
                                 # The pruned figure, because that is the mask the user is
                                 # shown. Reporting the raw area next to a pruned overlay
                                 # makes the sidebar disagree with the picture beside it.
@@ -769,7 +789,7 @@ def gather_training_data(progress=None):
     a fixed cap silently goes stale as more images get labelled.
     """
     import destitch  # noqa: F401  (ensures code/ is importable before heavy work)
-    Xs, ys, ws = [], [], []
+    Xs, ys = [], []
 
     items = [m for m in S.list_images() if m.get("corrected_crack_px") or m.get("corrected_not_px")]
     n_crack_total = sum(m.get("corrected_crack_px", 0) for m in items)
@@ -824,7 +844,6 @@ def gather_training_data(progress=None):
                     del b
             Xs.append(block)
             ys.append(np.concatenate([np.ones(nc, bool), np.zeros(nb, bool)]))
-            ws.append(np.ones(nc + nb))
             del gt, a
             if progress:
                 progress(f"ground truth {stem}", 1, 1)
@@ -863,26 +882,52 @@ def gather_training_data(progress=None):
                 todo &= ~sel
         Xs.append(np.concatenate([a, b], axis=1))
         ys.append(np.concatenate([np.ones(nc, bool), np.zeros(nb, bool)]))
-        ws.append(np.ones(nc + nb))
         del corr, img, coords, embs, a, b
         if progress:
             progress(f"features {k}/{len(items)}", k, len(items))
 
     if not Xs:
-        return None, None, None, dict(reason="no labelled data")
+        return None, None, dict(reason="no labelled data")
     # The ground-truth block is 17-dim; correction blocks are 273-dim. Only train
     # on the common width, and say which happened rather than crashing later.
     widths = {x.shape[1] for x in Xs}
     target = max(widths)
-    keep = [(x, y, w) for x, y, w in zip(Xs, ys, ws) if x.shape[1] == target]
-    dropped = len(Xs) - len(keep)
-    X = np.concatenate([k[0] for k in keep]).astype(np.float32)
-    y = np.concatenate([k[1] for k in keep])
-    w = np.concatenate([k[2] for k in keep])
+    keep_i = [i for i, x in enumerate(Xs) if x.shape[1] == target]
+    dropped = len(Xs) - len(keep_i)
+
+    # PREALLOCATE AND FILL, rather than np.concatenate(...).astype(np.float32).
+    #
+    # That one line held three copies of the whole training matrix alive at once. With 71
+    # labelled images at ~65k rows each plus 0.8 M ground-truth rows, the matrix is ~5.4 M
+    # rows x 273 float32 = 5.9 GB, and at the moment of the astype there were three: the
+    # per-image blocks still referenced by Xs, the concatenate result, and the astype copy.
+    # ~17.7 GB transient, on a machine that may have 16 GB total -- and it happened AFTER
+    # the expensive SAM feature pass, so the cost was paid before the failure. The astype
+    # was pure waste besides: every block is constructed float32 already.
+    #
+    # Filling a preallocated array and dropping each block as it is copied holds one copy
+    # plus one block: ~5.9 GB + ~90 MB.
+    n_rows = sum(Xs[i].shape[0] for i in keep_i)
+    X = np.empty((n_rows, target), np.float32)
+    y = np.empty(n_rows, bool)
+    at = 0
+    for i in keep_i:
+        blk, lab = Xs[i], ys[i]
+        n = blk.shape[0]
+        X[at:at + n] = blk
+        y[at:at + n] = lab
+        at += n
+        Xs[i] = None                    # free this block now, not at function exit
+        ys[i] = None
+    assert at == n_rows, (at, n_rows)
+    del Xs, ys, keep_i
+
     info = dict(n_px=int(len(y)), n_features=int(target), crack_fraction=float(y.mean()),
                 neg_cap=neg_cap, correction_crack_px=int(n_crack_total),
                 blocks_dropped_for_width=dropped, bootstrap_crack=boot_crack)
-    return X, y, w, info
+    # `w` is gone: it was built, concatenated and returned, and retrain() never passed it to
+    # clf.fit -- 43 MB of sample weights computed and thrown away every retrain.
+    return X, y, info
 
 
 def retrain(deploy=True, progress=None):
@@ -899,7 +944,7 @@ def retrain(deploy=True, progress=None):
     built = ensure_gt_features(progress=progress)
     if progress:
         progress("gathering labels", 0, 1)
-    X, y, w, info = gather_training_data(progress=progress)
+    X, y, info = gather_training_data(progress=progress)
     if X is None:
         return dict(ok=False, error="no labelled data yet -- paint some corrections first")
 
@@ -928,11 +973,13 @@ def retrain(deploy=True, progress=None):
 
     if progress:
         progress("fitting", 0, 1)
-    clf = Pipeline([("scaler", StandardScaler()),
+    clf = Pipeline([("scaler", StandardScaler(copy=False)),
                     ("mlp", MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=400,
                                           random_state=0))])
+    # copy=False so StandardScaler standardises in place instead of returning a second
+    # 5.9 GB array inside fit.
     clf.fit(X, y)
-    del X, y, w
+    del X, y
 
     stamp = time.strftime("%Y%m%d_%H%M%S")
     out = os.path.join(S.MODELS, f"hybrid_{stamp}.joblib")

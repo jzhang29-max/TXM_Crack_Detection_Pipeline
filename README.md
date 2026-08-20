@@ -134,9 +134,14 @@ That script creates its own virtualenv, installs dependencies, expands the bundl
 reference data, and serves the app. Re-running it later just starts the app -- it
 notices the venv already exists and that requirements have not changed.
 
-Python 3.9+ is the only prerequisite. Apple Silicon, CUDA and CPU-only all work; a
-GPU makes the SAM step ~10x faster but nothing requires one. `PORT=9000 ./run_app.sh`
-if 8800 is taken.
+**Python 3.10 is the floor, 3.12 is what this is tested on.** Not 3.9: `scikit-learn>=1.7`
+requires 3.10, and the versions pip resolves today (numpy 2.5, scipy 1.18, tifffile) require
+3.12. Debian 11 and Ubuntu 20.04 ship 3.9, and stock macOS `python3` may too — on those,
+install a newer Python first or `./run_app.sh` fails in pip's resolver after the clone.
+Check with `python3 -V` before you start.
+
+Apple Silicon, CUDA and CPU-only all work; a GPU makes the SAM step ~10x faster but nothing
+requires one. `PORT=9000 ./run_app.sh` if 8800 is taken.
 
 Two things happen once, not on every start:
 
@@ -178,8 +183,10 @@ because it was missing from an explicit file list. One repo, one push, no list.
 The app starts empty -- drag images in, or load everything that ships with the repo:
 
 ```bash
-python3 code/load_all_images.py          # ~45 min for all 71, reusing the cached SAM embeddings
-python3 code/import_research_corrections.py   # attach the 264 M not-crack labels
+# Use the venv's python, or these die with ModuleNotFoundError — ./run_app.sh installs
+# into .venv and never touches your system python.
+.venv/bin/python code/load_all_images.py
+.venv/bin/python code/import_research_corrections.py   # attach the 264 M not-crack labels
 ```
 
 The loader skips anything already present by filename, so it is safe to re-run. Both are
@@ -199,8 +206,12 @@ Each image is then destitched, flat-fielded, embedded with SAM and predicted. Bu
 ~20 s for a 2.9 MP image, a few minutes for a 30 MP mosaic; the status line names the
 stage and, on multi-image jobs, shows elapsed time and an estimate of what is left.
 
-To load the 71 images that ship with the repo, `python3 code/load_all_images.py` is much
-faster than dragging them, because it reuses the cached SAM embeddings.
+To load the 71 images that ship with the repo, `.venv/bin/python code/load_all_images.py`
+is much faster than dragging them in — but **budget real time for it on a fresh clone.** That
+script reuses `paint/sam_embcache` when present, and that cache is 2.1 GB of derived data
+which is *gitignored* — so a clone does not have it. The honest figure for a first run is
+**~1050 SAM ViT-H tile passes**: roughly 26 minutes on a GPU, and about 4.4 hours CPU-only.
+It is resumable — rerun it and it skips whatever finished — and it only happens once.
 
 ### 2. Look at the result
 
