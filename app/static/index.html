@@ -710,8 +710,32 @@ async function up(files){
 /* ---------- jobs ---------- */
 function watch(jid,what){
   clearInterval(POLL);BUSY=true;$("#retrain").disabled=true;$("#mpick").disabled=true;
+  let miss=0;
   POLL=setInterval(async()=>{
-    const s=await j(`/api/job/${jid}`);
+    // NEVER report an unknown or unreachable job as success. j() throws on a dead server,
+    // and after a restart /api/job/<id> answers {ok:false,error:"unknown job"} with no
+    // .state -- which used to fall through every branch below and land on the final else,
+    // announcing "complete" IN GREEN for a retrain that never finished. Losing the server
+    // mid-retrain is not exotic: an OOM kill, a Ctrl-C, a sleeping laptop, and ./run_app.sh
+    // is how you recover.
+    let s;
+    try{ s=await j(`/api/job/${jid}`); }
+    catch(e){
+      if(++miss<4){say(`${what}: lost contact with the app, retrying…`,"var(--warn)");return;}
+      clearInterval(POLL);$("#prog").style.width="0";BUSY=false;
+      $("#retrain").disabled=false;$("#mpick").disabled=false;LASTK=0;
+      say(`${what} — the app stopped responding. It may still be running; `+
+          `reload this page to reattach, or restart with ./run_app.sh`,"var(--bad)");
+      scope();return;
+    }
+    miss=0;
+    if(!s||!s.state){
+      clearInterval(POLL);$("#prog").style.width="0";BUSY=false;
+      $("#retrain").disabled=false;$("#mpick").disabled=false;LASTK=0;
+      say(`${what} — the app no longer knows about this job, so it did not finish. `+
+          `The server was probably restarted. Nothing was deployed.`,"var(--bad)");
+      loadModel();scope();return;
+    }
     $("#prog").style.width=(s.n?Math.round(100*s.k/s.n):0)+"%";
     if(s.state==="running"){
       // Elapsed and estimated remaining, from the job's own start time and how many
@@ -726,7 +750,8 @@ function watch(jid,what){
       if(CUR&&s.k>1&&s.k!==LASTK){LASTK=s.k;refresh();loadList(true);}
       return;
     }
-    clearInterval(POLL);$("#prog").style.width="0";BUSY=false;$("#mpick").disabled=false;LASTK=0;
+    clearInterval(POLL);$("#prog").style.width="0";BUSY=false;
+    $("#retrain").disabled=false;$("#mpick").disabled=false;LASTK=0;
     if(s.state==="error"){say(`${what} failed — ${s.error}`,"var(--bad)");console.error(s.trace);scope();
       loadModelList();return;}
     const res=s.result||{};
@@ -755,7 +780,12 @@ function watch(jid,what){
         say(m+" — applying to your images…","var(--ok)");
         const rr=await j("/api/reoverlay",{method:"POST"});watch(rr.job,"Updating results");return;}
       say(m+` · not applied (${res.reason||"no improvement"}) — previous model kept`,"var(--warn)");
-    }else say(`${what} complete${s.seconds?` in ${dur(s.seconds)}`:""}`,"var(--ok)");
+    }else if(s.state==="done"){
+      say(`${what} complete${s.seconds?` in ${dur(s.seconds)}`:""}`,"var(--ok)");
+    }else{
+      // Any other state is not success. Say what it was rather than guessing.
+      say(`${what} ended unexpectedly (${esc(s.state)})`,"var(--bad)");
+    }
     await loadList(true);if(CUR)show(CUR);scope();
     loadModelList();          // "needs a pass" -> "ready" once a model has been run
   },900);

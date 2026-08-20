@@ -438,6 +438,14 @@ full study, including 33 verified citations.
   than 0.5 points. Every regression this project has had passed a single-metric check —
   an over-aggressive filter and a good one both reduce predicted area, and only
   recall against ground truth separates them.
+- **The model does not transfer to AM/HC, measured.** Leave-one-specimen-group-out on the
+  owner's own labels (71 images, all four groups) gives crack recall 0.836 for B2, 0.795 B3,
+  0.763 wrought — and **0.397 for AM/HC**. Controlled: holding out 27 *random* images
+  instead of the 27 AM/HC ones gives 0.755–0.816, so it is the specimen group and not the
+  training-set size. AM/HC also has the highest not-crack agreement (0.973), so the failure
+  is under-marking. `python3 code/crossval_groups.py` reproduces it;
+  `docs/SAM_COMBINATION_SWEEP.md` has the method and the caveats — these are sparse labels,
+  so it is agreement with a human's judgement, not accuracy against truth.
 - **Some imported not-crack labels are on real crack, and most cannot be checked.**
   `code/import_research_corrections.py` brought in 263 M not-crack pixels from the
   research archive. On the four images where pixel truth exists, **22–28% of that

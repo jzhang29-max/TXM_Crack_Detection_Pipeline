@@ -23,7 +23,9 @@ import glob
 import json
 import os
 import sys
+import threading
 import time
+import zipfile
 
 import numpy as np
 
@@ -282,17 +284,58 @@ def ingest(image_id, progress=None, force=False):
                                     ingested=time.time()))
         return True
 
-    if mdl.needs_sam() and (force or not os.path.exists(S.path(image_id, "emb.npz"))):
+    embp = S.path(image_id, "emb.npz")
+    if mdl.needs_sam() and (force or not os.path.exists(embp)):
         rep("SAM embedding")
         coords, emb = M.embed_image(img01, progress=lambda k, n: rep("SAM embedding", k, n))
-        np.savez(S.path(image_id, "emb.npz"), coords=coords, emb=emb)
+        # Written atomically, the same temp+fsync+replace dance store.save_npy does twenty
+        # lines away. This used to be a bare np.savez straight onto the final path, and a
+        # SAM embedding is 8-59 MB: quit or lose power during that write and the file is a
+        # truncated zip forever. The image was then BRICKED with no route back from the UI
+        # -- Re-apply calls ingest() without force so it takes the existing broken file,
+        # re-dropping produces the same content-hash id, and the only escape (Remove and
+        # re-drop) silently discards that image's corrections. The same corrupt file then
+        # killed the next retrain an hour in, while gathering features.
+        tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
+        try:
+            with open(tmp, "wb") as fh:
+                np.savez(fh, coords=coords, emb=emb)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, embp)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
         del coords, emb
 
     rep("predicting")
     emb = None
-    if mdl.needs_sam() and os.path.exists(S.path(image_id, "emb.npz")):
-        z = np.load(S.path(image_id, "emb.npz"))
-        emb = (z["coords"], z["emb"])
+    if mdl.needs_sam() and os.path.exists(embp):
+        try:
+            z = np.load(embp)
+            emb = (z["coords"], z["emb"])
+        except (zipfile.BadZipFile, ValueError, EOFError, KeyError) as e:
+            # A damaged cache must not be a dead end. Recompute it rather than raising:
+            # this file is derived data, so throwing it away costs seconds of GPU and
+            # nothing else, while raising cost the user the whole image.
+            rep(f"SAM cache damaged ({type(e).__name__}), recomputing")
+            try:
+                os.unlink(embp)
+            except OSError:
+                pass
+            coords, emb2 = M.embed_image(img01,
+                                         progress=lambda k, n: rep("SAM embedding", k, n))
+            tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
+            with open(tmp, "wb") as fh:
+                np.savez(fh, coords=coords, emb=emb2)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, embp)
+            emb = (coords, emb2)
+            del coords, emb2
     prob = mdl.predict(img01, emb=emb, progress=lambda st, k, n: rep(st, k, n))
     S.store_prob(image_id, mkey, prob.astype(np.float32))
 

@@ -290,3 +290,59 @@ column and the labels). Result **0.8270 against 0.8308, −0.0038, winning 1 of 
 No help. The same caveat applies: ridge filters should matter most at the thin widths this
 ground truth does not contain, so this refutes "orientation features help here", not
 "orientation features help".
+
+
+## 2026-08-19: the first evaluation outside B2 — and it fails
+
+Until now every number in this project came from four dense ground-truth images, all
+specimen group B2. Sampling the owner's 30.2 M hand-drawn labels into a fold cache
+(`code/build_label_folds.py`) makes leave-one-specimen-GROUP-out constructible for the
+first time: 71 labelled images across AM/HC (27), B2 (17), B3 (13), wrought (14).
+
+**Sparse labels need a different metric.** `corr == 0` means "no opinion", not "not crack".
+Measured on six images, treating corrections as dense ground truth gives mean IoU 0.06,
+because every crack the model found correctly and the owner never painted over counts as a
+false positive; restricted to judged pixels the same images give 0.70–0.997. So this reports
+**agreement on judged pixels**, never a whole-image IoU.
+
+Train on the other three groups plus the four dense ground-truth images; test on the
+held-out group's judged pixels only.
+
+| held-out group | images | judged px | crack recall | not-crack agreement |
+|---|---|---|---|---|
+| **AM/HC** | 27 | 367,499 | **0.397** | 0.973 |
+| B2 | 17 | 294,817 | 0.836 | 0.943 |
+| B3 | 13 | 212,010 | 0.795 | 0.818 |
+| wrought | 14 | 159,994 | 0.763 | 0.866 |
+| mean | | | 0.698 | 0.900 |
+
+**The model does not transfer to AM/HC.** Held out entirely it recovers 40% of the crack
+the owner marked there, against 76–84% for every other group. Note the direction: AM/HC has
+the *highest* not-crack agreement (0.973) and the lowest crack recall, so the failure is
+UNDER-marking, not over-marking — consistent with the thin-crack misses the README figure
+already shows on an AM/HC frame.
+
+**Controlled for training-set size**, because holding out AM/HC also removes 27 of 71
+images:
+
+| held out | crack recall |
+|---|---|
+| the 27 AM/HC images (by group) | **0.397** |
+| 27 random images, seed 0 | 0.782 |
+| 27 random images, seed 1 | 0.816 |
+| 27 random images, seed 2 | 0.755 |
+
+Same number of images, same training budget, twice the recall. The collapse is the specimen
+group, not the data volume.
+
+**Caveats that matter.** These are sparse labels, so this is agreement with the owner's
+judgement and not accuracy against physical truth. 98.3% of the force-crack labels sit on
+pixels the model already called crack (Flip region confirms a blob in one click), which
+makes crack recall partly circular — but that circularity would *inflate* recall, and AM/HC
+still reads 0.397, so the failure is real and if anything understated. The not-crack side is
+dominated by imported research negatives covering large background regions.
+
+**What this changes.** The honest scope of the deployed model is B2-like material. Any claim
+about AM/HC needs either dense annotation there or a model trained to transfer. This is the
+measurement that was missing, and it argues the top priority is annotation in AM/HC rather
+than any further work on the architecture.
