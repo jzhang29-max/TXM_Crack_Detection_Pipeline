@@ -594,6 +594,8 @@ def clean_fp_measured(model_key):
 # sampling noise in the number people will read. At 30k this measured 0.8107 against
 # 0.8241 from a 120k-row harness -- a 0.013 gap that is pure sample size.
 CV_ROWS_PER_IMAGE = 60000
+CV_MAX_FOLDS = 5
+LABEL_FOLDS = os.path.join(PROJECT, "paint", "label_folds.npz")
 CV_TRAIN_CAP = 90000
 
 
@@ -668,11 +670,42 @@ def crossval_grouped(progress=None):
             continue
         block, y, n17 = got
         Xs.append(block); ys.append(y); gs.append(np.full(len(y), gi))
+
+    # The owner's own labels, when code/build_label_folds.py has been run. Without them this
+    # number depends only on the four shipped ground-truth images, so it cannot move when
+    # someone labels more -- which makes it useless as a gate. With them it responds to the
+    # actual corpus, and each labelled image is its own GROUP so no image is ever on both
+    # sides of a fold.
+    extra_groups = 0
+    if os.path.exists(LABEL_FOLDS):
+        try:
+            z = np.load(LABEL_FOLDS, allow_pickle=False)
+            ids = sorted({k.split("|")[0] for k in z.files})
+            base = len(GT_STEMS)
+            for j, iid in enumerate(ids):
+                kx, ks, ky = f"{iid}|x17", f"{iid}|xsam", f"{iid}|y"
+                if not (kx in z.files and ks in z.files and ky in z.files):
+                    continue
+                blk = np.concatenate([z[kx], z[ks]], axis=1)
+                if Xs and blk.shape[1] != Xs[0].shape[1]:
+                    continue                       # width mismatch: skip, never pad
+                Xs.append(blk.astype(np.float32))
+                ys.append(z[ky].astype(bool))
+                gs.append(np.full(len(z[ky]), base + j))
+                extra_groups += 1
+            if progress and extra_groups:
+                progress(f"cross-validation: +{extra_groups} labelled images", 1, 1)
+        except (OSError, ValueError, KeyError):
+            extra_groups = 0                       # a damaged cache must not sink a retrain
     if len(Xs) < 2:
         return None
     X = np.concatenate(Xs); y = np.concatenate(ys); g = np.concatenate(gs)
     del Xs, ys, gs
-    k = len(np.unique(g))
+    # Grouped by image, but capped: with 71 labelled images leave-one-image-out would mean
+    # 75 refits per retrain. GroupKFold with k folds keeps whole images together while
+    # holding the refit count fixed, which is the property that matters.
+    n_groups = len(np.unique(g))
+    k = min(CV_MAX_FOLDS, n_groups)
 
     from sklearn.neural_network import MLPClassifier
     from sklearn.pipeline import Pipeline
@@ -686,7 +719,12 @@ def crossval_grouped(progress=None):
 
     per_fold = []
     for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=g), 1):
-        held = GT_STEMS[int(g[te][0])]
+        # Name the fold by WHAT IT HOLDS, not by its first group. With 75 groups over 5
+        # folds each fold holds ~15 images, so labelling it after one ground-truth stem
+        # read as if that single image were the test set.
+        gids = sorted(set(int(v) for v in g[te]))
+        gt_in = [GT_STEMS[i] for i in gids if i < len(GT_STEMS)]
+        held = (f"{len(gids)} images" + (f" incl. {', '.join(gt_in)}" if gt_in else ""))
         if progress:
             progress(f"cross-validation fold {f}/{k}: holding out {held}", f, k)
         if len(tr) > CV_TRAIN_CAP:
@@ -704,7 +742,12 @@ def crossval_grouped(progress=None):
                              precision=round(tp / max(tp + fp, 1), 4),
                              recall=round(tp / max(tp + fn, 1), 4)))
     ious = [f["iou"] for f in per_fold]
-    return dict(k=k, per_fold=per_fold,
+    # `mean_iou` is agreement on JUDGED pixels: labels are dense ground truth on the four
+    # shipped images and the owner's own corrections elsewhere. It is not IoU against
+    # physical truth, and the scorecard says so.
+    return dict(k=k, per_fold=per_fold, labelled_images_used=extra_groups,
+                label_source=("ground truth + owner corrections" if extra_groups
+                              else "ground truth only"),
                 mean_iou=round(float(np.mean(ious)), 4),
                 std_iou=round(float(np.std(ious)), 4),
                 min_iou=round(float(np.min(ious)), 4),
@@ -1035,14 +1078,40 @@ def retrain(deploy=True, progress=None):
                   clean_fp_by_specimen=by_spec)
 
     iou_ok = i1 >= i0 - IOU_TOL
+
+    # The held-out half of the gate. i1 vs i0 above is IN-SAMPLE -- the candidate trains on
+    # the same four ground-truth images it is scored on -- so "IoU did not drop" can be
+    # satisfied by fitting them harder. This compares the candidate's grouped-by-image
+    # cross-validated score against the last one recorded, which is the same protocol
+    # measured the same way, and is the only IoU-like number here that cannot be gamed by
+    # memorising the evaluation set.
+    ho_ok, ho_prev, ho_now = True, None, None
+    try:
+        _hist = [h for h in retrain_history() if (h.get("heldout") or {}).get("mean_iou")]
+        ho_prev = _hist[-1]["heldout"]["mean_iou"] if _hist else None
+    except Exception:                                           # noqa: BLE001
+        ho_prev = None
     if n_clean and fp_inc is not None and fp_cand is not None:
         fp_ok = fp_cand <= fp_inc + FP_TOL
     else:
         fp_ok = True                       # cannot check; reported below, not hidden
-    passes = bool(iou_ok and fp_ok)
+    # crossval runs after the gate is decided elsewhere in this function, so compute it
+    # here where its verdict can actually count.
+    try:
+        if progress:
+            progress("cross-validation (grouped by image)", 0, 1)
+        result["heldout"] = crossval_grouped(progress=progress)
+    except Exception as e:                                      # noqa: BLE001
+        result["heldout"] = None
+        result["heldout_error"] = f"{type(e).__name__}: {e}"
+    ho_now = (result.get("heldout") or {}).get("mean_iou")
+    if ho_prev is not None and ho_now is not None:
+        ho_ok = ho_now >= ho_prev - IOU_TOL
+    passes = bool(iou_ok and fp_ok and ho_ok)
     result["passes_gate"] = passes
     result["gate_detail"] = dict(
-        iou_ok=bool(iou_ok), fp_ok=bool(fp_ok),
+        iou_ok=bool(iou_ok), fp_ok=bool(fp_ok), heldout_ok=bool(ho_ok),
+        heldout_prev=ho_prev, heldout_now=ho_now,
         fp_checked_on=n_clean,
         note=(None if n_clean else
               "no crack-free specimen is loaded, so over-prediction was NOT checked -- "
@@ -1071,6 +1140,10 @@ def retrain(deploy=True, progress=None):
         bits = []
         if not iou_ok:
             bits.append(f"IoU regressed {i0:.3f} -> {i1:.3f} (tolerance {IOU_TOL})")
+        if not ho_ok:
+            bits.append(f"held-out IoU regressed {ho_prev:.3f} -> {ho_now:.3f} "
+                        f"(tolerance {IOU_TOL}) -- this one is grouped by image, so it "
+                        f"cannot be recovered by fitting the evaluation set harder")
         if not fp_ok:
             bits.append(f"false positives on {n_clean} crack-free specimen(s) rose "
                         f"{fp_inc*100:.2f}% -> {fp_cand*100:.2f}% of area "
@@ -1079,18 +1152,6 @@ def retrain(deploy=True, progress=None):
                       reason=(None if passes else
                               "; ".join(bits) + ". Not deployed. The model file is kept "
                               "so you can inspect it."))
-    # The honest number. Everything above is in-sample -- the candidate trains on the same
-    # four ground-truth images the gate scores it on -- so it cannot answer "how will this do
-    # on an image it has not seen". This can, at the cost of ~1 minute on a 90 minute job.
-    try:
-        if progress:
-            progress("cross-validation (grouped by image)", 0, 1)
-        result["heldout"] = crossval_grouped(progress=progress)
-    except Exception as e:                                      # noqa: BLE001
-        # Never let the honest-number pass sink a retrain that already succeeded.
-        result["heldout"] = None
-        result["heldout_error"] = f"{type(e).__name__}: {e}"
-
     # Record the scorecard whether or not it deployed. A REJECTED retrain is the most
     # useful entry in the history -- it is the one a person will want to look at again.
     record_retrain(result, stamp=stamp)

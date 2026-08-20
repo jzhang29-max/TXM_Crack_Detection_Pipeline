@@ -365,3 +365,44 @@ and 0.5000 crack fraction, built in 714 s. Peak resident 8.55 GB rather than 4.5
 the per-image 17-feature stacks are transient and the largest is 2.18 GB on its own; that one
 is deliberately left alone, since banding a Gaussian filter bank needs a halo sized to the
 largest sigma and getting it wrong changes predictions silently.
+
+
+## 2026-08-19, later: the gate's blind spot closed, and two more refuted ideas
+
+**The gate now has a third condition that cannot be gamed by memorising the evaluation
+set.** Its IoU half compares candidate to incumbent on the four ground-truth images the
+candidate also *trains* on, so "IoU did not drop" was satisfiable by fitting them harder.
+`crossval_grouped()` now also draws on the owner's 71 labelled images (each its own group,
+GroupKFold capped at 5 folds so a retrain does not do 75 refits), which makes the held-out
+number respond to the actual corpus instead of being fixed by four images — and a retrain
+that drops it by more than 0.01 is refused. Verified on a seven-case table: the decisive row
+is *in-sample IoU up, held-out down → does not deploy*.
+
+With the owner's labels included the held-out figure reads **0.7634** (sd 0.0347, worst
+0.7210) against 0.8151 from the four ground-truth images alone — lower because the folds now
+contain the harder non-B2 material. Reported as agreement on judged pixels, since labels are
+dense truth on four images and the owner's own corrections elsewhere.
+
+**Fusion rule: `mean` confirmed, twice.** The hypothesis was that averaging vetoes thin
+cracks — a 3-px crack the full-resolution 17-feature branch calls at 0.85 is pulled to 0.475
+if the 16-px-blocky SAM branch says 0.10. Measured on identical base models, so no reseeding
+noise between rules:
+
+| rule | IoU | precision | recall |
+|---|---|---|---|
+| **mean (deployed)** | **0.8308** | 0.887 | 0.928 |
+| max | 0.7391 | 0.760 | **0.964** |
+| min | 0.7949 | **0.933** | 0.844 |
+| 17-branch alone | 0.7377 | 0.805 | 0.899 |
+| hybrid alone | 0.7942 | 0.859 | 0.909 |
+
+`max` does buy recall, and pays 13 points of precision for it. And the components being
+missed have median width **1.0 px** — the regime where every published method collapses to
+Dice 0.35–0.39 — so no fusion rule recovers them; that is a resolution limit, not a
+combination choice.
+
+**The false-alarm figure had five values in this repo because two of them were measured
+before speck pruning and three after.** Now defined once: share of total pixels predicted
+crack *after* pruning, per specimen, averaged over the six confirmed crack-free specimens.
+Shipped baseline **0.076%** (range 0.000–0.185%); currently deployed **0.106%** (range
+0.000–0.262%). Always quote the range: one specimen is near zero and one carries most of it.

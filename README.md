@@ -97,8 +97,23 @@ hand-labelled truth for the same window. Agreement is high where the crack is wi
 which is what all four ground-truth images are.
 
 On the four ground-truth images (all one specimen group, B2) under leave-one-image-out:
-mean IoU **0.821**, recall **0.914**, and on six specimens the owner confirmed
-crack-free the **shipped baseline** marks **0.21%** of area as crack (measured).
+mean IoU **0.821**, recall **0.914**.
+
+**The false-alarm figure, with its definition, because it appeared five different ways in
+earlier drafts.** *Share of total pixels predicted crack, after speck pruning — which is the
+mask you actually see — measured per specimen on the six the owner confirmed crack-free,
+then averaged over specimens (n=6):*
+
+| model | mean | range across the six |
+|---|---|---|
+| shipped baseline | **0.076%** | 0.000 – 0.185% |
+| currently deployed retrain | **0.106%** | 0.000 – 0.262% |
+
+Quote the mean *and* the range; one specimen is always near zero and one carries most of it.
+Numbers elsewhere in this repo around 0.19–0.26% are the same quantity measured **before**
+pruning, which is why they are larger — if you compare two figures, check they are on the
+same side of the filter. For external calibration, MIL-HDBK-1823A treats ≤1% probability of
+false calls as the NDT yardstick; both models are well inside it.
 
 > **Check which model you are on.** Those numbers are the shipped baseline's. A model
 > retrained in the app can be far worse at background and still deploy, because until
