@@ -87,9 +87,6 @@ button:disabled{opacity:.4;cursor:default}
   border-radius:6px;cursor:pointer}
 #mpick:hover{border-color:#3d4552}
 #mpick:disabled{opacity:.5;cursor:default}
-#hint{margin:8px 2px 0;font-size:11px;line-height:1.5;color:var(--ink3)}
-#hint code{font-size:10.5px;background:var(--line);padding:1px 4px;border-radius:3px;
-  overflow-wrap:anywhere}
 #rreport{margin-top:9px;font-size:11.5px;line-height:1.45}
 #rreport .hd{font-weight:600;letter-spacing:.01em}
 #rreport table{width:100%;border-collapse:collapse;margin:5px 0 3px}
@@ -180,10 +177,7 @@ button:disabled{opacity:.4;cursor:default}
     <b>Drop TXM images</b>
     <span>or click to browse — .tif .tiff .png</span>
   </button>
-  <!-- The 71 shipped images are 2.26 GB the stranger has already downloaded, and until now
-       nothing on screen said they existed or how to load them. -->
-  <p id="hint">71 images ship in <code>images/</code> — load them all with
-    <code>.venv/bin/python code/load_all_images.py</code></p>
+
   <input type="file" id="file" multiple accept=".tif,.tiff,.png,.jpg" hidden>
 
   <div class="lbl" id="listlbl">Images <span id="ncount" style="color:var(--ink3)"></span></div>
