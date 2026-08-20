@@ -18,7 +18,7 @@
    3. Group by task with real whitespace, not by cramming into one flex row. */
 :root{
   --bg:#0f1114; --surface:#16191e; --surface2:#1c2027; --line:#252a32;
-  --line2:#333a45; --ink:#eceef1; --ink2:#a8aeb8; --ink3:#6f7681;
+  --line2:#333a45; --ink:#eceef1; --ink2:#a8aeb8; --ink3:#8b939f;
   --brand:#4f8ef7; --ok:#2ea36b; --warn:#c9822a; --bad:#d64545;
   --r:8px; --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.22);
 }
@@ -87,6 +87,9 @@ button:disabled{opacity:.4;cursor:default}
   border-radius:6px;cursor:pointer}
 #mpick:hover{border-color:#3d4552}
 #mpick:disabled{opacity:.5;cursor:default}
+#hint{margin:8px 2px 0;font-size:11px;line-height:1.5;color:var(--ink3)}
+#hint code{font-size:10.5px;background:var(--line);padding:1px 4px;border-radius:3px;
+  overflow-wrap:anywhere}
 #rreport{margin-top:9px;font-size:11.5px;line-height:1.45}
 #rreport .hd{font-weight:600;letter-spacing:.01em}
 #rreport table{width:100%;border-collapse:collapse;margin:5px 0 3px}
@@ -177,6 +180,10 @@ button:disabled{opacity:.4;cursor:default}
     <b>Drop TXM images</b>
     <span>or click to browse — .tif .tiff .png</span>
   </button>
+  <!-- The 71 shipped images are 2.26 GB the stranger has already downloaded, and until now
+       nothing on screen said they existed or how to load them. -->
+  <p id="hint">71 images ship in <code>images/</code> — load them all with
+    <code>.venv/bin/python code/load_all_images.py</code></p>
   <input type="file" id="file" multiple accept=".tif,.tiff,.png,.jpg" hidden>
 
   <div class="lbl" id="listlbl">Images <span id="ncount" style="color:var(--ink3)"></span></div>

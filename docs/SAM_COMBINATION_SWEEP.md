@@ -406,3 +406,41 @@ before speck pruning and three after.** Now defined once: share of total pixels 
 crack *after* pruning, per specimen, averaged over the six confirmed crack-free specimens.
 Shipped baseline **0.076%** (range 0.000–0.185%); currently deployed **0.106%** (range
 0.000–0.262%). Always quote the range: one specimen is near zero and one carries most of it.
+
+
+## "Why not just train a U-Net?" — now answered
+
+This was the last standing objection to the project's central architecture choice, and the
+honest position until now was "we did not evaluate one". A standard 4-level U-Net (1.93 M
+parameters) was trained under **the identical protocol** the 273-feature classifier is scored
+under: leave one whole ground-truth image out, train on the other three, evaluate on the
+held-out image's full frame at threshold 0.5.
+
+| held out | U-Net | 273-feature ensemble | delta |
+|---|---|---|---|
+| 333_75_um_zoom | 0.7196 | 0.787 | −0.067 |
+| 336_25 | 0.5824 | 0.869 | −0.287 |
+| 338_13 | 0.8242 | 0.891 | −0.067 |
+| **LARGE_343_75** | **0.3233** | **0.781** | **−0.458** |
+| **mean** | **0.6124** | **0.8320** | **−0.2196** |
+
+**It loses on 4 of 4 folds, by 0.22 mean IoU.** And the pattern is the informative part: the
+worst fold by far is `LARGE_343_75`, the one image measured as genuinely out of distribution
+(centroid displacement 1.13 sd against 0.25–0.38 for the others). The U-Net scores 0.32
+there against the classifier's 0.78 — a high-capacity model trained on three images
+generalises far worse to a fourth than a per-pixel classifier does, which is exactly the
+low-data failure mode the architecture was chosen to avoid.
+
+Deliberately equal, so the comparison is about architecture and not effort: the same images
+and masks, the same `img.npy` input, a fixed epoch budget with no early stopping on the test
+image, no test-time augmentation, no ensembling, threshold fixed at 0.5. Deliberately in the
+U-Net's favour: whole 256×256 neighbourhoods instead of per-pixel vectors, flip augmentation,
+and 1.93 M parameters against ~19 k in the MLPs.
+
+**Scope this claim carefully.** This is one standard U-Net at a matched budget, not nnU-Net
+with its full recipe — auto-configuration, deep supervision, 1000 epochs, five-fold
+ensembling — which is untested here and would do better than this. What the result supports
+is narrow and still useful: *a conventionally-trained U-Net on four annotated images does not
+approach the deployed classifier, and generalises markedly worse to an unseen specimen.* It
+does not support "learned segmentation cannot work on this problem", and with 15–20 densely
+annotated images the crossover would plausibly move.

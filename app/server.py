@@ -67,6 +67,37 @@ def _job(fn, label):
 
 
 # ------------------------------------------------------------------- static
+_LOCAL_HOSTS = ("127.0.0.1", "localhost", "[::1]", "::1")
+
+
+@app.before_request
+def _local_only():
+    """Refuse requests that did not come from this machine's own browser tab.
+
+    The app binds 127.0.0.1 and is meant to stay there, but two things reach it anyway. A
+    page on any website can resolve a name it controls to 127.0.0.1 and then talk to this
+    server as same-origin (DNS rebinding) -- the Host header is the only thing that
+    distinguishes that from a real local request. And a cross-origin page can POST to it
+    directly, because every handler uses get_json(force=True), which accepts a body without
+    the JSON content type that would otherwise force a preflight.
+    
+    Neither is exotic once someone puts this behind a lab reverse proxy, which a public
+    release invites. Twelve lines here is proportionate; authentication is not -- see the
+    Security note in the README.
+    """
+    host = (request.host or "").split(":")[0]
+    if host not in _LOCAL_HOSTS:
+        return jsonify(ok=False, error="this app only answers requests addressed to "
+                                       "127.0.0.1 or localhost"), 403
+    if request.method != "GET":
+        origin = request.headers.get("Origin")
+        if origin:
+            from urllib.parse import urlparse
+            if urlparse(origin).hostname not in _LOCAL_HOSTS:
+                return jsonify(ok=False, error="cross-origin writes are refused"), 403
+    return None
+
+
 @app.errorhandler(ValueError)
 def _bad_value(e):
     """A crafted image id should read as "no such image", not a 500 with a traceback.

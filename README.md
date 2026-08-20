@@ -172,6 +172,32 @@ To check your install rather than trust it:
 python3 app/selftest.py
 ```
 
+## Security, plainly
+
+**This app has no authentication and is not built to be exposed.** It binds `127.0.0.1`
+with `debug=False`, and it should stay there — do not put it behind a lab reverse proxy or a
+tunnel as it is. Anyone who can reach the port can read every image, delete any of them, and
+start a retrain.
+
+Three things *are* hardened, because they were reachable even bound to localhost:
+
+- **Image ids are validated at a single chokepoint.** `store.path()` refuses anything
+  outside `[A-Za-z0-9._-]` or containing `..`. Before that, `DELETE /api/image/%2e%2e`
+  handed `shutil.rmtree` the whole `app_data` directory — every correction mask, the model
+  registry and the retrain history. `delete_image()` additionally refuses any real path
+  outside `app_data/images/`.
+- **Uploaded filenames are escaped where they are rendered.** They persist in `meta.json`
+  and were interpolated raw into `innerHTML`, so a file arriving in a collaborator's folder
+  named `<img src=x onerror=…>.tif` ran in the app's own origin — and could issue exactly
+  the DELETE above.
+- **Requests must be addressed to this machine.** A `Host` that is not
+  `127.0.0.1`/`localhost`/`[::1]` is refused with 403, which is what stops a page on any
+  website resolving a name it controls to 127.0.0.1 and talking to your app as same-origin.
+  Non-GET requests carrying a foreign `Origin` are refused too.
+
+Model files are unpickled with `joblib`, which executes arbitrary code by construction — so
+only load `.joblib` files you produced or trust, exactly as with any scikit-learn artifact.
+
 ## What is in here
 
 This one repo is both the tool and the record of how it was built. A new user only
