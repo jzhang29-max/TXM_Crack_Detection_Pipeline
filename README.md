@@ -59,9 +59,9 @@ otherwise.
 
 A native-resolution window — 1013×760 of a 4376×2363 frame — because a hairline crack does
 not survive being downsampled to README width. Left, the image as you see it in the app;
-right, the shipped baseline's output. This is an AM/HC specimen, a group with **no**
-pixel-level ground truth, so nothing about this frame was used to fit or validate the
-model.
+right, the shipped baseline's output. This is an AM/HC specimen — the group where the model
+is weakest: masked IoU **0.32** against 0.82 on B2, precision 0.355, on four frames the owner
+labelled 90–96% densely. Nothing about *this* frame was used to fit or validate the model.
 
 Four things are visible here, and the last two are why the correction tools exist:
 
@@ -125,10 +125,17 @@ false calls as the NDT yardstick; both models are well inside it.
 > `shipped baseline` entry is the measured-good one. Zero-shot SAM, prompted the way SAM is
 designed to be prompted, scores 0.23-0.36 on the same images.
 
-Performance varies a lot by specimen group, and the examples above were chosen to show
-both ends. Some frames over-predict substantially -- wide red bands around a crack rather
-than the crack itself. There is no ground truth outside B2, so outside B2 those numbers
-are unverified and your eye is the only judge. `docs/SAM_COMPARISON.md` has the full study
+**Performance varies enormously by specimen group, and that is the most important thing on
+this page.** Masked IoU is **0.82 on B2** and **0.32 on AM/HC** — measured on four AM/HC
+frames the owner labelled 90–96% densely, held out by image (`code/eval_dense_labels.py`).
+The AM/HC failure is precision, 0.355 mean and as low as 0.082: it finds the crack and marks
+three to twelve times too much material with it. A second, independent protocol agrees the
+group does not transfer — leave-one-specimen-group-out gives crack recall 0.836 (B2), 0.795
+(B3), 0.763 (wrought), 0.397 (AM/HC).
+
+So treat 0.821 as a B2 number, not a general one. The remaining unknown is whether AM/HC's
+0.32 is a model failure or a labelling disagreement: precision is scored against one person's
+labels, and a second annotator on a subset is what would settle it. `docs/SAM_COMPARISON.md` has the full study
 and `docs/HANDOFF.md` records four approaches that were tried and reverted.
 `docs/SAM_COMBINATION_SWEEP.md` tests 78 feature/classifier/ensembling combinations
 under leave-one-image-out and finds none that beats the deployed one — it is worth
