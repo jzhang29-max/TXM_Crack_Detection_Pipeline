@@ -127,3 +127,55 @@ Q1 methods or tools paper.
 - **Claims to avoid** are listed in this repo's history and worth re-reading before writing:
   no "novel architecture", no "new metric", no "statistically significant" at n=4, no
   "validated on 71 images" when pixel truth exists for four.
+
+
+## Correction, 2026-08-19: dense ground truth outside B2 already existed
+
+This document and the README both said dense ground truth exists only for four B2 images.
+That was wrong by omission and the owner was right to push back. All 71 images carry labels;
+what varies is **density**, and density is what IoU needs:
+
+| judged fraction | images |
+|---|---|
+| 90–100% | 10 |
+| 60–90% | 7 |
+| 25–60% | 37 |
+| under 25% | 17 |
+
+Five of the ten near-dense frames are the crack-free specimens, but **four AM/HC frames are
+90–96% judged and contain crack** (19 k to 294 k crack px). Masked IoU — scored over judged
+pixels only, excluding rather than assuming the remainder — is well founded on them: 67–75%
+of their unjudged pixels are off-specimen surround, and the unjudged-and-on-specimen
+remainder is 1.4–3.3% of the frame.
+
+**The first IoU ever measured on additively-manufactured material here, held out by image:**
+
+| frame | masked IoU | precision | recall |
+|---|---|---|---|
+| 1250_cycles | 0.3116 | 0.380 | 0.635 |
+| 1400_cycles_tip | **0.0812** | **0.082** | 0.957 |
+| 1400_cycles | 0.3640 | 0.388 | 0.854 |
+| 1450_cycles | 0.5419 | 0.572 | 0.912 |
+| **mean** | **0.3247** | **0.355** | 0.840 |
+
+**0.32 against 0.82 on B2**, and the failure is precision, not recall: the model finds the
+crack (recall 0.84, up to 0.96) and marks three to twelve times too much material with it.
+On `1400_cycles_tip` precision is 0.082 — twelve wrong pixels for every right one.
+
+Note this is the *opposite* diagnosis from the sparse cross-group analysis, which reported
+crack recall 0.397 on AM/HC and concluded under-marking. Both are correct and the difference
+is the protocol: there AM/HC was excluded from training entirely; here only the target frame
+is held out, with the other AM/HC frames in training. So with AM/HC represented the model
+finds the cracks and grossly over-marks; without it, it misses them. Neither regime works.
+
+**One caveat that cannot be resolved from this data.** Precision is measured against the
+owner's crack labels, and if the model is marking real crack the owner classified as
+not-crack, precision is understated. That is exactly the label-ceiling question, and it needs
+a second annotator on a subset — which is now the single most valuable remaining measurement,
+because it decides whether 0.32 is a model failure or a labelling disagreement.
+
+**Consequence for the write-up.** The claim "no dense ground truth outside B2" must go. The
+stronger and better-supported claim replaces it: performance collapses from IoU 0.82 to 0.32
+across specimen groups, measured two independent ways on the owner's own dense labels, and
+neither the in-sample gate nor a pixel-overlap score on B2 would reveal it. That is the
+central evidence for the protocol argument, and it is now measured rather than inferred.

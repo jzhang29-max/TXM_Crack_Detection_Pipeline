@@ -544,7 +544,13 @@ full study, including 33 verified citations.
   than 0.5 points. Every regression this project has had passed a single-metric check —
   an over-aggressive filter and a good one both reduce predicted area, and only
   recall against ground truth separates them.
-- **The model does not transfer to AM/HC, measured.** Leave-one-specimen-group-out on the
+- **On AM/HC the model scores IoU 0.32, against 0.82 on B2.** Measured on four AM/HC
+  frames the owner labelled 90–96% densely, held out by image, scored over judged pixels
+  only (`python3 code/eval_dense_labels.py`). The failure is **precision** — 0.355 mean, as
+  low as 0.082 — not recall (0.840): it finds the crack and marks 3–12x too much material
+  with it. Caveat that needs a second annotator: precision is measured against one person's
+  labels, so if the model marks real crack that was called not-crack, this understates it.
+- **The model does not transfer to AM/HC, measured a second way.** Leave-one-specimen-group-out on the
   owner's own labels (71 images, all four groups) gives crack recall 0.836 for B2, 0.795 B3,
   0.763 wrought — and **0.397 for AM/HC**. Controlled: holding out 27 *random* images
   instead of the 27 AM/HC ones gives 0.755–0.816, so it is the specimen group and not the
