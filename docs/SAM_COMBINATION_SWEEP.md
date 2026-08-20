@@ -444,3 +444,50 @@ is narrow and still useful: *a conventionally-trained U-Net on four annotated im
 approach the deployed classifier, and generalises markedly worse to an unseen specimen.* It
 does not support "learned segmentation cannot work on this problem", and with 15–20 densely
 annotated images the crossover would plausibly move.
+
+
+## Annotation acceleration: two approaches built, measured, and rejected
+
+The measured blocker is dense ground truth outside B2. Two ways to make dense annotation
+cheap were built and both fail on measurement, recorded here so nobody rebuilds them.
+
+**Candidate regions from model-independent ridge filters** (Sato + Frangi + Hessian, chosen
+*because* they were measured to add nothing to the classifier, so they propose geometry
+without importing the model's beliefs). Tested against the owner's existing crack pixels on
+`HC_316L_fatigue_1250_cycles`:
+
+| ridge quantile | regions | frame coverage | of the owner's crack captured |
+|---|---|---|---|
+| 0.985 | 8 | 0.17% | 15.5% |
+| 0.92 | 123 | 1.12% | 28.8% |
+| 0.75 | 311 | 7.27% | 51.8% |
+| 0.60 | 192 | 15.12% | **63.4%** |
+
+At best 63% captured while covering 15% of the frame — the other 37% still needs painting,
+so there is no saving.
+
+**A superpixel tessellation**, to turn painting into accept/reject with 100% recall by
+construction. The number that matters is the CEILING: if every superpixel were labelled
+perfectly, what IoU could be reached against the owner's own pixels?
+
+| SLIC segments | ceiling IoU | superpixels a reviewer touches |
+|---|---|---|
+| 859 | 0.184 | 25 |
+| 2,771 | 0.543 | 47 |
+| 8,216 | **0.700** | 128 |
+
+A ceiling of 0.70 is *below the model's own held-out score* (0.83). These cracks are too fine
+for superpixel boundaries to follow, and pushing the ceiling up needs so many segments that
+it stops being faster than painting.
+
+**Conclusion: dense annotation of this material requires pixel painting, and that is why it
+is expensive.** What *can* be reduced is the scope. A held-out IoU is a statistic, so a
+uniformly-random sample of tiles estimates it without bias and with a quotable confidence
+interval. `code/export_annotation_tiles.py` writes that sample — 27 tiles of 512x512 across
+all 27 AM/HC frames is 7.1 M pixels, about 0.9x one 8 MP frame, but spread across every frame
+in the group rather than concentrated in one.
+
+Sampling is uniform inside the specimen **on purpose**. Choosing model-uncertain tiles would
+find more crack per tile and feel more productive, and would also make the ground truth a
+biased sample, so IoU computed on it would not estimate the frame's IoU. Active learning
+belongs on *training* tiles, with an untouched uniform set kept for evaluation.

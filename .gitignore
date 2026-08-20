@@ -119,3 +119,6 @@ dataset_cache/*
 
 # Derived cross-validation cache: 968 MB, rebuilt by code/build_label_folds.py
 paint/label_folds.npz
+
+# Tiles exported for annotation (regenerate with code/export_annotation_tiles.py)
+paint/annotate/
