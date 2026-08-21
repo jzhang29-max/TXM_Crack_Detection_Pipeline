@@ -1,5 +1,10 @@
 # HANDOFF — state of play
 
+> Note: `models/pixel_flatfield_hgb.joblib` and `models/pixel_sam_hybrid.joblib` are
+> referenced below as development history. Neither ships any more -- the repo now
+> carries only the two models the deployed ensemble uses. Both remain in git history.
+
+
 Single source of truth for picking this up in a new session. Everything below
 is committed to git; nothing important lives only in a chat transcript.
 

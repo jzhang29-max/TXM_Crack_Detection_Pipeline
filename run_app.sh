@@ -69,7 +69,7 @@ elif [ ! -d "$HFHUB" ] && ! python3 -c "import socket;socket.setdefaulttimeout(4
   echo "    ~/.cache/huggingface across, or set TXM_NO_SAM=1 to stop retrying."
 fi
 
-if [ ! -f models/pixel_sam_hybrid.joblib ] && [ ! -f models/pixel_hgb_final.joblib ]; then
+if [ ! -f models/hybrid_nogt_20260821.joblib ] && [ ! -f models/pixel_hgb_final.joblib ]; then
   echo "==> WARNING: no model found in models/."
   echo "    The app will start but cannot predict until one is present."
 fi

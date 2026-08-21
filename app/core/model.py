@@ -50,9 +50,6 @@ DEFAULT_17 = os.path.join(_PROJECT, "models", "pixel_hgb_final.joblib")
 # under grouped-by-image cross-validation, and 0.250% predicted area on the six specimens
 # confirmed crack-free (the predecessor: 0.940 in-sample, 0.264% crack-free).
 DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_nogt_20260821.joblib")
-# Its predecessor, kept because it is what every number in this repo before 2026-08-21 was
-# measured with. It trained ON the reference frames, so it has no honest score on them.
-LEGACY_HYBRID = os.path.join(_PROJECT, "models", "pixel_sam_hybrid.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"
 
 
@@ -182,8 +179,9 @@ class CrackModel:
             self.hybrid = b["model"] if isinstance(b, dict) else b
             self.n_hybrid = (b.get("n_features", 273) if isinstance(b, dict) else 273)
         if self.m17 is None and self.hybrid is None:
-            raise FileNotFoundError("no model found -- expected models/pixel_hgb_final.joblib "
-                                    "and/or models/pixel_sam_hybrid.joblib")
+            raise FileNotFoundError(
+                "no model found -- expected models/pixel_hgb_final.joblib and/or "
+                "models/hybrid_nogt_20260821.joblib")
         if self.ensemble and (self.m17 is None or self.hybrid is None):
             self.ensemble = False   # fall back rather than silently averaging one thing
 

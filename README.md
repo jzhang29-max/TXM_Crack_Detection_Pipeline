@@ -216,7 +216,8 @@ app/static/index.html  the whole frontend
 code/                  features, destitch, flatfield, SAM harness, batch utilities
 images/                all 71 raw TXM images, bit-exact float32 TIFF (predictor 3)
 dataset_cache/         the reference ground-truth images (needed to validate a retrain)
-models/                shipped model weights
+models/                the two shipped models: pixel_hgb_final (17-feature member)
+                       and hybrid_nogt_20260821 (SAM+17 member), averaged at predict time
 app_data/              your uploads, embeddings and retrained models (gitignored)
 ```
 

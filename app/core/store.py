@@ -436,7 +436,7 @@ def model_key(entry):
     A retrain stamp is unique per model, so it is the natural key. Entries without one
     (the shipped baseline, or a hand-configured entry) are keyed by their files'
     paths AND size+mtime -- not paths alone. Paths alone were wrong: the training
-    scripts overwrite models/pixel_sam_hybrid.joblib in place, so a genuinely new
+    scripts overwrite a shipped model file in place, so a genuinely new
     model kept the old key, every image looked "ready" for it, and the app served the
     previous model's predictions while reporting the new one as current.
     """
