@@ -636,6 +636,39 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("retrain report is kept after the job is gone", False, str(e))
 
+    # ---- WILL A CLONE ACTUALLY HAVE THE MODEL IT DEFAULTS TO?
+    #
+    # A retrain writes its model into app_data/, which is gitignored, so shipping one means
+    # copying it into models/ and pointing the defaults at it. Forgetting either half leaves
+    # a repo that works perfectly on the machine that trained the model and raises
+    # FileNotFoundError for everyone else. That is not hypothetical -- it was the state of
+    # this repo until the model below was committed.
+    try:
+        import subprocess as _sp
+        import model as _M3
+        for _lbl, _pth in (("path_17", _M3.DEFAULT_17), ("path_hybrid", _M3.DEFAULT_HYBRID)):
+            _rel = os.path.relpath(_pth, PROJECT)
+            _tracked = _sp.run(["git", "ls-files", "--error-unmatch", _rel],
+                               cwd=PROJECT, capture_output=True).returncode == 0
+            check(f"a clone gets the default {_lbl} model",
+                  os.path.exists(_pth) and _tracked,
+                  f"{_rel}: on disk={os.path.exists(_pth)}, committed={_tracked}")
+    except Exception as e:                                      # noqa: BLE001
+        check("a clone gets the default models", False, str(e))
+
+    # store.py spells its recipe tag out as a literal because pipeline imports store, so the
+    # two can drift apart silently. If they do, the shipped entry reads as a foreign recipe
+    # and every future retrain is gated against an absolute floor instead of its predecessor.
+    try:
+        import store as _S3
+        import pipeline as _P3
+        _tag = (_S3._default_registry().get("current") or {}).get("recipe")
+        check("the shipped registry entry carries the current recipe tag",
+              _tag == _P3.RECIPE,
+              f"store.py={_tag!r} pipeline.RECIPE={_P3.RECIPE!r}")
+    except Exception as e:                                      # noqa: BLE001
+        check("the shipped registry entry carries the current recipe tag", False, str(e))
+
     # ---- the UNCACHED half of a model switch, checked structurally.
     #
     # The check above can only ever exercise the cached path: it deliberately picks a

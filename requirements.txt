@@ -1,7 +1,11 @@
 # TXM Crack Detection — runtime dependencies
 numpy>=1.22
 scipy>=1.9
-scikit-learn>=1.7        # The shipped .joblib models were pickled by 1.7.2. A newer
+scikit-learn>=1.9        # The shipped hybrid was pickled by 1.9.0, so 1.9 is a hard
+# floor for it -- sklearn gives no cross-version unpickling guarantee, and an older
+# runtime may fail or, worse, load it wrong. The two older models here are 1.7.2
+# pickles; loading those under 1.9 warns, and the warning was checked rather than
+# assumed: max probability delta 5.5e-6 over the reference frames, zero class flips.
                          # sklearn loads them with an InconsistentVersionWarning that
                          # says results may be invalid; MEASURED on 20,000 pixels,
                          # 1.7.2 vs 1.9.0 differ by at most 5.5e-6 in probability and

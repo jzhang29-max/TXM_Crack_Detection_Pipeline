@@ -79,6 +79,22 @@ plt.rcParams.update({
 with open(os.path.join(CACHE_DIR, "manifest.json")) as f:
     IMAGES = json.load(f)["images"]
 
+
+def _resolve(p):
+    """Manifest paths are stored project-relative so a clone works at any location.
+
+    They used to be absolute, baked to one machine's home directory, which meant every
+    np.load below raised FileNotFoundError for anyone else. Absolute values are still
+    accepted so an older manifest keeps working.
+    """
+    return p if os.path.isabs(p) else os.path.join(PROJECT_DIR, p)
+
+
+for _img in IMAGES:
+    for _k in ("img_path", "gt_path", "feat_path"):
+        if _img.get(_k):
+            _img[_k] = _resolve(_img[_k])
+
 SEED = 0
 MODEL_SPECS = {
     "RandomForest": (RandomForestClassifier,

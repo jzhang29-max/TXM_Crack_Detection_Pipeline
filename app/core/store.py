@@ -401,9 +401,15 @@ def delete_image(image_id):
 
 # ------------------------------------------------------------- model registry
 def _default_registry():
+    # `recipe` must match pipeline.RECIPE. It is spelled out rather than imported because
+    # pipeline imports this module, and the selftest asserts the two agree -- without the tag
+    # a retrain would treat this entry as a foreign recipe and fall back to an absolute floor
+    # instead of a proper no-regression comparison.
     return dict(current=dict(kind="ensemble",
                              path_17=os.path.join(PROJECT, "models", "pixel_hgb_final.joblib"),
-                             path_hybrid=os.path.join(PROJECT, "models", "pixel_sam_hybrid.joblib"),
+                             path_hybrid=os.path.join(PROJECT, "models",
+                                                     "hybrid_nogt_20260821.joblib"),
+                             recipe="mlp_ens_nogt",
                              label="shipped baseline",
                              created=None),
                 history=[])

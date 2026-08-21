@@ -1,19 +1,24 @@
-"""
-Full-workflow diagram for the TXM crack-detection pipeline, in the same
-visual language as the sibling SEM project's figure (hand-authored SVG:
-real gradients, real shadows, line-style icons, actual pipeline output as
-thumbnails, journal-style caption) -- built with code/diagram_helpers.py so
-this project doesn't depend on that one's directory existing alongside it.
+"""Full-workflow figure for the TXM crack-detection pipeline, as deployed.
 
-Two parts, matching how this pipeline is actually used:
-  Part 1 (A-D): per-image inference, run on any new TXM tile.
-  Part 2 (E-F): human correction + fully automated retrain/verify/deploy,
-  which is the one structural difference from the SEM pipeline's manual
-  correction loop -- F deploys itself with no human sign-off required,
-  gated by 5 objective checks instead.
+Six inference stages in a serpentine grid, then the human-correction and gated-retrain loop.
+Every thumbnail is a real array produced by the app's own modules -- see
+compute_diagram_stages.py, which imports app/core/model.py and app/core/pipeline.py rather
+than reimplementing them, so this figure cannot quietly describe a system that is no longer
+shipping.
+
+WHAT CHANGED FROM THE PREVIOUS VERSION, and why the old figure was wrong:
+  * destitch and flat-field were missing entirely, and (A) implied the percentile stretch fed
+    the model. It does not -- the stretch is for the human, and the model is fed the raw
+    normalised array on purpose.
+  * SAM was absent. The deployed model is a mean-probability ensemble of MLP(17) and
+    MLP(17 + SAM ViT-H 256-d); the old figure showed one MLP on 17 features.
+  * (D) documented the legacy hysteresis post-processing, which is off by default because it
+    measurably deletes thin crack (-0.08 IoU). The default is a threshold plus speck pruning.
+  * the gate had five checks and trained on Ilastik-derived bootstrap labels. It now has
+    three recipe-aware axes, and those reference frames are held OUT of training.
 
 Usage:
-    python3 generate_pipeline_diagram.py [dataset_cache_image_key]
+    python3 generate_pipeline_diagram.py [dataset_cache_stem]
 """
 import os
 import subprocess
@@ -23,79 +28,126 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from diagram_helpers import (
-    SVG, icon_svg, esc, wrap_tspans, rounded_rect, to_data_uri, draw_card, draw_document,
+    SVG, esc, wrap_tspans, rounded_rect, draw_card, draw_document,
     doc_cy_above, doc_arrow_start_y, stat_card, DOC_COLOR, INK, SUBTEXT, _darken,
 )
 from compute_diagram_stages import compute_stages, ROOT
 
+# The SVG is a working file: it embeds every thumbnail as base64, so it is ~30 MB and each
+# regeneration would add another 30 MB blob to git history forever. It is gitignored. The PNG
+# is the deliverable and lives with the other README figures.
 OUT_DIR = os.path.join(ROOT, "pipeline_diagram")
+PNG_DIR = os.path.join(os.path.dirname(ROOT), "docs", "img")
 os.makedirs(OUT_DIR, exist_ok=True)
+os.makedirs(PNG_DIR, exist_ok=True)
 IMAGE_KEY = sys.argv[1] if len(sys.argv) > 1 else "338_13"
 
-STAGE_COLORS = ["#264653", "#2A9D8F", "#E9B44C", "#E76F51"]  # Part 1: cool -> warm, 4 stages
-PART2_COLORS = ["#7A4C9E", "#0F6E56"]  # Part 2: violet (human) -> teal (automated gate)
-
+STAGE_COLORS = ["#264653", "#287271", "#2A9D8F", "#E9B44C", "#E76F51", "#A63A50"]
+PART2_COLORS = ["#7A4C9E", "#0F6E56"]
 FONT_PATH = "/System/Library/Fonts/Supplemental/Arial.ttf"
 FONT_BOLD_PATH = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 
 
-def main():
-    print(f"Building pipeline diagram for dataset_cache image '{IMAGE_KEY}' ...")
-    s = compute_stages(IMAGE_KEY)
-    display_name = IMAGE_KEY  # short label for titles/caption/filenames; s["name"] is
-    # the full raw-file stem (used internally for correction-file lookup only)
 
-    # Match the deliverable's actual black-crack/white-background convention
-    # (apply_pixel_model.save_outputs) instead of to_data_uri's default
-    # normalization, which would otherwise render crack=white on these
-    # boolean masks -- backwards from what this project actually ships.
-    raw_thresh_display = np.where(s["raw_thresh_mask"], 0, 255).astype(np.uint8)
-    final_mask_display = np.where(s["final_mask"], 0, 255).astype(np.uint8)
+def _shrink(a, how="mean", target=700):
+    """Downsample a panel before it is base64-embedded.
+
+    Thumbnails render about 270 px wide in a 1350-px-wide figure, so embedding
+    1700-px arrays put ~40x more data in the SVG than any pixel of it could show. The cost
+    was not just size: one data URI reached 22 million characters and libxml2 refused to
+    parse the file at all ("Buffer size limit exceeded"), so rsvg-convert produced no PNG.
+
+    `how` matters, and a single rule would corrupt half the panels. Thin crack is one or two
+    pixels wide, so whichever direction represents crack has to survive the reduction:
+      mean -- continuous greyscale, where averaging is the honest resampling
+      max  -- probability maps, where crack is the HIGH value
+      min  -- masks and overlays, where crack is black or red and averaging washes it out
+    """
+    a = np.asarray(a)
+    h, w = a.shape[:2]
+    f = int(np.ceil(max(h, w) / target))
+    if f <= 1:
+        return a
+    h2, w2 = (h // f) * f, (w // f) * f
+    a = a[:h2, :w2]
+    op = {"mean": np.mean, "max": np.max, "min": np.min}[how]
+    if a.ndim == 2:
+        out = op(a.reshape(h2 // f, f, w2 // f, f), axis=(1, 3))
+    else:
+        out = op(a.reshape(h2 // f, f, w2 // f, f, a.shape[2]), axis=(1, 3))
+    return out.astype(a.dtype) if a.dtype == np.uint8 else out
+
+
+def main():
+    print(f"Building pipeline diagram for '{IMAGE_KEY}' (runs the deployed model) ...")
+    s = compute_stages(IMAGE_KEY)
+    name = s["name"]
 
     stages = [
-        dict(key="A", title="Raw Input & Normalize", icon="sliders",
-             subtitle="Percentile stretch (1st-99th) instead of raw min/max, robust to outlier pixels",
-             thumbs=[("Naive min/max stretch", s["img01_naive"], None),
-                     ("Percentile-normalized", s["img01"], None)]),
-        dict(key="B", title="Feature Extraction", icon="network",
-             subtitle="17 features/pixel: intensity, gradient, Laplacian, texture at multiple radii",
-             thumbs=[("Normalized image", s["img01"], None),
-                     (f"{s['feature_name']} (1 of 17)", s["feature_map"], "viridis")]),
-        dict(key="C", title="ML Prediction", icon="classifier",
-             subtitle="MLP neural network classifier, per-pixel crack probability",
-             thumbs=[(f"{s['feature_name']} feature", s["feature_map"], "viridis"),
-                     ("Predicted probability", s["prob_map"], "inferno")]),
-        dict(key="D", title="Post-processing", icon="magnifier",
-             subtitle="Hysteresis grow-from-seed, small-hole fill, ring/dust rejection, border blank",
-             thumbs=[("Raw >=0.5 threshold", raw_thresh_display, None),
-                     ("Final cleaned mask (crack=black)", final_mask_display, None)]),
+        dict(key="A", title="Destitch", icon="sliders",
+             subtitle="The mosaic tile grid is periodic, so it is one to two frequency bins; "
+                      "those bins are notched out",
+             thumbs=[("As received", _shrink(s["img01"]), None),
+                     ("Destitched", _shrink(s["destitched"]), None)]),
+        dict(key="B", title="Flat-field, for the human only", icon="sun",
+             subtitle="Divided by an anisotropic Gaussian, then stretched 1st-99th "
+                      "percentile. Geometry preserved",
+             thumbs=[("Destitched", _shrink(s["destitched"]), None),
+                     ("Display view: what you mark on", _shrink(s["display"]), None)]),
+        dict(key="C", title="17 hand-crafted features", icon="network",
+             subtitle="Intensity, Gaussian smooths, gradient magnitude, Laplacian and local "
+                      "std, sigma 1-64 px",
+             thumbs=[("Model input: the RAW array", _shrink(s["img01"]), None),
+                     (f"{s['feature_name']} (1 of 17)", _shrink(s["feature_map"]), "viridis")]),
+        dict(key="D", title="SAM ViT-H embedding", icon="grid",
+             subtitle=f"{s['n_tiles']} tiles of 1024 px, each giving a 64x64 grid of "
+                      f"{s['emb_channels']}-d vectors -- one per 16x16 block",
+             thumbs=[("Model input: the RAW array", _shrink(s["img01"]), None),
+                     (f"SAM embedding: 3 PCs of {s['emb_channels']}", s["sam_rgb"], None)]),
+        dict(key="E", title="Ensemble prediction", icon="classifier",
+             subtitle="Mean probability of MLP(17) and MLP(17+SAM). Averaging is what wins "
+                      "on the large mosaics",
+             thumbs=[("MLP(17) alone", _shrink(s["p17"], "max"), "inferno"),
+                     ("Averaged with MLP(17+SAM)", _shrink(s["p_ens"], "max"), "inferno")]),
+        dict(key="F", title="Threshold and speck pruning", icon="magnifier",
+             subtitle="Probability > 0.50, then blobs under 2000 px dropped. Legacy "
+                      "hysteresis cleanup is OFF by default",
+             thumbs=[("Raw > 0.50 threshold", _shrink(s["raw_thresh_display"], "min"), None),
+                     ("Final mask, crack = black", _shrink(s["final_mask_display"], "min"), None)]),
     ]
+
+    # icon_svg returns nothing for an unknown kind, which draws a blank white badge and is
+    # easy to miss in a 2700x6750 figure -- (D) shipped that way once. Check the names.
+    VALID_ICONS = {"sliders", "sun", "magnifier", "network", "classifier", "grid",
+                   "check", "brush", "shield", "loop"}
+    for st in stages:
+        if st["icon"] not in VALID_ICONS:
+            raise SystemExit(f'stage ({st["key"]}) uses icon "{st["icon"]}", which icon_svg '
+                             f'does not implement -- it would render as an empty badge. '
+                             f'Valid: {sorted(VALID_ICONS)}')
 
     gate_lines = s["gate_lines"] or [
-        ("Accuracy vs. corrected GT", "no regression detected", True),
-        ("Border / edge artifact", "no regression detected", True),
-        ("Spontaneous artifacts", "no regression detected", True),
-        ("Degenerate output", "no regression detected", True),
-        ("Did anything change", "report-only", True),
+        ("Reference frames (held out)", "not measured yet", True),
+        ("Crack-free specimens", "not measured yet", True),
+        ("Grouped-by-image cross-val", "not measured yet", True),
     ]
-    gate_card = stat_card("Automated deploy gate", gate_lines, PART2_COLORS[1], FONT_PATH, FONT_BOLD_PATH)
+    gate_card = stat_card("Retrain gate: three axes", gate_lines, PART2_COLORS[1],
+                          FONT_PATH, FONT_BOLD_PATH)
 
     part2_stages = [
-        dict(key="E", title="Manual Correction", icon="brush",
-             subtitle="Browser paint tool: add missed crack, erase false positives, click-to-remove a whole region",
-             thumbs=[("Before correction", s["overlay_before_correction"], None),
-                     ("After correction", s["overlay_after_correction"], None)]),
-        dict(key="F", title="Automated Retrain & Deploy", icon="shield",
-             subtitle="5 objective checks -- deploys itself only if all pass, otherwise leaves production untouched",
+        dict(key="G", title="Manual correction", icon="brush",
+             subtitle="Add missed crack, erase false positives, or flip a whole region. "
+                      "Every stroke saves itself",
+             thumbs=[("Model output on the display view", _shrink(s["overlay_model"], "min"), None),
+                     ("Hand-labelled truth", _shrink(s["overlay_gt"], "min"), None)]),
+        dict(key="H", title="Gated retrain", icon="shield",
+             subtitle="Trains on your corrections ONLY. The four reference frames are the "
+                      "held-out test set, not training data",
              thumbs=[("Gate report (real run)", np.array(gate_card), None),
-                     ("Deployed result", s["overlay_after_correction"], None)]),
+                     ("Deployed result", _shrink(s["overlay_model"], "min"), None)]),
     ]
 
     # ---------------------------------------------------------- geometry
-    # H is derived from the actual content below (Part 1 grid -> output docs
-    # -> Part 2 -> feedback loop -> caption), not guessed up front -- an
-    # earlier fixed-formula H overshot the real content and left a large
-    # dead band above the caption.
     W = 1350
     MARGIN = 70
     CARD_GAP = 60
@@ -104,19 +156,29 @@ def main():
     ROW_GAP = 190
     TITLE_H = 260
     PART2_TITLE_H = 110
-    PART2_CARD_W = CARD_W
     PART2_CARD_H = 460
-    CAPTION_H = 300
+    CAPTION_H = 320
 
-    row_y = [TITLE_H, TITLE_H + CARD_H + ROW_GAP]
+    n_rows = (len(stages) + 1) // 2
     col_x = [MARGIN, MARGIN + CARD_W + CARD_GAP]
-    out_y = row_y[1] + CARD_H + 90                # center of the output-doc row below D
+    row_y = [TITLE_H + r * (CARD_H + ROW_GAP) for r in range(n_rows)]
+    # Serpentine: row 0 left->right, row 1 right->left, and so on. Index i sits in
+    # row i//2, and in the column that continues the snake.
+    positions = []
+    for i in range(len(stages)):
+        r = i // 2
+        left_to_right = (r % 2 == 0)
+        c = (i % 2) if left_to_right else (1 - (i % 2))
+        positions.append((col_x[c], row_y[r], c, r))
+
+    last_row_cols = [p[2] for p in positions if p[3] == n_rows - 1]
+    out_col = col_x[last_row_cols[-1]]
+    out_y = row_y[-1] + CARD_H + 90
     part2_y0 = out_y + 200
     p2_row_y = part2_y0 + PART2_TITLE_H
     p2_bottom = p2_row_y + PART2_CARD_H
     loop_y = p2_bottom + 55
-    content_bottom = loop_y + 40                  # clears the loop-annotation text
-    H = content_bottom + 50 + CAPTION_H
+    H = loop_y + 40 + 50 + CAPTION_H
 
     svg = SVG(W, H)
     svg.add_shadow_filter("cardShadow", dy=10, blur=16, opacity=0.16)
@@ -133,159 +195,148 @@ def main():
 
     svg.raw(f'<rect x="0" y="0" width="{W}" height="{H}" fill="url(#bg)"/>')
     dots = []
-    step = 26
-    for gx in range(0, W, step):
-        for gy in range(0, H - CAPTION_H, step):
+    for gx in range(0, W, 26):
+        for gy in range(0, H - CAPTION_H, 26):
             dots.append(f'<circle cx="{gx}" cy="{gy}" r="1" fill="#1B242C" opacity="0.035"/>')
     svg.raw("".join(dots))
 
     svg.raw(f'<text x="{W/2}" y="58" text-anchor="middle" font-family="Georgia, \'Times New Roman\', serif" '
-            f'font-size="32" font-weight="700" fill="{INK}">Automated Crack Detection in TXM Images</text>')
+            f'font-size="32" font-weight="700" fill="{INK}">Crack Detection in TXM Images</text>')
     svg.raw(f'<text x="{W/2}" y="90" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" '
-            f'font-size="15.5" font-style="italic" fill="{SUBTEXT}">Full workflow: pixel-level detection → manual '
-            f'correction → fully automated retrain &amp; deploy, worked example: {esc(display_name)}</text>')
+            f'font-size="15.5" font-style="italic" fill="{SUBTEXT}">Destitch → features + SAM '
+            f'embedding → ensemble → correction → gated retrain. Worked example: {esc(name)}</text>')
 
-    centers = {}
-    # 2x2 serpentine: A(top-left) -> B(top-right) -> C(bottom-right) -> D(bottom-left)
-    positions = [(col_x[0], row_y[0]), (col_x[1], row_y[0]), (col_x[1], row_y[1]), (col_x[0], row_y[1])]
-
+    boxes = {}
     for i, stage in enumerate(stages):
-        x, y = positions[i]
-        color = STAGE_COLORS[i]
-        centers[i] = (x, y, x + CARD_W, y + CARD_H)
-        draw_card(svg, x, y, CARD_W, CARD_H, stage, color, f"grad{i}")
+        x, y, c, r = positions[i]
+        boxes[i] = (x, y, x + CARD_W, y + CARD_H, c, r)
+        draw_card(svg, x, y, CARD_W, CARD_H, stage, STAGE_COLORS[i], f"grad{i}")
 
-    def connect(i, j):
-        xi0, yi0, xi1, yi1 = centers[i]
-        xj0, yj0, xj1, yj1 = centers[j]
-        ay = yi0 + 60
-        if xj0 >= xi1:
-            x_from, x_to = xi1 - 6, xj0 + 6
+    # horizontal connector inside a row, in whichever direction the snake runs
+    for i in range(len(stages) - 1):
+        xi0, yi0, xi1, yi1, ci, ri = boxes[i]
+        xj0, yj0, xj1, yj1, cj, rj = boxes[i + 1]
+        if ri == rj:
+            ay = yi0 + 60
+            if xj0 >= xi1:
+                x_from, x_to = xi1 - 6, xj0 + 6
+            else:
+                x_from, x_to = xi0 + 6, xj1 - 6
+            svg.raw(f'<path d="M {x_from} {ay} L {x_to} {ay}" stroke="{STAGE_COLORS[i+1]}" '
+                    f'stroke-width="4" fill="none" marker-end="url(#arrow{i+1})"/>')
         else:
-            x_from, x_to = xi0 + 6, xj1 - 6
-        svg.raw(f'<path d="M {x_from} {ay} L {x_to} {ay}" stroke="{STAGE_COLORS[j]}" stroke-width="4" '
-                f'fill="none" marker-end="url(#arrow{j})"/>')
+            cxw = (xi0 + xi1) / 2
+            svg.raw(f'<path d="M {cxw} {yi1} C {cxw+40} {yi1+ROW_GAP*0.4}, '
+                    f'{cxw-40} {yj0-ROW_GAP*0.4}, {cxw} {yj0}" stroke="{STAGE_COLORS[i+1]}" '
+                    f'stroke-width="4" fill="none" marker-end="url(#arrow{i+1})"/>')
 
-    connect(0, 1)  # A -> B, row 0 left->right
-    connect(2, 3)  # C -> D, row 1 right->left  (wait: need B->C wrap then C->D)
-
-    # serpentine wrap: bottom of B drops into top of C (same column)
-    x1_0, y1_0, x1_1, y1_1 = centers[1]
-    x2_0, y2_0, x2_1, y2_1 = centers[2]
-    wrap_color = STAGE_COLORS[2]
-    cxw = (x1_0 + x1_1) / 2
-    svg.raw(f'<path d="M {cxw} {y1_1} C {cxw+40} {y1_1+ROW_GAP*0.4}, {cxw-40} {y2_0-ROW_GAP*0.4}, {cxw} {y2_0}" '
-            f'stroke="{wrap_color}" stroke-width="4" fill="none" marker-end="url(#arrow2)"/>')
-
-    # ---- input document ----
+    # ---- input document above A ----
     docA_size = 78
-    docA_x, docA_y = centers[0][0] + CARD_W * 0.5, doc_cy_above(row_y[0], docA_size)
+    docA_x = boxes[0][0] + CARD_W * 0.5
+    docA_y = doc_cy_above(row_y[0], docA_size)
     draw_document(svg, docA_x, docA_y, docA_size, "Raw TXM TIFF\n(float32)", "image")
     svg.raw(f'<path d="M {docA_x} {doc_arrow_start_y(docA_y, docA_size)} L {docA_x} {row_y[0]-4}" '
             f'stroke="{DOC_COLOR}" stroke-width="3" fill="none" marker-end="url(#arrowDoc)"/>')
 
-    # ---- docs feeding C: features + trained model ----
-    cx0, cy0, cx1, cy1 = centers[2]
-    mcx = (cx0 + cx1) / 2
+    # ---- documents feeding the prediction stage (E) ----
+    ex0, ey0, ex1, ey1, ec, er = boxes[4]
+    mcx = (ex0 + ex1) / 2
     doc_size = 66
-    doc_y = doc_cy_above(row_y[1], doc_size)
+    doc_y = doc_cy_above(row_y[er], doc_size)
     doc_arrow_y = doc_arrow_start_y(doc_y, doc_size)
-    doc_spacing = (CARD_W - 40) / 2
-    c_docs = [
-        (mcx - doc_spacing, "17-D feature\nstack (.npy)", "table"),
-        (mcx + doc_spacing, "Trained MLP\nmodel (.joblib)", "model"),
-    ]
-    for x, label, glyph in c_docs:
+    spacing = (CARD_W - 40) / 2
+    for x, label, glyph in [(mcx - spacing, "17-D feature\nstack", "table"),
+                            (mcx + spacing, "SAM embedding\n(emb.npz)", "model")]:
         draw_document(svg, x, doc_y, doc_size, label, glyph)
-        svg.raw(f'<path d="M {x} {doc_arrow_y} L {x} {row_y[1]-4}" stroke="{DOC_COLOR}" '
+        svg.raw(f'<path d="M {x} {doc_arrow_y} L {x} {row_y[er]-4}" stroke="{DOC_COLOR}" '
                 f'stroke-width="3" fill="none" marker-end="url(#arrowDoc)"/>')
 
-    # ---- output docs below D ----
-    dx0, dy0, dx1, dy1 = centers[3]
-    dcx = (dx0 + dx1) / 2
-    conv_y = dy1 + 42
-    svg.raw(f'<path d="M {dcx} {dy1} L {dcx} {conv_y}" stroke="{DOC_COLOR}" stroke-width="3" fill="none"/>')
-    for ddx, lbl, glyph in [(-150, "Black &amp; white\nmask (.png)", "image"),
-                             (0, "Overlay\n(.png)", "image"),
-                             (150, "Region stats\n(.csv)", "table")]:
-        svg.raw(f'<path d="M {dcx} {conv_y} L {dcx+ddx} {out_y-38}" stroke="{DOC_COLOR}" stroke-width="3" '
-                f'fill="none" marker-end="url(#arrowDoc)"/>')
-        draw_document(svg, dcx + ddx, out_y, 70, lbl.replace("&amp;", "&"), glyph)
+    # ---- output documents below the last stage ----
+    fx0, fy0, fx1, fy1, fc, fr = boxes[len(stages) - 1]
+    out_cx = (fx0 + fx1) / 2
+    out_size = 66
+    out_docs = [("Black & white\nmask (.png)", "image"), ("Overlay\n(.png)", "image"),
+                ("Region stats\n(.csv)", "table")]
+    out_spacing = (CARD_W - 60) / 2
+    svg.raw(f'<path d="M {out_cx} {fy1} L {out_cx} {out_y - out_size/2 - 8}" '
+            f'stroke="{DOC_COLOR}" stroke-width="3" fill="none" marker-end="url(#arrowDoc)"/>')
+    for k, (label, glyph) in enumerate(out_docs):
+        x = out_cx + (k - 1) * out_spacing
+        draw_document(svg, x, out_y, out_size, label, glyph)
+        if k != 1:
+            svg.raw(f'<path d="M {out_cx} {fy1 + 30} L {x} {out_y - out_size/2 - 8}" '
+                    f'stroke="{DOC_COLOR}" stroke-width="2.5" fill="none" '
+                    f'marker-end="url(#arrowDoc)" opacity="0.85"/>')
 
-    # ------------------------------------------------ Part 2 section
-    svg.raw(f'<line x1="{MARGIN}" y1="{part2_y0-14}" x2="{W-MARGIN}" y2="{part2_y0-14}" '
-            f'stroke="#D8E0E4" stroke-width="2" stroke-dasharray="2,6"/>')
-    svg.raw(f'<text x="{W/2}" y="{part2_y0+18}" text-anchor="middle" font-family="Georgia, serif" '
-            f'font-size="23" font-weight="700" fill="{PART2_COLORS[1]}">Manual Correction &amp; Fully Automated Retraining</text>')
-    svg.raw(f'<text x="{W/2}" y="{part2_y0+42}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" '
-            f'font-size="13.5" font-style="italic" fill="{SUBTEXT}">Unlike a manual review-and-approve loop, (F) '
-            f'deploys itself -- gated by 5 objective checks, not a human judgment call</text>')
-
-    p2_col_x = col_x
-    p2_centers = {}
+    # ---- part 2 ----
+    svg.raw(f'<path d="M {MARGIN} {part2_y0 - 40} L {W-MARGIN} {part2_y0 - 40}" '
+            f'stroke="#C7D2D7" stroke-width="2" stroke-dasharray="7 7" fill="none"/>')
+    svg.raw(f'<text x="{W/2}" y="{part2_y0 + 18}" text-anchor="middle" '
+            f'font-family="Georgia, serif" font-size="24" font-weight="700" '
+            f'fill="{PART2_COLORS[1]}">Correction and gated retraining</text>')
+    svg.raw(f'<text x="{W/2}" y="{part2_y0 + 44}" text-anchor="middle" '
+            f'font-family="Helvetica, Arial, sans-serif" font-size="14" font-style="italic" '
+            f'fill="{SUBTEXT}">The candidate deploys itself only if all three axes hold — '
+            f'and the reference frames it is judged on are never trained on</text>')
+    p2_boxes = {}
     for i, stage in enumerate(part2_stages):
-        x = p2_col_x[i]
-        p2_centers[i] = (x, p2_row_y, x + PART2_CARD_W, p2_row_y + PART2_CARD_H)
-        draw_card(svg, x, p2_row_y, PART2_CARD_W, PART2_CARD_H, stage, PART2_COLORS[i], f"grad2_{i}")
-
-    ex0, ey0, ex1, ey1 = p2_centers[0]
-    fx0, fy0, fx1, fy1 = p2_centers[1]
-    ecx, fcx = (ex0 + ex1) / 2, (fx0 + fx1) / 2
-    ay = ey0 + 60
-    svg.raw(f'<path d="M {ex1-6} {ay} L {fx0+6} {ay}" stroke="{PART2_COLORS[1]}" stroke-width="4" '
-            f'fill="none" marker-end="url(#arrow2_1)"/>')
-
-    # input arrow from Part 1 output (D) down into E
-    svg.raw(f'<path d="M {dcx} {out_y+45} C {dcx-60} {(out_y+p2_row_y)/2}, {ecx+60} {(out_y+p2_row_y)/2}, '
-            f'{ecx} {p2_row_y-4}" stroke="{PART2_COLORS[0]}" stroke-width="3.5" stroke-dasharray="1,7" '
-            f'stroke-linecap="round" fill="none" marker-end="url(#arrow2_0)"/>')
-    svg.raw(f'<text x="{(dcx+ecx)/2-30}" y="{(out_y+p2_row_y)/2+40}" text-anchor="middle" '
-            f'font-family="Helvetica, Arial, sans-serif" font-size="11" font-style="italic" '
-            f'fill="{SUBTEXT}">reviews production output</text>')
-
-    # feedback loop: F's deployed model powers stage C on the next run
-    loop_y = fy1 + 55
-    svg.raw(f'<path d="M {fx1-30} {fy1} L {fx1-30} {loop_y} L {ex0+30} {loop_y} L {ex0+30} {ey1}" '
-            f'stroke="{PART2_COLORS[1]}" stroke-width="3" stroke-dasharray="8,6" fill="none" '
-            f'marker-end="url(#arrow2_0)"/>')
-    svg.raw(f'<text x="{(ex0+fx1)/2}" y="{loop_y+18}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" '
-            f'font-size="12" font-style="italic" fill="{PART2_COLORS[1]}">deployed model auto-refreshes the paint '
-            f'tool AND powers stage (C) on the next image</text>')
+        x = col_x[i]
+        p2_boxes[i] = (x, p2_row_y, x + CARD_W, p2_row_y + PART2_CARD_H)
+        draw_card(svg, x, p2_row_y, CARD_W, PART2_CARD_H, stage, PART2_COLORS[i], f"grad2_{i}")
+    ay = p2_row_y + 60
+    svg.raw(f'<path d="M {p2_boxes[0][2]-6} {ay} L {p2_boxes[1][0]+6} {ay}" '
+            f'stroke="{PART2_COLORS[1]}" stroke-width="4" fill="none" marker-end="url(#arrow2_1)"/>')
+    svg.raw(f'<path d="M {(p2_boxes[1][0]+p2_boxes[1][2])/2} {p2_boxes[1][3]} '
+            f'L {(p2_boxes[1][0]+p2_boxes[1][2])/2} {loop_y} '
+            f'L {(p2_boxes[0][0]+p2_boxes[0][2])/2} {loop_y} '
+            f'L {(p2_boxes[0][0]+p2_boxes[0][2])/2} {p2_boxes[0][3]}" '
+            f'stroke="{PART2_COLORS[1]}" stroke-width="3" stroke-dasharray="8 6" fill="none" '
+            f'marker-end="url(#arrow2_1)"/>')
+    svg.raw(f'<text x="{W/2}" y="{loop_y+22}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" '
+            f'font-size="13" font-style="italic" fill="{SUBTEXT}">a deployed model re-predicts '
+            f'every image inside the same job, so no mask is left stale</text>')
 
     # ---------------------------------------------------------- caption
     cap_y = H - CAPTION_H + 30
     svg.raw(rounded_rect(MARGIN, cap_y - 24, W - 2 * MARGIN, CAPTION_H - 40, 10, "white",
-                          stroke="#D8E0E4", sw=1.5, filter_id="cardShadow"))
+                         stroke="#D8E0E4", sw=1.5, filter_id="cardShadow"))
     caption = (
-        f"Figure 1. Automated crack-detection pipeline for transmission X-ray microscopy (TXM) images. A raw "
-        f"float32 tile is percentile-normalized (A) and described by 17 multi-scale features per pixel -- "
-        f"intensity-trend, gradient, Laplacian, and texture at radii from 2 to 64px (B) -- which an MLP neural "
-        f"network classifier (chosen over RandomForest/ExtraTrees/HistGradientBoosting by benchmarked accuracy on "
-        f"the real production training recipe, see benchmark_figures/) converts into a per-pixel crack "
-        f"probability (C). Post-processing (D) "
-        f"applies hysteresis thresholding restricted to grow only from already-shape-validated regions (never "
-        f"spontaneously creating a new one), fills small interior holes, rejects ring/dust artifacts by topology "
-        f"and eccentricity, and blanks a border margin, producing the final mask, overlay, and stats. A human can "
-        f"then review that output in a browser paint tool -- add missed crack, erase false positives, or "
-        f"click-to-remove a whole false-positive region at once (E) -- and those corrections combine with the "
-        f"original Ilastik-derived bootstrap labels to retrain the classifier. Unlike a manual review-and-approve "
-        f"loop, the retrained candidate is deployed automatically, gated by 5 objective checks that each guard a "
-        f"regression this project actually hit during development: accuracy against corrected ground truth, "
-        f"border/edge density spikes, spontaneous new-artifact area, degenerate output, and whether corrected "
-        f"pixels actually changed (F). A verified model deploys itself with no human sign-off, and the paint tool "
-        f"detects the swapped file and refreshes its own cached predictions automatically. Worked example shown: "
-        f"{display_name}."
+        f"Figure 1. Crack-detection pipeline for transmission X-ray microscopy (TXM), as "
+        f"deployed. Every panel is a real array from the app's own modules. A raw float32 "
+        f"tile is destitched by notching the one-to-two frequency bins the periodic mosaic "
+        f"grid occupies (A), then flat-fielded and percentile-stretched (B) -- that pair is "
+        f"the DISPLAY view only, and both steps preserve geometry so a mask still registers "
+        f"pixel-for-pixel. The model is fed the raw normalised array on purpose: "
+        f"flat-fielding the model input was tried and cost 0.169 IoU, because large-radius "
+        f"intensity features carry ~41% of the model's importance and flat-fielding removes "
+        f"exactly those. Each pixel is described by 17 multi-scale hand-crafted features (C) "
+        f"and by a {s['emb_channels']}-dimensional SAM ViT-H image embedding, computed over "
+        f"{s['n_tiles']} tiles of 1024 px so that one vector covers each 16x16 block and is "
+        f"read back by bilinear lookup (D); SAM contributes its frozen encoder only, and its "
+        f"prompt encoder and mask decoder are never called. Two MLPs -- one on the 17 "
+        f"features, one on all 273 -- are averaged (E); the average, not the hybrid alone, is "
+        f"what wins on the largest mosaics. A 0.50 threshold and removal of blobs under 2000 "
+        f"px give the final mask (F), while the older hysteresis cleanup is off by default "
+        f"because it measurably deletes thin crack. Corrections are painted in the browser "
+        f"(G) and are the ONLY thing a retrain learns from (H): the four dense reference "
+        f"frames, and corrections on their specimens, are held out as the test set, which "
+        f"costs nothing across specimen groups and is what makes the gate's number mean "
+        f"something -- the same architecture scores 0.921 on those frames while training on "
+        f"them and 0.714 held out. The gate is three recipe-aware axes, and a candidate is "
+        f"only ever compared against a baseline measured the same way. Worked example: "
+        f"{esc(name)}."
     )
-    tspans, nlines = wrap_tspans(caption, 148, MARGIN + 24, 21)
-    svg.raw(f'<text x="{MARGIN+24}" y="{cap_y+6}" font-family="Georgia, serif" font-size="13.2" fill="{INK}">{tspans}</text>')
+    tspans, _ = wrap_tspans(caption, 148, MARGIN + 24, 21)
+    svg.raw(f'<text x="{MARGIN+24}" y="{cap_y+6}" font-family="Georgia, serif" font-size="13.2" '
+            f'fill="{INK}">{tspans}</text>')
 
-    svg_path = os.path.join(OUT_DIR, f"full_workflow_{display_name}.svg")
+    svg_path = os.path.join(OUT_DIR, f"full_workflow_{name}.svg")
     with open(svg_path, "w") as f:
         f.write(svg.render())
     print(f"Saved SVG: {svg_path}")
-
-    png_path = os.path.join(OUT_DIR, f"full_workflow_{display_name}.png")
-    subprocess.run(["rsvg-convert", "-w", str(W * 2), "-h", str(H * 2), svg_path, "-o", png_path], check=True)
+    png_path = os.path.join(PNG_DIR, "pipeline.png")
+    subprocess.run(["rsvg-convert", "-w", str(int(W * 2)), "-h", str(int(H * 2)),
+                    svg_path, "-o", png_path], check=True)
     print(f"Saved PNG: {png_path}")
 
 

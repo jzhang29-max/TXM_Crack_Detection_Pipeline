@@ -218,7 +218,7 @@ rim is still traced on 29 of 49 images, so the size-based exclusion helped
 (dominance 17 -> 7) but did not solve it.
 
 Still true: do not quote any crack area fraction as a measurement without
-spot-checking the overlay. Raw data: `results/harvested/wf_b87f351e-d77.json`.
+spot-checking the overlay.
 
 ---
 
@@ -330,49 +330,6 @@ wrong label actively teaches the wrong thing):
   inclusion vs early initiation is unclear
 - `b3_3_0lbf_268_13um` — degenerate frame, black bands are stitching artifacts
 - all faint centre hairlines — the thing that most needs labelling
-
----
-
-## 4b. NOTHING FROM AN AGENT RUN IS EVER LOST — how to recover it
-
-Two independent mechanisms. A killed run does NOT need re-running.
-
-**1. Harvest the journal** (works mid-run, on a dead run, repeatedly):
-
-```bash
-python3 research/code/harvest_workflow_results.py --list          # every run, started vs completed
-python3 research/code/harvest_workflow_results.py                 # newest run -> results/harvested/
-python3 research/code/harvest_workflow_results.py --run wf_xxxxx  # a specific run
-```
-
-Every agent that finishes has its return value appended to that run's
-`journal.jsonl` immediately, so completed work is on disk the moment it lands.
-One run here lost 51 of 92 agents to session limits and all 41 completed
-results were recovered this way. Harvested output is committed under
-`results/harvested/`.
-
-Gotcha if reading the journal by hand: the payload key is **`result`**, not
-`value`. Using the wrong key silently yields zero findings.
-
-**2. Resume the workflow** — replays completed agents from cache instantly and
-only re-runs the failed/new ones:
-
-```
-Workflow({scriptPath: "<path printed when the workflow launched>",
-          resumeFromRunId: "wf_xxxxx"})
-```
-
-Run IDs and script paths for the audit runs so far:
-
-| run | purpose | started/completed |
-|---|---|---|
-| `wf_b87f351e-d77` | re-audit of `final_71_v2` — ANSWERED §2 | 73/50 |
-| `wf_d6f09f17-513` | audit of `final_71` -> the 87% figure | 61/47 |
-| `wf_d18a107b-66e` | audit of v1 flatfielded predictions | 94/41 |
-| `wf_a8077edb-b3a` | first 71-image review (raw predictions) | 64/24 |
-
-Scripts live in
-`~/.claude/projects/-Users-jiamingzhang-Desktop-APP/ca4727e5-.../workflows/scripts/`.
 
 ---
 

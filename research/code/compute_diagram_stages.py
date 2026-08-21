@@ -1,107 +1,161 @@
-"""
-Runs the ACTUAL TXM pipeline (not a mock) on one worked-example image and
-returns every intermediate array the diagram needs as thumbnails. Mirrors
-the SEM project's pipeline_stages.py in spirit: real data at every stage,
-nothing hand-drawn or simulated.
+"""Runs the DEPLOYED pipeline on one worked example and returns every panel the
+figure needs. Real arrays at every stage; nothing hand-drawn or simulated.
+
+WHY THIS WAS REWRITTEN. The previous version ran the retired *research* path --
+`apply_pixel_model.predict_probability_map` on a single joblib model, the legacy
+`postprocess_mask`, and a `results/deploy_gate_report.json` from a five-check gate that no
+longer exists. It therefore could not show SAM at all, and the figure it produced described
+a system this project stopped shipping: no destitch, no flat-field, a lone MLP, hysteresis
+post-processing that is now off by default, and bootstrap ground-truth labels that are now
+held out of training entirely.
+
+It now imports `app/core/model.py` and `app/core/pipeline.py` -- the same modules the running
+app imports -- so the figure cannot drift from the deployed system again without the code
+change showing up here first.
 """
 import json
 import os
 import sys
 
-import joblib
 import numpy as np
-import tifffile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from txm_features import compute_feature_stack, robust_normalize, FEATURE_NAMES
-from apply_pixel_model import predict_probability_map, postprocess_mask, PROB_THRESHOLD
-import paint_common as pc
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, ".."))
+PROJECT = os.path.abspath(os.path.join(ROOT, ".."))
+for p in (os.path.join(PROJECT, "app", "core"), os.path.join(PROJECT, "code"), HERE):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-RESULTS_DIR = os.path.join(ROOT, "results")
+import model as M            # noqa: E402
+import pipeline as P         # noqa: E402
+from txm_features import compute_feature_stack, FEATURE_NAMES, robust_normalize  # noqa: E402
 
-
-def naive_normalize(img):
-    """Plain min-max stretch -- what you'd get WITHOUT the percentile-based
-    robust_normalize, included purely to make (A)'s before/after visible:
-    a few outlier pixels can otherwise wash out all the real contrast."""
-    lo, hi = img.min(), img.max()
-    return np.clip((img - lo) / max(hi - lo, 1e-8), 0, 1)
+GT_CACHE = os.path.join(PROJECT, "dataset_cache")
 
 
-def to_rgb_overlay(img01, mask):
+def to_rgb_overlay(img01, mask, colour=(255, 0, 0)):
     gray = (np.clip(img01, 0, 1) * 255).astype(np.uint8)
-    rgb = np.stack([gray, gray, gray], axis=-1)
-    rgb[mask] = [255, 0, 0]
+    rgb = np.stack([gray] * 3, axis=-1)
+    rgb[mask] = colour
     return rgb
 
 
+def sam_pc_rgb(coords, embs, shape):
+    """The 256-d SAM embedding as an image: its first three principal components as RGB.
+
+    Honest about what it is. Each 1024-px tile yields a 64x64 grid of 256-d vectors -- one
+    vector per 16x16 block of pixels -- so this is that grid assembled at 1/16 resolution and
+    projected to three dimensions. It is a view of the 256 channels, not one of them.
+    """
+    H, W = shape
+    GH, GW = int(np.ceil(H / M.EMB_STRIDE)), int(np.ceil(W / M.EMB_STRIDE))
+    C = embs.shape[1]
+    grid = np.zeros((GH, GW, C), np.float32)
+    for t, (y0, x0) in enumerate(np.asarray(coords)):
+        g = np.asarray(embs[t], np.float32).transpose(1, 2, 0)      # 64,64,C
+        gy, gx = int(y0) // M.EMB_STRIDE, int(x0) // M.EMB_STRIDE
+        h, w = min(g.shape[0], GH - gy), min(g.shape[1], GW - gx)
+        if h > 0 and w > 0:
+            grid[gy:gy + h, gx:gx + w] = g[:h, :w]
+    flat = grid.reshape(-1, C)
+    flat = flat - flat.mean(axis=0, keepdims=True)
+    # economy SVD on ~10k x 256 -- cheap, and avoids a sklearn import for three components
+    _, _, vt = np.linalg.svd(flat, full_matrices=False)
+    pcs = flat @ vt[:3].T
+    out = np.zeros((pcs.shape[0], 3), np.float32)
+    for i in range(3):
+        lo, hi = np.percentile(pcs[:, i], [1, 99])
+        out[:, i] = np.clip((pcs[:, i] - lo) / max(hi - lo, 1e-8), 0, 1)
+    return (out.reshape(GH, GW, 3) * 255).astype(np.uint8)
+
+
+def gate_lines_from_history():
+    """The three real gate axes from the last recorded retrain, or None."""
+    try:
+        hist = P.retrain_history()
+    except Exception:                                            # noqa: BLE001
+        return None
+    if not hist:
+        return None
+    L = hist[-1]
+    gd = L.get("gate_detail") or {}
+    cand, inc = (L.get("candidate") or {}), (L.get("incumbent") or {})
+    lines = []
+    ci = cand.get("iou")
+    lines.append(("Reference frames (held out)",
+                  f"IoU {ci:.3f}" if ci is not None else "not measured",
+                  bool(gd.get("iou_ok"))))
+    cf, if_ = L.get("candidate_clean_fp"), L.get("incumbent_clean_fp")
+    lines.append((f"Crack-free specimens ({L.get('clean_specimens') or 0})",
+                  (f"{if_*100:.2f}% -> {cf*100:.2f}% of area"
+                   if cf is not None and if_ is not None else "not measured"),
+                  bool(gd.get("fp_ok"))))
+    ho = (L.get("heldout") or {}).get("mean_iou")
+    lines.append(("Grouped-by-image cross-val",
+                  f"IoU {ho:.3f}" if ho is not None else "not measured",
+                  bool(gd.get("heldout_ok"))))
+    return lines
+
+
 def compute_stages(image_key="338_13"):
-    manifest_path = os.path.join(ROOT, "dataset_cache", "manifest.json")
-    with open(manifest_path) as f:
-        manifest = json.load(f)
-    info = next(i for i in manifest["images"] if i["name"] == image_key)
-    raw_path = info["raw_source"]
-    name = os.path.splitext(os.path.basename(raw_path))[0]
+    img_p = os.path.join(GT_CACHE, f"{image_key}_img.npy")
+    if not os.path.exists(img_p):
+        raise SystemExit(f"no {img_p} -- pass a dataset_cache stem, e.g. 338_13")
+    # The model input, exactly as pipeline._score feeds it when validating a retrain.
+    img01 = np.asarray(np.load(img_p), np.float32)
 
-    raw = tifffile.imread(raw_path).astype(np.float64)
-    img01_naive = naive_normalize(raw)
-    img01 = robust_normalize(raw, 1.0, 99.0)
+    # (A)+(B) the display view. Geometry-preserving, and DELIBERATELY not the model input.
+    import destitch
+    import flatfield
+    destitched, _ = destitch.destitch_image(img01.astype(np.float32))
+    destitched = np.asarray(destitched, np.float32)
+    ff = flatfield.flatfield(destitched)
+    if isinstance(ff, tuple):
+        ff = ff[0]
+    display = robust_normalize(np.asarray(ff, np.float64), 1.0, 99.0).astype(np.float32)
 
+    # (C) the 17 hand-crafted features, on the raw-normalised input
     feats = compute_feature_stack(img01)
-    feature_idx = FEATURE_NAMES.index("smooth_s32")
-    feature_map = feats[..., feature_idx]
+    fi = FEATURE_NAMES.index("smooth_s32")
+    feature_map = np.asarray(feats[..., fi], np.float32)
+    del feats
 
-    model = joblib.load(pc.MODEL_PATH)
-    prob_map = predict_probability_map(model, img01)
-    raw_thresh_mask = prob_map >= PROB_THRESHOLD
-    final_mask = postprocess_mask(prob_map)
+    # (D) SAM ViT-H embedding
+    coords, embs = M.embed_image(img01)
+    sam_rgb = sam_pc_rgb(coords, embs, img01.shape)
 
-    overlay_before_correction = to_rgb_overlay(img01, final_mask)
+    # (E) both members, so the figure can show what averaging buys
+    m17 = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
+    p17 = m17.predict(img01)
+    ens = P.get_model()
+    p_ens = ens.predict(img01, emb=(coords, embs))
 
-    corr_path = os.path.join(pc.CORRECTIONS_DIR, f"{name}_correction.npy")
-    if os.path.exists(corr_path):
-        correction = np.load(corr_path)
-        effective_mask = final_mask.copy()
-        effective_mask[correction == 1] = True
-        effective_mask[correction == 2] = False
-        n_corrected_px = int((correction != 0).sum())
-    else:
-        effective_mask = final_mask
-        n_corrected_px = 0
-    overlay_after_correction = to_rgb_overlay(img01, effective_mask)
+    # (F) the DEFAULT cleanup: a threshold and speck pruning. The legacy hysteresis
+    # post-processing is off by default -- measured to cost 0.08 IoU on thin crack.
+    raw_thresh = p_ens > 0.5
+    final_mask = P.prune_specks(raw_thresh)
 
-    gate_report_path = os.path.join(RESULTS_DIR, "deploy_gate_report.json")
-    gate_lines = None
-    if os.path.exists(gate_report_path):
-        with open(gate_report_path) as f:
-            gate = json.load(f)
-        label_map = {
-            "accuracy_vs_corrected_gt": "Accuracy vs. corrected GT",
-            "border_edge_artifact": "Border / edge artifact",
-            "spontaneous_artifacts": "Spontaneous artifacts",
-            "degenerate_output": "Degenerate output",
-            "did_anything_change": "Did anything change",
-        }
-        gate_lines = []
-        for c in gate["checks"]:
-            label = label_map.get(c["name"], c["name"])
-            sub = c.get("reason") or "no regression detected"
-            gate_lines.append((label, sub, bool(c["passed"])))
+    gt_p = os.path.join(GT_CACHE, f"{image_key}_gt.npy")
+    gt = np.load(gt_p).astype(bool) if os.path.exists(gt_p) else None
 
     return dict(
-        name=name,
-        raw_display=raw,
-        img01_naive=img01_naive,
+        name=image_key,
         img01=img01,
+        destitched=destitched,
+        display=display,
         feature_map=feature_map,
-        feature_name=FEATURE_NAMES[feature_idx],
-        prob_map=prob_map,
-        raw_thresh_mask=raw_thresh_mask,
+        feature_name=FEATURE_NAMES[fi],
+        sam_rgb=sam_rgb,
+        n_tiles=int(len(coords)),
+        emb_channels=int(embs.shape[1]),
+        p17=p17,
+        p_ens=p_ens,
+        raw_thresh_display=np.where(raw_thresh, 0, 255).astype(np.uint8),
+        final_mask_display=np.where(final_mask, 0, 255).astype(np.uint8),
         final_mask=final_mask,
-        overlay_before_correction=overlay_before_correction,
-        overlay_after_correction=overlay_after_correction,
-        n_corrected_px=n_corrected_px,
-        n_regions_final=int(final_mask.sum() > 0),
-        gate_lines=gate_lines,
+        overlay_model=to_rgb_overlay(display, final_mask),
+        overlay_gt=(to_rgb_overlay(display, gt) if gt is not None else
+                    to_rgb_overlay(display, final_mask)),
+        model_describe=ens.describe(),
+        gate_lines=gate_lines_from_history(),
     )

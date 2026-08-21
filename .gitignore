@@ -122,3 +122,10 @@ paint/label_folds.npz
 
 # Tiles exported for annotation (regenerate with code/export_annotation_tiles.py)
 paint/annotate/
+
+# editor / tooling local config, not part of the project
+.claude/
+__pycache__/
+
+# the workflow figure SVG embeds every thumbnail as base64 (~30 MB); the PNG is the deliverable
+research/pipeline_diagram/

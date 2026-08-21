@@ -44,7 +44,15 @@ for p in (_CODE, _HERE):
 TILE = 1024
 EMB_STRIDE = 16
 DEFAULT_17 = os.path.join(_PROJECT, "models", "pixel_hgb_final.joblib")
-DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "pixel_sam_hybrid.joblib")
+# The shipped hybrid. Trained on the owner's corrections ONLY -- the four dense reference
+# frames are held out of training, so its scores are real generalisation numbers rather than
+# the in-sample ones its predecessor reported: IoU 0.741 on those held-out frames, 0.763
+# under grouped-by-image cross-validation, and 0.250% predicted area on the six specimens
+# confirmed crack-free (the predecessor: 0.940 in-sample, 0.264% crack-free).
+DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_nogt_20260821.joblib")
+# Its predecessor, kept because it is what every number in this repo before 2026-08-21 was
+# measured with. It trained ON the reference frames, so it has no honest score on them.
+LEGACY_HYBRID = os.path.join(_PROJECT, "models", "pixel_sam_hybrid.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"
 
 
