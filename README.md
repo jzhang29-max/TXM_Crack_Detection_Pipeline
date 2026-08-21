@@ -154,10 +154,10 @@ Run it after a labelling session. Keyed by filename, not image id.
 concatenated with 17 hand-crafted ones: intensity, Gaussian-smoothed intensity at σ=2…64,
 gradient magnitude, Laplacian, and local-standard-deviation texture.
 
-Retraining in the app fits a single **HistGradientBoosting** on those 273 features. The
-shipped baseline is an older mean-probability ensemble of two MLPs; the single model measured
-better on both tests and runs about twice as fast — see
-[docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
+A mean-probability ensemble of two MLPs on those features — one on the 17 alone, one on all
+273. A single HistGradientBoosting scored better on every labelled-pixel metric and was
+tried; it marked 7.5× more crack-free material as crack and was reverted. That measurement
+is in [docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
 
 The four dense reference frames in `dataset_cache/` are a **held-out test set**: nothing
 trains on them, or on corrections from their specimens, so the retrain gate's number is a

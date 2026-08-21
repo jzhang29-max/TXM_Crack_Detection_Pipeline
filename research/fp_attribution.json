@@ -1,0 +1,72 @@
+{
+ "question": "Did dropping the reference frames or switching to HistGradientBoosting cause the false-positive regression?",
+ "protocol": "4 arms, fixed 400,000-row budget, crossing {reference frames in, out} x {HGB, mean-probability MLP ensemble}; scored on both gate axes",
+ "conclusion": "The classifier. HGB is ~4.7x worse on crack-free specimens in both compositions. Removing the reference frames slightly lowers FP.",
+ "contamination_measured": "with-GT minus no-GT on the same frames, MLP ensemble: 0.9208 - 0.7136 = +0.207 IoU of inflation from training on the evaluation images",
+ "arms": [
+  {
+   "arm": "A no-GT + HGB",
+   "composition": "corrections only, 400,000 rows",
+   "ref_iou": 0.7481,
+   "ref_recall": 0.8373,
+   "clean_fp": 0.021406,
+   "n_clean": 6,
+   "per_specimen": {
+    "B2_2_1_lbf_idx00000_mosaictile": 0.024645,
+    "B2_2_9_lbf_idx00000_mosaictile": 0.030997,
+    "B2_amb_mosaic_2_idx00000_mosai": 0.011707,
+    "b3_amb_idx00000_mosaictileAA_i": 0.009585,
+    "b3_3_18lbf_348_13um_idx00000_m": 0.037261,
+    "wrought_316L_fatigue_0_cycles_": 0.014239
+   }
+  },
+  {
+   "arm": "B no-GT + MLP ens",
+   "composition": "corrections only, 400,000 rows",
+   "ref_iou": 0.7136,
+   "ref_recall": 0.7942,
+   "clean_fp": 0.004507,
+   "n_clean": 6,
+   "per_specimen": {
+    "B2_2_1_lbf_idx00000_mosaictile": 0.005556,
+    "B2_2_9_lbf_idx00000_mosaictile": 0.006343,
+    "B2_amb_mosaic_2_idx00000_mosai": 0.001908,
+    "b3_amb_idx00000_mosaictileAA_i": 0.001679,
+    "b3_3_18lbf_348_13um_idx00000_m": 0.006561,
+    "wrought_316L_fatigue_0_cycles_": 0.004992
+   }
+  },
+  {
+   "arm": "C with-GT + HGB",
+   "composition": "reference rows + all corrections, 400,000 rows",
+   "ref_iou": 0.8691,
+   "ref_recall": 0.9528,
+   "clean_fp": 0.025398,
+   "n_clean": 6,
+   "per_specimen": {
+    "B2_2_1_lbf_idx00000_mosaictile": 0.03088,
+    "B2_2_9_lbf_idx00000_mosaictile": 0.036519,
+    "B2_amb_mosaic_2_idx00000_mosai": 0.018976,
+    "b3_amb_idx00000_mosaictileAA_i": 0.011392,
+    "b3_3_18lbf_348_13um_idx00000_m": 0.036558,
+    "wrought_316L_fatigue_0_cycles_": 0.018066
+   }
+  },
+  {
+   "arm": "D with-GT + MLP ens (old recipe)",
+   "composition": "reference rows + all corrections, 400,000 rows",
+   "ref_iou": 0.9208,
+   "ref_recall": 0.9777,
+   "clean_fp": 0.00544,
+   "n_clean": 6,
+   "per_specimen": {
+    "B2_2_1_lbf_idx00000_mosaictile": 0.007063,
+    "B2_2_9_lbf_idx00000_mosaictile": 0.008306,
+    "B2_amb_mosaic_2_idx00000_mosai": 0.002984,
+    "b3_amb_idx00000_mosaictileAA_i": 0.002778,
+    "b3_3_18lbf_348_13um_idx00000_m": 0.00707,
+    "wrought_316L_fatigue_0_cycles_": 0.004435
+   }
+  }
+ ]
+}

@@ -598,20 +598,33 @@ def main():
             need = ["candidate", "incumbent", "candidate_clean_fp", "incumbent_clean_fp",
                     "deployed", "when"]
             missing = [k for k in need if L.get(k) is None]
-            # The held-out number is the one a person should read. If it is present it must
-            # be BELOW the in-sample IoU -- above it would mean the grouping leaked and the
-            # honest number is not honest.
+            # THE LEAKAGE GUARD, restated.
+            #
+            # This used to assert held-out < in-sample, which stopped meaning anything once
+            # the four reference frames left the training set: that figure is held out too
+            # now, so there is no reason either number must sit above the other, and the
+            # check began failing on a correct pipeline (0.7589 vs 0.7422).
+            #
+            # What still detects a leaky split is the FOLD SPREAD. Measured on this data with
+            # the deployed architecture: grouping by image gives sd ~0.05, while shuffling
+            # pixels into folds gives sd 0.003 -- four genuinely different specimens cannot
+            # agree to a thousandth, so a suspiciously tight spread is the fingerprint of
+            # train and test sharing neighbourhoods. That is the invariant worth asserting,
+            # and unlike the old one it fails on the actual mistake rather than on a
+            # relationship between two unrelated numbers.
             ho = L.get("heldout")
             if ho:
-                ins = (L.get("candidate") or {}).get("iou")
-                check("held-out IoU is grouped by image and below the in-sample figure",
+                sd = ho.get("std_iou")
+                check("held-out IoU is grouped by image, with a fold spread that rules out "
+                      "a leaky split",
                       ho.get("grouped_by") == "image" and ho.get("k", 0) >= 2
-                      and (ins is None or ho["mean_iou"] < ins),
-                      f"{ho.get('k')}-fold by {ho.get('grouped_by')}: "
-                      f"{ho.get('mean_iou')} vs in-sample {ins} "
-                      f"(sd {ho.get('std_iou')}, worst {ho.get('min_iou')})")
+                      and sd is not None and sd > 0.01,
+                      f"{ho.get('k')}-fold by {ho.get('grouped_by')}: {ho.get('mean_iou')} "
+                      f"(sd {sd}, worst {ho.get('min_iou')}) -- random pixel folds would "
+                      f"read sd ~0.003")
             else:
-                skip("held-out IoU is grouped by image and below the in-sample figure",
+                skip("held-out IoU is grouped by image, with a fold spread that rules out "
+                     "a leaky split",
                      "no cross-validated score recorded for the last retrain yet")
             check("retrain report is kept after the job is gone", not missing,
                   f"{rr.get('n_total')} recorded; last {L.get('stamp')} "

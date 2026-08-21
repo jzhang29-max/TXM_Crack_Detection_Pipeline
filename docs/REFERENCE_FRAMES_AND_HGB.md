@@ -55,10 +55,13 @@ widening fixes that. So models now carry a `recipe` tag:
   (`MIN_ABS_IOU`), with the reason recorded in `gate_detail.iou_basis` rather than the check
   silently skipped
 
-## 2. Single HistGradientBoosting, not a mean-probability MLP ensemble
+## 2. HistGradientBoosting looked better on every labelled metric, and was reverted
 
-Measured inside this project's own grouped-by-image protocol, 5 folds, **identical rows and
-identical folds** for all three (1,274,320 rows over 75 image groups):
+It was tried, deployed, caught by the gate, and rolled back. The sequence is the point of
+this section, so it is recorded in the order it happened rather than tidied up.
+
+**What was measured first.** Inside this project's own grouped-by-image protocol, 5 folds,
+identical rows and identical folds for all three (1,274,320 rows over 75 image groups):
 
 | model | IoU @0.5 | AUC | best IoU | at threshold |
 |---|---|---|---|---|
@@ -66,7 +69,7 @@ identical folds** for all three (1,274,320 rows over 75 image groups):
 | mean probability of MLP(17) and MLP(17+SAM) | 0.7541 | 0.9529 | 0.7645 | 0.43 |
 | MLP(17+SAM) alone | 0.7398 | 0.9552 | 0.7574 | 0.20 |
 
-And cross-group, from the leave-one-group-out run above:
+And cross-group, leave-one-group-out over AM/HC, B2, B3 and wrought, 3 repeats:
 
 | model | B2 frames AUC | cross-group AUC |
 |---|---|---|
@@ -75,25 +78,54 @@ And cross-group, from the leave-one-group-out run above:
 | the old ensemble | 0.977 | 0.863 |
 | MLP(17) alone | 0.959 | 0.782 |
 
-The +0.034 cross-group AUC over the ensemble is four times the ±0.008 noise floor, and
-nothing is given up on B2. The cause is the 17-feature member: at 0.782 cross-group it is far
-the weakest of the four, and averaging it into the ensemble drags the mean down. Dropping it
-also halves inference, because the old ensemble ran both models over every band, and removes
-the 5.9 GB in-place `StandardScaler` pass — a tree ensemble is invariant to feature scaling.
++0.034 cross-group AUC over the ensemble, four times the ±0.008 noise floor, giving up
+nothing on B2. On that basis it was deployed.
+
+**What the gate then measured.** Predicted area on the six specimens confirmed to contain no
+crack rose from **0.26% to 1.98%**, all six worse, worst 0.41% → 3.49%. The retrain was
+refused and the model kept for inspection.
+
+**Attribution.** Four arms at a fixed 400,000-row budget, crossing {reference frames in, out}
+with {HGB, the ensemble}, each scored on both gate axes (`research/fp_attribution.json`):
+
+| arm | reference IoU | crack-free FP |
+|---|---|---|
+| no-GT + HGB | 0.748 | 2.141% |
+| no-GT + MLP ensemble | 0.714 | **0.451%** |
+| with-GT + HGB | 0.869 \* | 2.540% |
+| with-GT + MLP ensemble (old recipe) | 0.921 \* | 0.544% |
+
+\* contaminated: those arms train on the frames they are scored on.
+
+So the classifier owns it, not the training composition: HGB is ~4.7x worse on crack-free
+material in **both** compositions, and removing the reference frames slightly *lowers* FP
+(0.544% → 0.451%). The classifier was reverted to the ensemble; the reference-frame change
+was kept.
+
+### Why every metric that favoured HGB was blind to this
+
+All of them — IoU, AUC, matched-FPR recall, cross-group AUC — are computed over **labelled**
+pixels. Crack-free specimen is exactly the material nobody labels: there is nothing to find,
+so there is nothing to mark. HGB separates the labelled distribution better and behaves far
+worse off it, and no amount of AUC over labels can see that.
+
+This is the argument for keeping a false-positive axis measured on unlabelled material known
+to contain nothing. It is not a redundant second opinion on the same evidence; it is the only
+axis reading material the training distribution does not cover. It caught a 22.4% model
+before, and it caught this one.
 
 ### A measurement error worth recording
 
-The first comparison here looked like a regression: a live grouped-CV run with
-HistGradientBoosting scored 0.759 against a **recorded** 0.815 for the old ensemble, and that
-0.815 was treated as a baseline. It was not one. It had been measured on 2026-08-19 against a
-smaller label corpus, so the two numbers were never comparable. Re-measured on identical rows
-the ensemble scores 0.7541, below HistGradientBoosting's 0.7642. A stored number from an
-earlier corpus is not a baseline for a fresh run, however tempting the direct comparison is.
+The first comparison looked like a regression for the wrong reason: a live grouped-CV run
+with HGB scored 0.759 against a **recorded** 0.815 for the old ensemble, and that 0.815 was
+treated as a baseline. It was not one — it had been measured on 2026-08-19 against a smaller
+label corpus. Re-measured on identical rows the ensemble scores 0.7541, *below* the 0.7589 it
+had just rejected. Both gate axes are now recipe-aware for this reason; a stored number from
+another architecture or another corpus is not a baseline.
 
 ### Still open: the threshold
 
-HistGradientBoosting's best threshold on this protocol is **0.33**, not the 0.50 the app
-defaults to, worth about 0.016 IoU. The default was calibrated for the old ensemble (whose
-own optimum measures 0.43). Recalibrating means either changing the default sensitivity or,
-better, storing a per-model calibrated threshold in the registry so each model is served at
-its own operating point. Not done here.
+The ensemble's own best threshold on this protocol measures **0.43**, not the 0.50 the app
+serves. Worth ~0.010 IoU. The clean fix is a per-model calibrated threshold stored in the
+registry, so each model is served at its own operating point rather than a shared constant.
+Not done here.

@@ -92,7 +92,7 @@ REFERENCE_SPECIMENS = ("333_75", "336_25", "338_13", "343_75")
 # comparing against was trained under the same rules. A model trained WITH the reference
 # frames scores them in-sample; comparing a clean candidate to it on those frames would
 # reject the clean one for being honest.
-RECIPE = "hgb_hybrid_nogt"
+RECIPE = "mlp_ens_nogt"
 MIN_ABS_IOU = 0.60
 
 
@@ -825,18 +825,22 @@ def crossval_grouped(progress=None):
     n_groups = len(np.unique(g))
     k = min(CV_MAX_FOLDS, n_groups)
 
-    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
 
     def _clf():
-        """Same class as the deployed model, so this number describes what is deployed.
+        """Same architecture as the deployed model, so this number describes what ships.
 
-        It used to fit an MLP pair and average them, which stopped matching the deployed
-        model the moment that became a single HistGradientBoosting -- and a held-out figure
-        measuring a different architecture than the one shipping is worse than none, because
-        it reads as if it had been checked.
+        Kept deliberately in step: this was briefly a single HistGradientBoosting, to match a
+        deployed model that then failed the false-positive gate and was reverted. A held-out
+        figure measuring an architecture other than the one shipping is worse than none,
+        because it reads as though it had been checked.
         """
-        return HistGradientBoostingClassifier(max_iter=300, early_stopping=True,
-                                              random_state=0)
+        return Pipeline([("scaler", StandardScaler()),
+                         ("mlp", MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300,
+                                               random_state=0, early_stopping=True,
+                                               n_iter_no_change=8))])
 
     per_fold = []
     for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=g), 1):
@@ -850,8 +854,11 @@ def crossval_grouped(progress=None):
             progress(f"cross-validation fold {f}/{k}: holding out {held}", f, k)
         if len(tr) > CV_TRAIN_CAP:
             tr = np.random.RandomState(7).choice(tr, CV_TRAIN_CAP, replace=False)
-        # The deployed architecture: one model on the full [17 | 256] hybrid vector.
-        prob = _clf().fit(X[tr], y[tr]).predict_proba(X[te])[:, 1]
+        # The deployed architecture: mean probability of a 17-feature model and the hybrid.
+        probs = []
+        for cols in (slice(0, n17), slice(0, X.shape[1])):
+            probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
+        prob = np.mean(probs, axis=0)
         pred = prob >= 0.5
         tp = int((pred & y[te]).sum()); fp = int((pred & ~y[te]).sum())
         fn = int((~pred & y[te]).sum())
@@ -1067,7 +1074,9 @@ def gather_training_data(progress=None):
 def retrain(deploy=True, progress=None):
     """Train a new hybrid on all current corrections, validate, maybe deploy."""
     import joblib
-    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
 
     t0 = time.time()
     # Built here rather than at startup, so a fresh clone is running in seconds and
@@ -1105,23 +1114,35 @@ def retrain(deploy=True, progress=None):
 
     if progress:
         progress("fitting", 0, 1)
-    # HistGradientBoosting on the 273-d hybrid, as ONE model rather than an MLP averaged
-    # with a 17-feature MLP. Measured (code/experiment_no_gt.py, 3 repeats, identical rows):
+    # WHY NOT HistGradientBoosting, WHICH LOOKED BETTER.
     #
-    #   model                          B2 frames AUC   cross-group AUC
-    #   HistGradientBoosting(17+SAM)       0.981           0.897
-    #   hybrid MLP(17+SAM)                 0.972           0.893
-    #   the old mean-probability ensemble  0.977           0.863
-    #   17-feature MLP alone               0.959           0.782
+    # It measured better on every axis scored over LABELLED pixels -- grouped-by-image
+    # IoU@0.5 0.7642 against 0.7541, AUC 0.9634 against 0.9529, and cross-group AUC 0.897
+    # against 0.863, four times the noise floor. It was deployed on that basis and the gate
+    # caught it: predicted area on the six specimens confirmed to contain no crack rose from
+    # 0.26% to 1.98%, every one of the six worse.
     #
-    # +0.034 cross-group AUC over the ensemble is four times the +-0.008 noise floor, and it
-    # gives up nothing on B2. The reason is the 17-feature member: at 0.782 cross-group it is
-    # far the weakest of the four, and averaging it in drags the mean down. Dropping it also
-    # halves inference -- the old ensemble ran both models over every band.
+    # Attributed with four arms at a fixed 400 k-row budget (research/fp_attribution.json),
+    # crossing {reference frames in, out} with {HGB, this ensemble}:
     #
-    # No StandardScaler: a tree ensemble is invariant to per-feature scaling, so the 5.9 GB
-    # in-place standardisation the MLP needed is simply gone.
-    clf = HistGradientBoostingClassifier(max_iter=300, early_stopping=True, random_state=0)
+    #   arm                        reference IoU   crack-free FP
+    #   no-GT  + HGB                   0.748          2.141%
+    #   no-GT  + this ensemble         0.714          0.451%
+    #   with-GT + HGB                  0.869*         2.540%
+    #
+    #   * contaminated: that arm trains on the frames it is scored on.
+    #
+    # So it is the classifier, not the training composition. The reason is what the two are
+    # scored on: every metric that favoured HGB is computed over labelled pixels, and
+    # crack-free specimen is precisely the material nobody labels. HGB separates the labelled
+    # distribution better and behaves far worse off it. An AUC over labels cannot see that,
+    # which is the whole argument for keeping a false-positive axis measured on unlabelled
+    # material that is known to contain nothing.
+    clf = Pipeline([("scaler", StandardScaler(copy=False)),
+                    ("mlp", MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=400,
+                                          random_state=0))])
+    # copy=False so StandardScaler standardises in place instead of returning a second
+    # 5.9 GB array inside fit.
     clf.fit(X, y)
     del X, y
 
@@ -1144,14 +1165,13 @@ def retrain(deploy=True, progress=None):
         record_retrain(result, stamp=stamp)
         return result
 
-    # kind != "ensemble" and an explicitly EMPTY path_17: this model is the hybrid alone.
-    cand_entry = dict(kind="hgb_hybrid", path_17="", path_hybrid=out, recipe=RECIPE,
+    cand_entry = dict(kind="ensemble", path_17=M.DEFAULT_17, path_hybrid=out, recipe=RECIPE,
                       label=f"retrained {stamp}", created=stamp)
     inc = get_model()
     if progress:
         progress("validating incumbent", 0, 1)
     i0, r0 = _score(inc, progress=progress)
-    cand = M.CrackModel(path_17="", path_hybrid=out, ensemble=False)
+    cand = M.CrackModel(path_17=cand_entry["path_17"], path_hybrid=out, ensemble=True)
     if progress:
         progress("validating candidate", 0, 1)
     i1, r1 = _score(cand, progress=progress)
@@ -1213,7 +1233,15 @@ def retrain(deploy=True, progress=None):
     # memorising the evaluation set.
     ho_ok, ho_prev, ho_now = True, None, None
     try:
-        _hist = [h for h in retrain_history() if (h.get("heldout") or {}).get("mean_iou")]
+        # SAME RECIPE ONLY. This axis had exactly the bug the reference-frame axis was fixed
+        # for: it compared a fresh score against whatever was last recorded, regardless of
+        # which architecture produced it or which label corpus it was measured on. The first
+        # run under this recipe was rejected for "regressing" 0.8151 -> 0.7589 against a
+        # figure measured on 2026-08-19 by a two-MLP average over a smaller corpus. Measured
+        # on identical rows that architecture scores 0.7541, below the 0.7589 it rejected.
+        # A stored number from another recipe or another corpus is not a baseline.
+        _hist = [h for h in retrain_history()
+                 if (h.get("heldout") or {}).get("mean_iou") and h.get("recipe") == RECIPE]
         ho_prev = _hist[-1]["heldout"]["mean_iou"] if _hist else None
     except Exception:                                           # noqa: BLE001
         ho_prev = None
@@ -1233,11 +1261,16 @@ def retrain(deploy=True, progress=None):
     ho_now = (result.get("heldout") or {}).get("mean_iou")
     if ho_prev is not None and ho_now is not None:
         ho_ok = ho_now >= ho_prev - IOU_TOL
+        ho_basis = f"no-regression against the last {RECIPE} run"
+    else:
+        ho_basis = (f"no previous {RECIPE} run to compare against -- this run establishes "
+                    f"the baseline for this axis")
     passes = bool(iou_ok and fp_ok and ho_ok)
     result["passes_gate"] = passes
     result["gate_detail"] = dict(
         iou_ok=bool(iou_ok), fp_ok=bool(fp_ok), heldout_ok=bool(ho_ok),
-        iou_basis=iou_basis, recipe=RECIPE, incumbent_recipe=inc_recipe,
+        iou_basis=iou_basis, heldout_basis=ho_basis,
+        recipe=RECIPE, incumbent_recipe=inc_recipe,
         reference_frames_held_out=True,
         heldout_prev=ho_prev, heldout_now=ho_now,
         fp_checked_on=n_clean,
@@ -1271,8 +1304,9 @@ def retrain(deploy=True, progress=None):
                         f"[{iou_basis}]")
         if not ho_ok:
             bits.append(f"held-out IoU regressed {ho_prev:.3f} -> {ho_now:.3f} "
-                        f"(tolerance {IOU_TOL}) -- this one is grouped by image, so it "
-                        f"cannot be recovered by fitting the evaluation set harder")
+                        f"(tolerance {IOU_TOL}, {ho_basis}) -- this one is grouped by "
+                        f"image, so it cannot be recovered by fitting the evaluation "
+                        f"set harder")
         if not fp_ok:
             bits.append(f"false positives on {n_clean} crack-free specimen(s) rose "
                         f"{fp_inc*100:.2f}% -> {fp_cand*100:.2f}% of area "
