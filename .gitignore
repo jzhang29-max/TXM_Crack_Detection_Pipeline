@@ -86,6 +86,9 @@ paint/corrections/*_painted.png
 app_data/
 # SAM embedding cache: 2.1 GB, rebuilt on demand by cache_sam_embeddings.py
 paint/sam_embcache/
+# derived encoder caches for the encoder comparison; regenerable, and large
+paint/sam2_embcache/
+paint/sam3_embcache/
 # per-image prediction caches, all regenerable
 paint/predicted_cache_pergroup/
 paint/predicted_cache_hybrid/
@@ -129,3 +132,4 @@ __pycache__/
 
 # the workflow figure SVG embeds every thumbnail as base64 (~30 MB); the PNG is the deliverable
 research/pipeline_diagram/
+research/logs/

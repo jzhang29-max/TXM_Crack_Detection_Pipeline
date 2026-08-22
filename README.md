@@ -197,6 +197,13 @@ Full per-specimen breakdowns, the validation protocol and a 78-variant architect
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
 `SAM_COMPARISON.md`, `PUBLISHABILITY.md` and `HANDOFF.md`.
 
+**Why SAM 1 and not SAM 2 or SAM 3?** Measured, not assumed:
+[docs/ENCODER_COMPARISON.md](docs/ENCODER_COMPARISON.md). SAM 2's features are more
+discriminative in isolation (+0.021 IoU on the hybrid member, p=0.029) but that advantage
+vanishes in the shipped ensemble (+0.001, p=0.87) and comes with a nominal false-positive
+cost. SAM 3's weights are gated behind Meta's manual approval; the comparison harness has its
+arm wired in and runs unchanged once access is granted.
+
 ## Security
 
 **No authentication.** It binds `127.0.0.1` with `debug=False` and should stay there — do

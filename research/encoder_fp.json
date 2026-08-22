@@ -1,0 +1,42 @@
+{
+ "per_specimen": [
+  {
+   "image": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.003836,
+   "sam2": 0.00316
+  },
+  {
+   "image": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.004452,
+   "sam2": 0.0056
+  },
+  {
+   "image": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.001288,
+   "sam2": 0.002364
+  },
+  {
+   "image": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.001864,
+   "sam2": 0.005312
+  },
+  {
+   "image": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.003452,
+   "sam2": 0.007964
+  },
+  {
+   "image": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+   "n": 250000,
+   "sam1": 0.002688,
+   "sam2": 0.001912
+  }
+ ],
+ "rows": null,
+ "note": "unpruned, uniform-sampled; paired"
+}
