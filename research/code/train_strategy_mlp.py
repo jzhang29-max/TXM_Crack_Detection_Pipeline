@@ -8,7 +8,7 @@ less prone to isolated single-pixel confidence flips on its own, independent
 of the hysteresis postprocessing fix already merged into apply_pixel_model.py.
 
 Training signal is identical in spirit to retrain_with_corrections.py's
-main(): the 4-image Ilastik bootstrap sample plus every human correction
+main(): the 4-image external bootstrap sample plus every human correction
 across all 12 images, capped per-class-per-image so no single image's
 correction volume can numerically drown out the rest.
 
@@ -73,7 +73,7 @@ GT_IMAGES = {
 def build_training_set():
     rng = np.random.RandomState(0)
 
-    print("Loading bootstrapped Ilastik-derived samples (dataset_cache/)...")
+    print("Loading bootstrapped externally-derived samples (dataset_cache/)...")
     X_boot, y_boot, w_boot = load_bootstrap_samples(rng)
 
     print("Loading human correction samples (paint/corrections/)...")
@@ -101,7 +101,7 @@ def build_training_set():
 
 
 def build_corrected_gt(key):
-    """original Ilastik gt, overridden by the human correction wherever one
+    """original external gt, overridden by the human correction wherever one
     exists: correction==1 forces True (crack), correction==2 forces False."""
     gt = np.load(os.path.join(DATASET_CACHE_DIR, f"{key}_gt.npy")).astype(bool)
     raw_name = GT_IMAGES[key]

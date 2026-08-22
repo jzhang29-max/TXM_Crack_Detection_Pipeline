@@ -1,6 +1,6 @@
 """
 Apply the trained per-pixel HistGradientBoostingClassifier crack detector
-(models/pixel_hgb_final.joblib, see train_pixel_hgb.py) to a single raw TXM
+(the shipped 17-feature member, models/f17_v3_*.joblib) to a single raw TXM
 TIFF image and produce a clean, post-processed crack mask.
 
 This script only *applies* the already-trained model -- it does not retrain

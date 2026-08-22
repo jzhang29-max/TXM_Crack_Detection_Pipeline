@@ -28,7 +28,7 @@ results are comparable):
   3. Combine exactly like retrain_with_corrections.py's main(): sample_weight
      = compute_sample_weight('balanced', y) * base_weight.
   4. Train the HGB model above.
-  5. For each of the 4 ground-truth images, build corrected_gt = ilastik_gt
+  5. For each of the 4 ground-truth images, build corrected_gt = external_gt
      with correction==1 forced True / correction==2 forced False, predict
      on the full dense feature array (predict_proba, threshold 0.5, RAW
      pre-postprocess prediction), compute IoU/Dice against corrected_gt.
@@ -100,7 +100,7 @@ def build_corrected_gt(key, corr_name):
         corrected[correction == 1] = True
         corrected[correction == 2] = False
     else:
-        print(f"  WARNING: no correction file found for {key} ({corr_path}); using raw ilastik GT")
+        print(f"  WARNING: no correction file found for {key} ({corr_path}); using raw external GT")
     return corrected, (correction if os.path.exists(corr_path) else None)
 
 
@@ -113,7 +113,7 @@ def main():
     print(f"  HGB params: {HGB_PARAMS}")
     print("=" * 70)
 
-    print("\nLoading bootstrapped Ilastik-derived samples (dataset_cache/)...")
+    print("\nLoading bootstrapped externally-derived samples (dataset_cache/)...")
     X_boot, y_boot, w_boot = load_bootstrap_samples(rng)
 
     print("\nLoading human correction samples (paint/corrections/)...")
@@ -150,7 +150,7 @@ def main():
     if os.path.exists(PRODUCTION_MODEL_PATH):
         prod_model = joblib.load(PRODUCTION_MODEL_PATH)
 
-    print("\nEvaluating against corrected ground truth (ilastik GT + human corrections overlaid)...")
+    print("\nEvaluating against corrected ground truth (external GT + human corrections overlaid)...")
     per_image = []
     ious, dices = [], []
     for key, corr_name in GT_IMAGES.items():

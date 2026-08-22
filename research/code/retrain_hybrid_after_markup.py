@@ -10,7 +10,7 @@ The same discipline as retrain_after_markup.py, for the SAM+17 model:
      inventory. Class balance is the knob that caused four separate regressions
      in this project, and a fixed sweep goes stale -- the balance point moved
      8,028 -> 12,971 when B3 and Wrought crack labels were added.
-  2. Score every candidate on the 4 Ilastik ground-truth images (IoU, recall)
+  2. Score every candidate on the 4 external reference images (IoU, recall)
      AND on the 6 owner-confirmed crack-free specimens (predicted area, i.e.
      pure false positives).
   3. Deploy only if IoU holds within tolerance AND crack-free false positives

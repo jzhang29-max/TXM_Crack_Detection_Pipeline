@@ -10,7 +10,7 @@ anything fails, NOTHING is deployed, and a clear report explains exactly
 what regressed and by how much.
 
 The checks, and which real incident each one guards against:
-  1. ACCURACY: candidate's mean IoU vs "corrected ground truth" (Ilastik +
+  1. ACCURACY: candidate's mean IoU vs "corrected ground truth" (external +
      your paint corrections merged) must not drop more than IOU_TOLERANCE
      below current production's IoU on the same images. Guards against the
      dilution regression (correction_weight=5.0 pooled across 12 images
@@ -79,7 +79,7 @@ MAX_AREA_FRACTION = 0.80
 
 def train_candidate(correction_weight):
     rng = np.random.RandomState(0)
-    print("Loading bootstrapped Ilastik-derived samples...")
+    print("Loading bootstrapped externally-derived samples...")
     X_boot, y_boot, w_boot = rc.load_bootstrap_samples(rng)
     print("Loading human correction samples...")
     X_corr, y_corr, w_corr = rc.load_correction_samples(correction_weight, rng)

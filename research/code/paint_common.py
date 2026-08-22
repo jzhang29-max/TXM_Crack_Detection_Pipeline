@@ -67,7 +67,7 @@ PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # asserted in get_state rather than assumed.
 # DEFAULT IS NOW RAW. The flatfielded pipeline was measured WORSE against the
 # only ground truth available: mean IoU 0.610 (flatfield) vs 0.779 (raw) on the
-# 4 Ilastik GT images, with recall on LARGE_343_75 falling 0.94 -> 0.65. It was
+# 4 external GT images, with recall on LARGE_343_75 falling 0.94 -> 0.65. It was
 # originally adopted on false-positive evidence from the new specimen groups,
 # which is real but does not measure IoU. Set TXM_PAINT_FLATFIELD=1 to use the
 # flatfielded pipeline for the AM/Wrought groups, where raw floods badly.

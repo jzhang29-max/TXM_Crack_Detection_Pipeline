@@ -3,7 +3,7 @@
     python3 code/detection_report.py
 
 WHY THIS EXISTS, and why no comparable tool has it. Every interactive segmentation tool
-surveyed for this project -- ilastik, Fiji/TWS, Labkit, Dragonfly, Avizo, VGSTUDIO MAX, ZEN
+surveyed for this project -- external, Fiji/TWS, Labkit, Dragonfly, Avizo, VGSTUDIO MAX, ZEN
 Intellesis, MONAI Label, micro-sam, SAMBA, FeatureForest, napari-convpaint -- reports pixel
 overlap: IoU, Dice, sometimes a validation curve. Pixel overlap cannot answer the two
 questions an engineer actually asks:

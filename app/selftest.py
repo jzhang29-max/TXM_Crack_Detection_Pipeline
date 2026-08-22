@@ -595,7 +595,9 @@ def main():
                  "no retrain has run on this install yet")
         else:
             L = rr.get("last") or {}
-            need = ["candidate", "incumbent", "candidate_clean_fp", "incumbent_clean_fp",
+            # NOT "incumbent": the gate no longer scores a previous model against a
+            # labelled test set, so that field is deliberately absent rather than missing.
+            need = ["candidate", "candidate_clean_fp", "incumbent_clean_fp",
                     "deployed", "when"]
             missing = [k for k in need if L.get(k) is None]
             # THE LEAKAGE GUARD, restated.
@@ -635,6 +637,58 @@ def main():
                   + (f"; MISSING {missing}" if missing else ""))
     except Exception as e:                                      # noqa: BLE001
         check("retrain report is kept after the job is gone", False, str(e))
+
+    # ---- A NAME USED IN A FUNCTION THAT IS NEVER BOUND ANYWHERE IN IT.
+    #
+    # retrain() runs for over an hour before it reaches the gate, so a NameError in that last
+    # block costs the whole run -- which is what happened: an `inc_recipe` reference survived
+    # a refactor that deleted its assignment, and the crash came after 68 minutes of
+    # gathering, fitting and cross-validating. Python cannot warn about it; a parse can.
+    #
+    # The FIRST version of this check was itself wrong: it collected only `Name` stores, so it
+    # did not know that `def _clf():` binds _clf or that a parameter binds its name, and it
+    # reported six false positives. A check that cries wolf gets ignored, so it now collects
+    # every binding form in the subtree -- nested defs, every argument, imports, except-as,
+    # walrus and comprehension targets are all Name stores already.
+    try:
+        import ast as _ast, builtins as _bi
+        _src = open(os.path.join(PROJECT, "app", "core", "pipeline.py")).read()
+        _tree = _ast.parse(_src)
+        _mod = set()
+        for _n in _tree.body:
+            if isinstance(_n, _ast.Assign):
+                _mod |= {t.id for t in _n.targets if isinstance(t, _ast.Name)}
+            elif isinstance(_n, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef)):
+                _mod.add(_n.name)
+            elif isinstance(_n, (_ast.Import, _ast.ImportFrom)):
+                _mod |= {(a.asname or a.name).split(".")[0] for a in _n.names}
+        _bad = {}
+        for _fn in [f for f in _tree.body
+                    if isinstance(f, (_ast.FunctionDef, _ast.AsyncFunctionDef))]:
+            _bound, _used = set(), {}
+            for _node in _ast.walk(_fn):
+                if isinstance(_node, _ast.arg):
+                    _bound.add(_node.arg)                       # every parameter, any depth
+                elif isinstance(_node, (_ast.FunctionDef, _ast.AsyncFunctionDef,
+                                        _ast.ClassDef)):
+                    _bound.add(_node.name)                      # nested def/class binds a name
+                elif isinstance(_node, (_ast.Import, _ast.ImportFrom)):
+                    _bound |= {(a.asname or a.name).split(".")[0] for a in _node.names}
+                elif isinstance(_node, _ast.ExceptHandler) and _node.name:
+                    _bound.add(_node.name)
+                elif isinstance(_node, (_ast.Global, _ast.Nonlocal)):
+                    _bound |= set(_node.names)
+                elif isinstance(_node, _ast.Name):
+                    (_bound.add(_node.id) if isinstance(_node.ctx, _ast.Store)
+                     else _used.setdefault(_node.id, _node.lineno))
+            for _k, _ln in _used.items():
+                if _k not in _bound and _k not in _mod and not hasattr(_bi, _k):
+                    _bad[f"{_fn.name}:{_ln}"] = _k
+        check("no function in pipeline.py uses a name it never binds", not _bad,
+              f"{_bad}" if _bad else
+              f"checked {sum(1 for f in _tree.body if isinstance(f, (_ast.FunctionDef, _ast.AsyncFunctionDef)))} functions")
+    except Exception as e:                                      # noqa: BLE001
+        check("no function in pipeline.py uses a name it never binds", False, str(e))
 
     # ---- WILL A CLONE ACTUALLY HAVE THE MODEL IT DEFAULTS TO?
     #

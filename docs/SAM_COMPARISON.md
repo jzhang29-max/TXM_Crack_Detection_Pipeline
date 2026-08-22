@@ -2,7 +2,7 @@
 
 Short answer: **it was tried, and both answers are in the data.** Used the way SAM is designed to be used — prompt it and read out masks — it fails badly on TXM crack images. Used as a frozen feature extractor with a supervised head, it is competitive with the hand-crafted features, and combining the two is better than either alone.
 
-Everything below is measured on the four Ilastik ground-truth images (the only pixel-level truth that exists for this project), with the same `metrics_from_pred` and the same leave-one-image-out protocol as every other model in the repository. Reproduce with:
+Everything below is measured on the four external reference images (the only pixel-level truth that exists for this project), with the same `metrics_from_pred` and the same leave-one-image-out protocol as every other model in the repository. Reproduce with:
 
 ```bash
 python3 research/code/sam_experiments.py --conditions all --model huge --save-masks

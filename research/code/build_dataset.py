@@ -1,10 +1,10 @@
 """
 Build and cache the dense multi-scale feature stack + ground-truth crack
-mask for every TXM image that has a matching, pixel-aligned Ilastik
+mask for every TXM image that has a matching, pixel-aligned external
 probability map. Run once; downstream training/evaluation scripts just load
 the cached .npy files (fast) instead of recomputing features every time.
 
-Ground truth: threshold the Ilastik crack-class probability channel at 0.5.
+Ground truth: threshold the external crack-class probability channel at 0.5.
 Pairs whose raw image and probability map don't have identical (H, W) are
 skipped outright (misaligned ground truth is worse than no ground truth).
 """

@@ -50,7 +50,7 @@ record of how the model was arrived at.
 ## What the model is
 
 A mean-probability ensemble of a 17-hand-crafted-feature MLP and a SAM ViT-H + 17
-hybrid. Leave-one-image-out on the 4 Ilastik ground-truth images, with false
+hybrid. Leave-one-image-out on the 4 external reference images, with false
 positives measured on 6 owner-confirmed crack-free specimens:
 
 | approach | mean IoU | pixel-weighted | recall | crack-free FP |

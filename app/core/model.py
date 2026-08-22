@@ -8,7 +8,7 @@ the point: the frontend can offer "predict", "correct", "retrain" as buttons
 because all of that complexity is behind this class.
 
 WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Measured under
-leave-one-image-out on the 4 Ilastik ground-truth images, with the crack-free
+leave-one-image-out on the 4 external reference images, with the crack-free
 axis measured on the 6 owner-confirmed undamaged specimens:
 
   approach                        mean IoU   pixel-weighted   recall   crack-free FP
@@ -43,13 +43,20 @@ for p in (_CODE, _HERE):
 
 TILE = 1024
 EMB_STRIDE = 16
-DEFAULT_17 = os.path.join(_PROJECT, "models", "pixel_hgb_final.joblib")
-# The shipped hybrid. Trained on the owner's corrections ONLY -- the four dense reference
-# frames are held out of training, so its scores are real generalisation numbers rather than
-# the in-sample ones its predecessor reported: IoU 0.741 on those held-out frames, 0.763
-# under grouped-by-image cross-validation, and 0.250% predicted area on the six specimens
-# confirmed crack-free (the predecessor: 0.940 in-sample, 0.264% crack-free).
-DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_nogt_20260821.joblib")
+# THE SHIPPED MODEL: both members fitted on the owner's corrections and nothing else.
+#
+# Every earlier model in this project inherited its 17-feature member from a research-phase
+# artifact trained on four pre-existing masks made with a different tool. Because the model
+# is a mean-probability ensemble, that meant half of every prediction came from labels the
+# owner did not draw. Both halves are now trained together, from the owner's own labelling of
+# all 71 images, and no external label is used anywhere -- not in training, not in the gate.
+#
+# Measured under grouped-by-image cross-validation (train and test never share an image):
+# IoU 0.776, sd 0.029, worst fold 0.733, precision 0.929, recall 0.824. On the six specimens
+# confirmed to contain no crack: 0.188% of area predicted crack, 2.83 false indications per
+# frame -- both better than the model it replaced (0.250%, 4.0).
+DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v3_20260822.joblib")
+DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v3_20260822.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"
 
 
@@ -83,7 +90,7 @@ def _get_sam():
     the app "falls back to the 17-feature model alone" when SAM is missing; until this
     existed that promise was false, and a researcher on a network that blocks
     huggingface.co got a red job error on every single image with no way to reach the
-    0.744-IoU model sitting in models/pixel_hgb_final.joblib.
+    17-feature model sitting in models/f17_v3_20260822.joblib.
     """
     global _sam, sam_unavailable_reason
     if sam_unavailable_reason:
@@ -180,8 +187,8 @@ class CrackModel:
             self.n_hybrid = (b.get("n_features", 273) if isinstance(b, dict) else 273)
         if self.m17 is None and self.hybrid is None:
             raise FileNotFoundError(
-                "no model found -- expected models/pixel_hgb_final.joblib and/or "
-                "models/hybrid_nogt_20260821.joblib")
+                "no model found -- expected models/f17_v3_20260822.joblib and/or "
+                "models/hybrid_v3_20260822.joblib")
         if self.ensemble and (self.m17 is None or self.hybrid is None):
             self.ensemble = False   # fall back rather than silently averaging one thing
 

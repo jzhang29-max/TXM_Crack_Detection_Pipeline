@@ -74,7 +74,7 @@ def make_mlp_pipeline(**params):
 
 def train_mlp_candidate(correction_weight=1.0):
     rng = np.random.RandomState(0)
-    print("Loading bootstrapped Ilastik-derived samples...")
+    print("Loading bootstrapped externally-derived samples...")
     X_boot, y_boot, w_boot = rc.load_bootstrap_samples(rng)
     print("Loading human correction samples...")
     X_corr, y_corr, w_corr = rc.load_correction_samples(correction_weight, rng)
@@ -160,7 +160,7 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels(names, rotation=15, ha="right")
     ax.set_ylim(0, 1.0)
-    ax.set_ylabel("IoU vs. corrected ground truth (Ilastik + your paint corrections)")
+    ax.set_ylabel("IoU vs. corrected ground truth (external + your paint corrections)")
     ax.set_title("(l) MLP candidate vs. current production, trained on the REAL production recipe")
     ax.legend(frameon=False, loc="upper right")
     savefig(fig, "fig_l_mlp_production_candidate.png")

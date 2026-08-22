@@ -1,6 +1,6 @@
 """
 Rebuild the feature/ground-truth cache from FLATFIELDED images instead of
-raw ones, reusing the existing Ilastik-derived ground-truth masks.
+raw ones, reusing the existing externally-derived ground-truth masks.
 
 Why: the current raw-trained model generalizes badly across specimen
 types. Measured root cause -- its dominant learned rule is "broad dark
@@ -67,7 +67,7 @@ def flatfield_path_for(raw_path):
 
 
 def main():
-    manifest = {"images": [], "note": "flatfielded features + reused Ilastik-derived GT masks"}
+    manifest = {"images": [], "note": "flatfielded features + reused externally-derived GT masks"}
 
     for pair in bd.PAIRS:
         name = pair["name"]

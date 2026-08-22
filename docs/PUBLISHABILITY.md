@@ -6,18 +6,18 @@ come off. Recorded because the negative result changes what can honestly be clai
 ## Not publishable: the architecture
 
 Prior art twice over. "Engineered multiscale filters plus a shallow pixel classifier" is
-ilastik and ZEISS ZEN Intellesis, which has shipped VGG19 activations into a 25-tree
+external and ZEISS ZEN Intellesis, which has shipped VGG19 activations into a 25-tree
 RandomForest since ~2017 — from the vendor that builds the Xradia TXM this data comes from.
 "Frozen foundation-model embeddings plus a shallow classifier in an interactive app" is
 FeatureForest (npj Imaging 2025, MobileSAM at 320 features/px against this project's 273),
 SAMBA (arXiv 2312.04197) and napari-convpaint (Cell Reports Methods 2026, which benchmarks
-108,642 feature combinations across VGG16/DINOv2/Cellpose/ilastik). There is no architectural
+108,642 feature combinations across VGG16/DINOv2/Cellpose/external). There is no architectural
 novelty claim available, and a reviewer will know these tools.
 
 ## Not publishable: the accuracy
 
 Held-out IoU 0.815–0.839 rests on four dense ground-truth images, one specimen group, all
-wide-open cracks at ~65 px median width, with Ilastik-derived labels and no second annotator.
+wide-open cracks at ~65 px median width, with externally-derived labels and no second annotator.
 n = 4 floors an exact two-sided sign test at p = 0.125, so nothing here can be significant.
 And in this project's own easy width regime the best published figure is Dice 0.964 (Riesz
 Networks) against this project's Dice 0.898–0.912 — roughly what published methods score at

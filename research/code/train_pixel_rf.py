@@ -6,7 +6,7 @@ approach (see txm_features.py docstring for the full story): instead of
 accepting/rejecting Otsu-found candidate regions (which structurally can't
 recover the ~18-31% true crack area from an initial mask that only covers
 ~1.1-1.3%), we train a classifier directly on a 17-feature-per-pixel stack
-against Ilastik-derived ground truth, and evaluate honestly with
+against externally-derived ground truth, and evaluate honestly with
 leave-one-image-out (LOIO) cross-validation across the 4 labeled images.
 
 Usage:

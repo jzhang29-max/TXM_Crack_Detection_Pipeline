@@ -12,7 +12,7 @@ IoU only exists for the 4 B2 images, and a model can score well there while
 still flooding a Wrought frame or hallucinating crack in an undamaged
 specimen, which is precisely what happened repeatedly in this project:
 
-  1. ACCURACY   mean IoU over the 4 Ilastik ground-truth images (B2 only --
+  1. ACCURACY   mean IoU over the 4 external reference images (B2 only --
                 the only pixel-level truth that exists).
   2. FALSE POSITIVE RATE  mean predicted area over the 6 user-confirmed
                 CRACK-FREE specimens. Should be ~0. This is the metric the

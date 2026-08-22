@@ -2,7 +2,7 @@
 The SAM experiment matrix: does Meta's Segment Anything beat the deployed
 17-feature pixel classifier on TXM crack images?
 
-Scored on the same 4 Ilastik ground-truth images, with the same
+Scored on the same 4 external reference images, with the same
 metrics_from_pred, as every other model in this project.
 
 CONDITIONS -- split by whether they could ever run in deployment:

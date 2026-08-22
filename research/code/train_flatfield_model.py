@@ -1,7 +1,7 @@
 """
 Train a crack classifier on FLATFIELDED images.
 
-Bootstrap labels come from the 4 Ilastik-derived ground-truth masks
+Bootstrap labels come from the 4 externally-derived ground-truth masks
 (reused unchanged -- flatfielding is a per-pixel intensity correction and
 moves nothing geometrically) plus every existing paint-tool correction,
 whose features are recomputed from the FLATFIELDED counterpart of each
@@ -93,7 +93,7 @@ def main():
 
     X_parts, y_parts, w_parts = [], [], []
 
-    # --- bootstrap: the 4 Ilastik GT images, flatfielded features ---
+    # --- bootstrap: the 4 external GT images, flatfielded features ---
     with open(os.path.join(CACHE_DIR, "manifest.json")) as f:
         manifest = json.load(f)
     for img in manifest["images"]:

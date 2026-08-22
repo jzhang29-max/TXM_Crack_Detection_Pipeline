@@ -7,7 +7,7 @@ since a TXM correction is already just labeled pixels, not a candidate
 region needing to be merged into a review CSV.
 
 What counts as training signal:
-  1. The original 4-image Ilastik-derived ground truth (dataset_cache/),
+  1. The original 4-image externally-derived ground truth (dataset_cache/),
      sampled at BOOTSTRAP_N_PER_CLASS_PER_IMAGE (default 100,000/class/image).
   2. Every pixel a human explicitly corrected in the paint tool
      (paint/corrections/<name>_correction.npy: 1=forced crack,
@@ -21,12 +21,12 @@ These two defaults (bootstrap=100k, correction weight=1.0) are NOT
 arbitrary -- they're the result of a real regression chase, worth knowing
 before changing them:
   - An earlier version used correction_weight=5.0 (treating a human
-    correction as 5x more trustworthy per-pixel than the Ilastik
+    correction as 5x more trustworthy per-pixel than the external
     bootstrap). Combined with the correction pool now spanning 12 images
     instead of 4, that 5x weight let corrections dominate the loss so
     heavily that the model's fit on images' own *original* ground truth
     measurably regressed -- verified via IoU against a "corrected ground
-    truth" (Ilastik + overrides) that isn't just stale-label bias.
+    truth" (external + overrides) that isn't just stale-label bias.
   - Lowering the weight alone only partially fixed it. The real fix was
     also raising BOOTSTRAP_N_PER_CLASS_PER_IMAGE from 30k to 100k, so the
     original clean 4-image signal isn't so heavily outnumbered in raw
@@ -133,7 +133,7 @@ def fit_with_sample_weight(clf, X, y, sample_weight):
 
 def load_bootstrap_samples(rng):
     """Same balanced-sampling recipe as train_pixel_hgb.py, from the cached
-    Ilastik-derived ground truth."""
+    externally-derived ground truth."""
     X_parts, y_parts, w_parts = [], [], []
     for feat_path in sorted(glob.glob(os.path.join(DATASET_CACHE_DIR, "*_features.npy"))):
         name = os.path.basename(feat_path)[: -len("_features.npy")]
@@ -225,7 +225,7 @@ def load_correction_samples(correction_weight, rng, max_per_class_per_image=CORR
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--correction-weight", type=float, default=1.0,
-                     help="sample-weight multiplier for human-corrected pixels relative to bootstrapped Ilastik pixels "
+                     help="sample-weight multiplier for human-corrected pixels relative to bootstrapped external pixels "
                           "(1.0 = equal footing; see module docstring for why higher values caused a real regression)")
     ap.add_argument("--neg-cap", type=int, default=CORRECTION_N_PER_CLASS_PER_IMAGE,
                      help="max force-not-crack px per corrected image. MUST be tuned to keep the "
@@ -241,7 +241,7 @@ def main():
 
     rng = np.random.RandomState(0)
 
-    print("Loading bootstrapped Ilastik-derived samples (dataset_cache/)...")
+    print("Loading bootstrapped externally-derived samples (dataset_cache/)...")
     X_boot, y_boot, w_boot = load_bootstrap_samples(rng)
 
     print("Loading human correction samples (paint/corrections/)...")

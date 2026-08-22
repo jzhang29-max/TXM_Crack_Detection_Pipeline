@@ -5,7 +5,7 @@ Rationale for this variant (see PROJECT CONTEXT / dataset_cache/manifest.json
 and txm_features.py docstring for the full story): the earlier region-
 candidate-classifier approach failed because it could only accept/reject
 Otsu-derived candidate regions that already covered ~1-1.3% of the image,
-against a true crack extent of 18-31% (per Ilastik ground truth). Skipping
+against a true crack extent of 18-31% (per external reference). Skipping
 region proposal entirely and training a genuine per-pixel classifier on a
 17-feature multi-scale stack (raw intensity, Gaussian smoothing at sigma =
 2..64, gradient magnitude, Laplacian, local texture) lets the model use the

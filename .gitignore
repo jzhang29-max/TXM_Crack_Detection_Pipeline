@@ -1,6 +1,6 @@
 # Regeneratable feature/ground-truth cache -- rebuild with:
 #   python3 code/build_dataset.py
-# (2GB+, and reconstructable from the raw TXM images + Ilastik exports on
+# (2GB+, and reconstructable from the raw TXM images + external exports on
 # Desktop, which live outside this repo anyway)
 dataset_cache/
 

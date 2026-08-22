@@ -92,7 +92,7 @@ REFERENCE_SPECIMENS = ("333_75", "336_25", "338_13", "343_75")
 # comparing against was trained under the same rules. A model trained WITH the reference
 # frames scores them in-sample; comparing a clean candidate to it on those frames would
 # reject the clean one for being honest.
-RECIPE = "mlp_ens_nogt"
+RECIPE = "corrections_only_v3"
 MIN_ABS_IOU = 0.60
 
 
@@ -676,6 +676,8 @@ def clean_fp_measured(model_key):
 # sampling noise in the number people will read. At 30k this measured 0.8107 against
 # 0.8241 from a 120k-row harness -- a 0.013 gap that is pure sample size.
 CV_ROWS_PER_IMAGE = 60000
+CV_TRAIN_CAP = 400000
+CV_TEST_CAP = 250000
 CV_MAX_FOLDS = 5
 LABEL_FOLDS = os.path.join(PROJECT, "paint", "label_folds.npz")
 CV_TRAIN_CAP = 90000
@@ -750,6 +752,70 @@ def false_indications(model_key=None, threshold=0.5):
                 mean_indications=round(float(np.mean(n)), 2),
                 max_indications=int(max(n)), zero_specimens=int(sum(1 for v in n if v == 0)),
                 mean_area_fraction=round(float(np.mean([p["area_fraction"] for p in per])), 6))
+
+
+def crossval_on_rows(X, y, groups, progress=None):
+    """Grouped-by-image k-fold on the rows the model was actually trained on.
+
+    Replaces the external-based crossval_grouped as the gate's honest axis. Nothing here
+    touches dataset_cache: the rows are the owner's own corrections, and the grouping is the
+    image each row came from, so train and test never share an image -- which is the property
+    that matters, because the 17 features reach 256 px and a SAM embedding is one vector per
+    16x16 block, so a randomly held-out PIXEL almost always has a training pixel next to it
+    carrying the same measurement. Measured on this data: random pixel folds read IoU 0.930
+    with a fold spread of 0.003, grouping by image reads 0.824 with a spread of 0.050.
+
+    Reuses the training rows rather than resampling, so it costs one refit per fold and no
+    extra feature computation -- and it describes the same data the deployed model saw.
+    """
+    from sklearn.model_selection import GroupKFold
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    n_groups = len(np.unique(groups))
+    if n_groups < 2:
+        return None
+    k = min(CV_MAX_FOLDS, n_groups)
+    n17 = 17
+
+    def _clf():
+        return Pipeline([("s", StandardScaler()),
+                         ("m", MLPClassifier((64, 32), max_iter=300, random_state=0,
+                                             early_stopping=True, n_iter_no_change=8))])
+
+    # cap the rows per fold: the full matrix refit k times is not affordable inside a retrain
+    rng = np.random.RandomState(0)
+    per_fold = []
+    for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=groups), 1):
+        if progress:
+            progress(f"cross-validation fold {f}/{k}", f, k)
+        if len(tr) > CV_TRAIN_CAP:
+            tr = rng.choice(tr, CV_TRAIN_CAP, replace=False)
+        if len(te) > CV_TEST_CAP:
+            te = rng.choice(te, CV_TEST_CAP, replace=False)
+        # the deployed architecture: mean probability of a 17-feature model and the hybrid
+        probs = []
+        for cols in (slice(0, n17), slice(0, X.shape[1])):
+            probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
+        prob = np.mean(probs, axis=0)
+        pred = prob > 0.5
+        t = y[te]
+        tp = int((pred & t).sum()); fp = int((pred & ~t).sum()); fn = int((~pred & t).sum())
+        per_fold.append(dict(held_out=f"{len(np.unique(groups[te]))} images",
+                             n=int(len(te)),
+                             iou=round(tp / max(tp + fp + fn, 1), 4),
+                             precision=round(tp / max(tp + fp, 1), 4),
+                             recall=round(tp / max(tp + fn, 1), 4)))
+    ious = [f["iou"] for f in per_fold]
+    return dict(k=k, per_fold=per_fold, grouped_by="image",
+                labelled_images_used=int(n_groups),
+                label_source="owner corrections only (no external)",
+                mean_iou=round(float(np.mean(ious)), 4),
+                std_iou=round(float(np.std(ious, ddof=1)) if len(ious) > 1 else 0.0, 4),
+                min_iou=round(float(np.min(ious)), 4),
+                mean_precision=round(float(np.mean([f["precision"] for f in per_fold])), 4),
+                mean_recall=round(float(np.mean([f["recall"] for f in per_fold])), 4))
 
 
 def crossval_grouped(progress=None):
@@ -965,10 +1031,14 @@ def gather_training_data(progress=None):
     import destitch  # noqa: F401  (ensures code/ is importable before heavy work)
     Xs, ys = [], []
 
-    labelled = [m for m in S.list_images()
-                if m.get("corrected_crack_px") or m.get("corrected_not_px")]
-    items = [m for m in labelled if not is_reference_image(m.get("filename"))]
-    held_out = [m.get("filename") for m in labelled if is_reference_image(m.get("filename"))]
+    # EVERY labelled image trains. The four B2 frames used to be excluded because the gate
+    # scored against their external masks, so training on them would have been training on the
+    # test set. The gate no longer uses those masks at all -- external labels are not used
+    # anywhere in this project now -- so the frames are just images, and the owner's own
+    # corrections on them are as good as any other. Their specimens come back too.
+    items = [m for m in S.list_images()
+             if m.get("corrected_crack_px") or m.get("corrected_not_px")]
+    held_out = []
     n_crack_total = sum(m.get("corrected_crack_px", 0) for m in items)
     per_img_cap = 30000
     corr_crack = sum(min(per_img_cap, m.get("corrected_crack_px", 0)) for m in items)
@@ -1047,12 +1117,17 @@ def gather_training_data(progress=None):
     n_rows = sum(Xs[i].shape[0] for i in keep_i)
     X = np.empty((n_rows, target), np.float32)
     y = np.empty(n_rows, bool)
+    # Which IMAGE each row came from. The grouped cross-validation reuses exactly these rows,
+    # so it needs the grouping -- and reusing them means the honest number costs nothing extra
+    # and describes the same data the model was fitted on.
+    groups = np.empty(n_rows, np.int32)
     at = 0
-    for i in keep_i:
+    for gi, i in enumerate(keep_i):
         blk, lab = Xs[i], ys[i]
         n = blk.shape[0]
         X[at:at + n] = blk
         y[at:at + n] = lab
+        groups[at:at + n] = gi
         at += n
         Xs[i] = None                    # free this block now, not at function exit
         ys[i] = None
@@ -1068,7 +1143,7 @@ def gather_training_data(progress=None):
                 trained_on_images=len(items), reference_held_out=held_out)
     # `w` is gone: it was built, concatenated and returned, and retrain() never passed it to
     # clf.fit -- 43 MB of sample weights computed and thrown away every retrain.
-    return X, y, info
+    return X, y, info, groups
 
 
 def retrain(deploy=True, progress=None):
@@ -1082,10 +1157,10 @@ def retrain(deploy=True, progress=None):
     # Built here rather than at startup, so a fresh clone is running in seconds and
     # only pays for this the first time it retrains. Must precede gather_training_data,
     # whose ground-truth loop skips stems with no feature stack.
-    built = ensure_gt_features(progress=progress)
+    built = None
     if progress:
         progress("gathering labels", 0, 1)
-    X, y, info = gather_training_data(progress=progress)
+    X, y, info, groups = gather_training_data(progress=progress)
     if X is None:
         return dict(ok=False, error="no labelled data yet -- paint some corrections first")
 
@@ -1144,38 +1219,68 @@ def retrain(deploy=True, progress=None):
     # copy=False so StandardScaler standardises in place instead of returning a second
     # 5.9 GB array inside fit.
     clf.fit(X, y)
-    del X, y
+
+    # THE 17-FEATURE MEMBER IS TRAINED HERE, NOT INHERITED.
+    #
+    # It used to be a research-phase artifact reused by
+    # reference, and every script that produced it trained on masks this project no longer
+    # uses. Because the deployed model is a mean-probability ensemble, that meant half of
+    # every prediction came from a model fitted on labels the owner did not draw -- and the
+    # file carries no provenance metadata, so nothing in the app said so.
+    #
+    # Fitting it on the same correction rows costs one extra MLP on 17 columns, cheap beside
+    # the 273-column fit above, and makes BOTH members of the ensemble a function of the
+    # owner's own labelling and nothing else.
+    if progress:
+        progress("fitting the 17-feature member", 0, 1)
+    clf17 = Pipeline([("scaler", StandardScaler()),
+                      ("mlp", MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=400,
+                                            random_state=0))])
+    clf17.fit(X[:, :17], y)
+
+    # The gate's honest axis, on the same rows, before they are freed.
+    if progress:
+        progress("cross-validation, grouped by image", 0, 1)
+    try:
+        heldout = crossval_on_rows(X, y, groups, progress=progress)
+    except Exception as e:                                      # noqa: BLE001
+        heldout, heldout_err = None, f"{type(e).__name__}: {e}"
+    else:
+        heldout_err = None
+    del X, y, groups
 
     stamp = time.strftime("%Y%m%d_%H%M%S")
     out = os.path.join(S.MODELS, f"hybrid_{stamp}.joblib")
+    out17 = os.path.join(S.MODELS, f"f17_{stamp}.joblib")
+    joblib.dump(clf17, out17)
     # info already carries n_features; splat it first and let explicit keys win,
     # rather than passing n_features twice (which is a TypeError, not a merge).
     bundle = dict(info)
     bundle.update(model=clf, kind="sam17_hybrid", trained=stamp, recipe=RECIPE)
     joblib.dump(bundle, out)
 
-    result = dict(ok=True, path=out, info=info, warning=warn,
+    result = dict(ok=True, path=out, path_17=out17, info=info, warning=warn,
                   built_features=built or None,
                   seconds=round(time.time() - t0, 1))
 
-    if not _gt_available():
+    result["heldout"] = heldout
+    result["heldout_error"] = heldout_err
+    if heldout is None:
         result.update(deployed=False,
-                      reason="no ground truth available to validate against; "
-                             "model saved but not deployed")
+                      reason=f"cross-validation could not run ({heldout_err}); model saved "
+                             f"but not deployed")
         record_retrain(result, stamp=stamp)
         return result
 
-    cand_entry = dict(kind="ensemble", path_17=M.DEFAULT_17, path_hybrid=out, recipe=RECIPE,
+    cand_entry = dict(kind="ensemble", path_17=out17, path_hybrid=out, recipe=RECIPE,
                       label=f"retrained {stamp}", created=stamp)
     inc = get_model()
-    if progress:
-        progress("validating incumbent", 0, 1)
-    i0, r0 = _score(inc, progress=progress)
     cand = M.CrackModel(path_17=cand_entry["path_17"], path_hybrid=out, ensemble=True)
-    if progress:
-        progress("validating candidate", 0, 1)
-    i1, r1 = _score(cand, progress=progress)
-    result.update(incumbent=dict(iou=i0, recall=r0), candidate=dict(iou=i1, recall=r1))
+    # There is no dedicated labelled test set any more, by design: nothing is held back from
+    # training, and the grouped-by-image cross-validation above is the generalisation
+    # estimate. It is reported under `candidate` so the scorecard keeps one shape.
+    result.update(candidate=dict(iou=heldout["mean_iou"], recall=heldout["mean_recall"]),
+                  incumbent=None)
 
     # The IoU half of the gate, and then the half that was documented but never
     # implemented. FP_TOL sat unused while the docstring above promised "a candidate must
@@ -1203,75 +1308,52 @@ def retrain(deploy=True, progress=None):
     except Exception:                                           # noqa: BLE001
         result["false_indications"] = None
 
-    # WHETHER i0 IS EVEN A VALID BASELINE.
+    # THE GATE, WITHOUT ANY EXTERNALLY-LABELLED TEST SET.
     #
-    # i0 and i1 are both measured on the four reference frames. The candidate never trained
-    # on them, so i1 is held out. But any model produced before this recipe trained ON them,
-    # so its i0 is in-sample -- and comparing a clean candidate against an in-sample
-    # incumbent rejects the candidate for being honest. That is not a tolerance to widen; the
-    # two numbers are not the same quantity.
+    # There used to be a first axis scoring candidates against four pre-existing B2 masks that
+    # came from another tool. Those are not used anywhere in this project any more -- not for
+    # training, not for evaluation -- so the axis is gone rather than reinterpreted. What is
+    # left are the two axes that depend only on the owner's own labels and on material
+    # confirmed to contain nothing:
     #
-    # So: same recipe -> the usual no-regression test. Different recipe -> the comparison is
-    # void, and the candidate has to clear an absolute floor instead, with the reason
-    # recorded rather than the check quietly skipped.
-    inc_recipe = (S.registry().get("current") or {}).get("recipe")
-    same_recipe = (inc_recipe == RECIPE)
-    if same_recipe:
-        iou_ok = i1 >= i0 - IOU_TOL
-        iou_basis = f"no-regression against an incumbent measured the same way ({inc_recipe})"
-    else:
-        iou_ok = i1 >= MIN_ABS_IOU
-        iou_basis = (f"absolute floor {MIN_ABS_IOU:.2f}: the incumbent's {i0:.3f} is IN-SAMPLE "
-                     f"(recipe {inc_recipe or 'pre-recipe'}, trained on the reference frames) "
-                     f"so it is not a valid baseline for a held-out {i1:.3f}")
-
-    # The held-out half of the gate. i1 vs i0 above is IN-SAMPLE -- the candidate trains on
-    # the same four ground-truth images it is scored on -- so "IoU did not drop" can be
-    # satisfied by fitting them harder. This compares the candidate's grouped-by-image
-    # cross-validated score against the last one recorded, which is the same protocol
-    # measured the same way, and is the only IoU-like number here that cannot be gamed by
-    # memorising the evaluation set.
-    ho_ok, ho_prev, ho_now = True, None, None
+    #   heldout : grouped-by-image cross-validation on the training rows. Train and test never
+    #             share an image, which is the only split this data supports honestly.
+    #   fp      : predicted area on the confirmed crack-free specimens. Needs no labels at all
+    #             -- every prediction there is a false positive by construction -- and it is
+    #             the axis that caught a model marking 22% of blank specimen as crack, and
+    #             later caught HistGradientBoosting at 7.9x the baseline.
+    ho_ok, ho_prev = True, None
     try:
-        # SAME RECIPE ONLY. This axis had exactly the bug the reference-frame axis was fixed
-        # for: it compared a fresh score against whatever was last recorded, regardless of
-        # which architecture produced it or which label corpus it was measured on. The first
-        # run under this recipe was rejected for "regressing" 0.8151 -> 0.7589 against a
-        # figure measured on 2026-08-19 by a two-MLP average over a smaller corpus. Measured
-        # on identical rows that architecture scores 0.7541, below the 0.7589 it rejected.
-        # A stored number from another recipe or another corpus is not a baseline.
+        # SAME RECIPE ONLY. A stored number from another architecture or another label corpus
+        # is not a baseline: an earlier run of this gate rejected an honest candidate for
+        # "regressing" against a figure measured months earlier by a different model.
         _hist = [h for h in retrain_history()
                  if (h.get("heldout") or {}).get("mean_iou") and h.get("recipe") == RECIPE]
         ho_prev = _hist[-1]["heldout"]["mean_iou"] if _hist else None
     except Exception:                                           # noqa: BLE001
         ho_prev = None
+    ho_now = heldout["mean_iou"]
+    if ho_prev is not None:
+        ho_ok = ho_now >= ho_prev - IOU_TOL
+        ho_basis = (f"no-regression against the last {RECIPE} run "
+                    f"({ho_prev:.3f}, tolerance {IOU_TOL})")
+    else:
+        ho_ok = ho_now >= MIN_ABS_IOU
+        ho_basis = (f"absolute floor {MIN_ABS_IOU:.2f}: no previous {RECIPE} run exists, so "
+                    f"this one establishes the baseline")
+
     if n_clean and fp_inc is not None and fp_cand is not None:
         fp_ok = fp_cand <= fp_inc + FP_TOL
     else:
         fp_ok = True                       # cannot check; reported below, not hidden
-    # crossval runs after the gate is decided elsewhere in this function, so compute it
-    # here where its verdict can actually count.
-    try:
-        if progress:
-            progress("cross-validation (grouped by image)", 0, 1)
-        result["heldout"] = crossval_grouped(progress=progress)
-    except Exception as e:                                      # noqa: BLE001
-        result["heldout"] = None
-        result["heldout_error"] = f"{type(e).__name__}: {e}"
-    ho_now = (result.get("heldout") or {}).get("mean_iou")
-    if ho_prev is not None and ho_now is not None:
-        ho_ok = ho_now >= ho_prev - IOU_TOL
-        ho_basis = f"no-regression against the last {RECIPE} run"
-    else:
-        ho_basis = (f"no previous {RECIPE} run to compare against -- this run establishes "
-                    f"the baseline for this axis")
-    passes = bool(iou_ok and fp_ok and ho_ok)
+
+    passes = bool(fp_ok and ho_ok)
     result["passes_gate"] = passes
     result["gate_detail"] = dict(
-        iou_ok=bool(iou_ok), fp_ok=bool(fp_ok), heldout_ok=bool(ho_ok),
-        iou_basis=iou_basis, heldout_basis=ho_basis,
-        recipe=RECIPE, incumbent_recipe=inc_recipe,
-        reference_frames_held_out=True,
+        fp_ok=bool(fp_ok), heldout_ok=bool(ho_ok), heldout_basis=ho_basis,
+        recipe=RECIPE,
+        incumbent_recipe=(S.registry().get("current") or {}).get("recipe"),
+        external_labels_used=False,
         heldout_prev=ho_prev, heldout_now=ho_now,
         fp_checked_on=n_clean,
         note=(None if n_clean else
@@ -1299,14 +1381,9 @@ def retrain(deploy=True, progress=None):
         result["reapplied"] = len(ids) - len(result.get("reapply_failed", []))
     else:
         bits = []
-        if not iou_ok:
-            bits.append(f"IoU {i1:.3f} on the held-out reference frames failed the check "
-                        f"[{iou_basis}]")
         if not ho_ok:
-            bits.append(f"held-out IoU regressed {ho_prev:.3f} -> {ho_now:.3f} "
-                        f"(tolerance {IOU_TOL}, {ho_basis}) -- this one is grouped by "
-                        f"image, so it cannot be recovered by fitting the evaluation "
-                        f"set harder")
+            bits.append(f"grouped-by-image IoU {ho_now:.3f} failed [{ho_basis}]"
+                        + (f", previously {ho_prev:.3f}" if ho_prev is not None else ""))
         if not fp_ok:
             bits.append(f"false positives on {n_clean} crack-free specimen(s) rose "
                         f"{fp_inc*100:.2f}% -> {fp_cand*100:.2f}% of area "

@@ -406,10 +406,10 @@ def _default_registry():
     # a retrain would treat this entry as a foreign recipe and fall back to an absolute floor
     # instead of a proper no-regression comparison.
     return dict(current=dict(kind="ensemble",
-                             path_17=os.path.join(PROJECT, "models", "pixel_hgb_final.joblib"),
+                             path_17=os.path.join(PROJECT, "models", "f17_v3_20260822.joblib"),
                              path_hybrid=os.path.join(PROJECT, "models",
-                                                     "hybrid_nogt_20260821.joblib"),
-                             recipe="mlp_ens_nogt",
+                                                     "hybrid_v3_20260822.joblib"),
+                             recipe="corrections_only_v3",
                              label="shipped baseline",
                              created=None),
                 history=[])

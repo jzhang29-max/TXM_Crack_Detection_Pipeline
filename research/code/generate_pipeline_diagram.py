@@ -14,7 +14,7 @@ WHAT CHANGED FROM THE PREVIOUS VERSION, and why the old figure was wrong:
     MLP(17 + SAM ViT-H 256-d); the old figure showed one MLP on 17 features.
   * (D) documented the legacy hysteresis post-processing, which is off by default because it
     measurably deletes thin crack (-0.08 IoU). The default is a threshold plus speck pruning.
-  * the gate had five checks and trained on Ilastik-derived bootstrap labels. It now has
+  * the gate had five checks and trained on externally-derived bootstrap labels. It now has
     three recipe-aware axes, and those reference frames are held OUT of training.
 
 Usage:

@@ -19,7 +19,7 @@ flatfielded counterparts at `~/Desktop/TXM DATA processed/flatfielded/<group>/`.
 
 ### CORRECTION — the flatfielded switch was a REGRESSION. Pipeline is back on RAW.
 
-Measured on the 4 Ilastik ground-truth images (the only pixel-level truth
+Measured on the 4 external reference images (the only pixel-level truth
 that exists), IoU and recall:
 
 | model | input | mean IoU | LARGE recall |
@@ -240,7 +240,7 @@ attempts were reverted because they violated them:
 
 > **SCOPE of rules 1 and 2 — settled 2026-08-12, do not re-open.** Rules 1 and 2
 > describe the AM / Wrought / B3 frames, which sit at lower damage. They do NOT
-> describe the four B2 Ilastik ground-truth images (333.75-343.75 lbf), where
+> describe the four B2 external reference images (333.75-343.75 lbf), where
 > the owner has confirmed the crack is genuinely WIDE OPEN and the broad dark
 > band IS the crack.
 >
@@ -280,7 +280,7 @@ labelling needs the owner's strokes in the paint tool.
 | source | kind | volume | trust |
 |---|---|---|---|
 | owner's hand-drawn strokes, 12 B2 images | crack + not-crack | — | HIGH, restored verbatim from git commit `df83a35` after the revert |
-| 4 Ilastik-derived ground-truth masks (B2) | crack | `dataset_cache_flatfield/` | HIGH — the only pixel-level truth that exists |
+| 4 externally-derived ground-truth masks (B2) | crack | `dataset_cache_flatfield/` | HIGH — the only pixel-level truth that exists |
 | off-specimen geometric exclusion, all 71 | not-crack | 80.3M px | HIGH — imaging geometry, not a morphology judgment |
 | 6 owner-confirmed crack-free specimens | not-crack | 91.6M px | HIGH — whole specimen interior |
 | false-positive cleanup (wedge margin, edge ring, round speckle) | not-crack | 43.3M px | MEDIUM — audit later showed wedge+rim still dominant, so it was too weak |
@@ -289,7 +289,7 @@ labelling needs the owner's strokes in the paint tool.
 ### MEASURED CORRECTION, 2026-08-18: the not-crack labels are not all HIGH
 
 The three HIGH ratings above were not measured when they were written. They now have
-been, against the only thing that can settle it — the four Ilastik ground-truth masks.
+been, against the only thing that can settle it — the four external reference masks.
 **On those four images, 22–28% of this archive's force-not-crack pixels sit on real
 crack:**
 

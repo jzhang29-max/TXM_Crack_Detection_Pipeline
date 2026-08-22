@@ -4,7 +4,7 @@ champion (raw_v4) was trained on.
 
 The point of this file is that the FEATURE SET is the only thing that changes.
 It mirrors retrain_with_corrections.py's sampling recipe verbatim -- the same
-bootstrap cap (100k/class/image from the 4 Ilastik masks), the same correction
+bootstrap cap (100k/class/image from the 4 external masks), the same correction
 cap (--neg-cap, default 2000, which is the value that produced raw_v4), the
 same correction weight, the same RNG seed, the same architecture from
 build_classifier() -- and then appends SAM's 256 embedding channels to each
@@ -133,7 +133,7 @@ def hybrid_at(name, rows, cols):
 
 
 def load_bootstrap(rng):
-    """4 Ilastik masks. Same caps and RNG order as retrain_with_corrections."""
+    """4 external masks. Same caps and RNG order as retrain_with_corrections."""
     X, y, w = [], [], []
     for feat_path in sorted(glob.glob(os.path.join(DATASET_CACHE_DIR, "*_features.npy"))):
         stem = os.path.basename(feat_path)[: -len("_features.npy")]
@@ -216,7 +216,7 @@ def main():
     args = ap.parse_args()
 
     rng = np.random.RandomState(SEED)
-    print("Bootstrap samples (4 Ilastik masks), hybrid features...")
+    print("Bootstrap samples (4 external masks), hybrid features...")
     Xb, yb, wb = load_bootstrap(rng)
     print("\nCorrection samples (paint tool), hybrid features...")
     Xc, yc, wc = load_corrections(args.neg_cap, args.correction_weight, rng)

@@ -2,7 +2,7 @@
 Final outputs from the ORIGINAL RAW-trained model -- the best model by the only
 metric that has ground truth behind it.
 
-Measured on the 4 Ilastik ground-truth images, IoU:
+Measured on the 4 external reference images, IoU:
     ORIG raw MLP   0.779   <- this script uses it
     ORIG raw HGB   0.764
     flatfield MLP  0.610

@@ -11,7 +11,7 @@ What it does, in order:
      separate regressions in this project. Measured on the raw model,
      24% crack -> IoU 0.649, 38% -> 0.744, 44% -> 0.773. The sweep finds the
      balance point for whatever label mix now exists instead of guessing it.
-  3. Scores every candidate on BOTH axes against the 4 Ilastik ground-truth
+  3. Scores every candidate on BOTH axes against the 4 external reference
      images: IoU/recall (does it find real cracks) AND predicted area on the
      6 owner-confirmed crack-free specimens (does it invent cracks).
   4. Deploys the best candidate ONLY if it beats the incumbent on IoU within

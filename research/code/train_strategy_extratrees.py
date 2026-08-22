@@ -1,6 +1,6 @@
 """
 Strategy-search candidate: ExtraTreesClassifier, trained on the bootstrapped
-Ilastik samples PLUS the human paint-tool corrections from all 12 opened
+external samples PLUS the human paint-tool corrections from all 12 opened
 images, using the corrected-sampling recipe in retrain_with_corrections.py
 (load_bootstrap_samples / load_correction_samples) -- i.e. this is the
 "ExtraTrees, but with the capping fix that avoided the LARGE-vignetting
@@ -10,7 +10,7 @@ This script is intentionally standalone (does not touch models/pixel_hgb_v3
 or pixel_hgb_final) so it can be compared side-by-side against both.
 
 Evaluation is against a *corrected* ground truth per image: the original
-Ilastik dataset_cache/<key>_gt.npy, overridden pixel-by-pixel wherever the
+external dataset_cache/<key>_gt.npy, overridden pixel-by-pixel wherever the
 user's paint/corrections/<raw_name>_correction.npy says so (1 -> force
 True/crack, 2 -> force False/not-crack). This is the only fair comparison
 once corrections exist for an image -- see project background.
@@ -110,7 +110,7 @@ def main():
 
     rng = np.random.RandomState(0)
 
-    print("Loading bootstrapped Ilastik-derived samples (dataset_cache/)...")
+    print("Loading bootstrapped externally-derived samples (dataset_cache/)...")
     X_boot, y_boot, w_boot = load_bootstrap_samples(rng)
 
     print(f"Loading human correction samples (weight={CORRECTION_WEIGHT}, "

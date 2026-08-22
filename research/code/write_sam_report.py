@@ -121,7 +121,7 @@ def main():
       "supervised head, it is competitive with the hand-crafted features, and "
       "combining the two is better than either alone.")
     A("")
-    A("Everything below is measured on the four Ilastik ground-truth images "
+    A("Everything below is measured on the four external reference images "
       "(the only pixel-level truth that exists for this project), with the same "
       "`metrics_from_pred` and the same leave-one-image-out protocol as every "
       "other model in the repository. Reproduce with:")

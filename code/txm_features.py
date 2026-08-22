@@ -5,7 +5,7 @@ Why a pixel classifier at all, instead of the region-candidate classifier
 the SEM tool (detect_cracks.py) uses: on the TXM dataset, the region
 classifier's ceiling is set by its *initial* Otsu-based darkness mask, which
 in practice only covers ~1.1-1.3% of the image while the real crack extent
-(per existing Ilastik ground truth) is 18-31%. Whether or not a candidate
+(per existing external reference) is 18-31%. Whether or not a candidate
 region gets accepted or rejected downstream can't fix an initial mask that
 never covered most of the true crack area in the first place -- the fix has
 to happen at the pixel level. This mirrors what the SEM project's own

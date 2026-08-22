@@ -177,21 +177,22 @@ real generalisation number.
 
 The model's output beside the hand-labelled truth for the same window.
 
-- **IoU 0.741, recall 0.809** on the four dense reference frames. Those frames are held out
-  of training entirely — nothing trains on them, or on corrections from their specimens — so
-  this is a generalisation number, not an in-sample one.
-- **IoU 0.763** under cross-validation grouped by image (fold sd 0.035, worst fold 0.721),
-  a second protocol over a wider set of images.
-- **0.250% of area** marked as crack on the six specimens confirmed to contain no crack, and
-  **4.0 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
+- **IoU 0.776** under cross-validation grouped by image — train and test never share an
+  image (fold sd 0.029, worst fold 0.733, precision 0.929, recall 0.824). This is the
+  headline number because it is the only one that answers "how will this do on an image it
+  has not seen".
+- **0.188% of area** marked as crack on the six specimens confirmed to contain no crack, and
+  **2.83 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
   as the NDT yardstick.
 - **100% of large flaws detected** — everything over 20 k px, which is 96.2% of all crack area.
 - Zero-shot SAM, prompted the way SAM is designed to be prompted, scores **0.23–0.36** on
   the same images.
 
-The shipped model reports 0.741 where its predecessor reported 0.940. The predecessor trained
-on the frames it was scored on; this one does not. Measured directly, that difference is
-+0.207 IoU of inflation, so the lower number is the one that describes an unseen image.
+**No external labels are used anywhere** — not in training, not in the gate. Both members of
+the ensemble are fitted on the owner's own corrections across all 71 images. Earlier models
+inherited their 17-feature member from a research artifact trained on four pre-existing masks
+made with another tool, so half of every prediction came from labels the owner had not drawn.
+That is gone.
 
 Full per-specimen breakdowns, the validation protocol and a 78-variant architecture sweep
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
@@ -223,8 +224,9 @@ app/static/index.html  the whole frontend
 code/                  features, destitch, flatfield, SAM harness, batch utilities
 images/                all 71 raw TXM images, bit-exact float32 TIFF (predictor 3)
 dataset_cache/         the reference ground-truth images (needed to validate a retrain)
-models/                the two shipped models: pixel_hgb_final (17-feature member)
-                       and hybrid_nogt_20260821 (SAM+17 member), averaged at predict time
+models/                the two shipped models: f17_v3 (17-feature member) and hybrid_v3
+                       (SAM+17 member), averaged at predict time. Both trained only on
+                       the corrections in this repo
 app_data/              your uploads, embeddings and retrained models (gitignored)
 ```
 
