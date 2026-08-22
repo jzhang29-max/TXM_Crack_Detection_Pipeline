@@ -85,16 +85,70 @@ docstring records that the hybrid alone "loses badly on the one 23.5 MP mosaic,"
 a weaker 17-feature model is averaged in at all. SAM 2 partially repairs that specific
 failure.
 
+## The deciding axis: false positives on crack-free material
+
+Run with `python3 code/experiment_encoders_fp.py --arms sam1,sam2`. Raw numbers in
+`research/encoder_fp.json`.
+
+Trained on the owner's corrections across all 66 labelled images — the composition the
+deployed recipe uses — 962,096 paired rows, then measured on the six specimens confirmed to
+contain no crack, where every positive is by definition a false positive. Measured by uniform
+pixel sampling (250,000 px per specimen) rather than full-frame prediction: on crack-free
+material the sampled positive rate is an unbiased estimate of the predicted area fraction at
+~1/1000th the compute. Unpruned, because speck pruning cannot apply to scattered pixels —
+both arms identically so, leaving the paired difference unaffected.
+
+| specimen | SAM 1 | SAM 2 |
+|---|---|---|
+| B2_2_1_lbf | 0.384% | 0.316% |
+| B2_2_9_lbf | 0.445% | 0.560% |
+| B2_amb_mosaic_2 | 0.129% | 0.236% |
+| b3_amb | 0.186% | 0.531% |
+| b3_3_18lbf | 0.345% | 0.796% |
+| wrought_316L_fatigue_0_cycles | 0.269% | 0.191% |
+| **mean** | **0.293%** | **0.439%** |
+| worst | 0.445% | 0.796% |
+
+Paired difference **+0.146 pp** (sd 0.215, SE 0.088, n=6, t=1.66, p≈0.16). Worse on four of
+six specimens, better on two. **Inside** the gate's 0.5 pp tolerance, and not statistically
+significant.
+
+**Sanity check on the harness.** SAM 1 reads 0.293% unpruned here against the deployed
+model's 0.250% measured after pruning. Those should be close, with pruning accounting for the
+gap, and they are — evidence this measures realistic behaviour.
+
+### A false start worth recording
+
+The first version of this test trained only on the four reference frames and reported 26–33%
+false-positive area, roughly a hundred times the deployed model's 0.25%. That was a
+training-composition artifact, not an encoder property, and it was predictable from this
+project's own data: the `gt-only` arm in `research/fp_attribution.json` hits 42% FPR on
+held-out groups for the same reason — crops that are 18–30% crack teach a model to over-call.
+It also reversed the apparent magnitude: SAM 2 looked +4.5 pp worse under that composition
+and is +0.15 pp worse under the real one. A narrow training set amplified a small encoder
+difference roughly thirtyfold.
+
+It also cost three hours to discover, because that version predicted every pixel of six
+mosaics — ~200 M MLP evaluations per arm — and had finished two specimens in that time.
+Sampling replaced it.
+
 ## Decision: do not switch
 
-The gain lives entirely in a configuration that is not shipped. Capturing it would mean
-dropping the 17-only member, which forfeits the ensemble's advantage elsewhere and is
-untested on the axis that actually decides deployment.
+Three axes, one conclusion:
 
-Because every number here is scored on **labelled pixels** — and that is the exact blind spot
-that let HistGradientBoosting win every such metric and then mark 7.9× more crack-free
-specimen as crack (`REFERENCE_FRAMES_AND_HGB.md`). Against that risk, +0.001 IoU on the
-shipping model does not justify adding a second 856 MB encoder to the install.
+| axis | SAM 2 vs SAM 1 | verdict |
+|---|---|---|
+| ensemble IoU (what ships) | +0.001, p=0.87 | nothing |
+| hybrid member alone | +0.021 IoU, +0.005 AUC, p=0.029 | real |
+| crack-free false positives | +0.146 pp, p=0.16 | nominally worse, within tolerance |
+
+SAM 2's features are genuinely more discriminative in isolation. That advantage disappears in
+the model actually shipped, and it arrives alongside a nominal false-positive cost pointing
+the wrong way. Capturing the gain would mean dropping the 17-only member — forfeiting the
+ensemble's advantage elsewhere, and on the false-positive axis that is untested.
+
+Paying for a second 856 MB encoder download in every tester's install to gain +0.001 IoU is
+not a trade worth making.
 
 ## What this predicts about SAM 3
 
