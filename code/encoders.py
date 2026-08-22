@@ -74,6 +74,21 @@ def availability(name):
                        f"gated, accept the licence on https://huggingface.co/{spec['repo']} "
                        f"with your own account and authenticate -- a licence agreement "
                        f"cannot be automated.")
+    # The processor is a separate failure mode and it is NOT optional: Sam2ImageProcessor
+    # needs torchvision, which this project deliberately does not require -- the app has no
+    # use for it. Checking it here turns an ImportError traceback partway through a long run
+    # into one line at the start.
+    try:
+        getattr(transformers, spec["processor"])
+        import importlib
+        if importlib.util.find_spec("torchvision") is None:
+            return False, ("torchvision is not installed, and the image processor for this "
+                           "encoder requires it. `pip install torchvision` (it pins the "
+                           "torch version already present, so the app is unaffected). It is "
+                           "intentionally absent from requirements.txt: the app never needs "
+                           "it.")
+    except Exception as e:                                        # noqa: BLE001
+        return False, f"processor {spec['processor']} unusable: {type(e).__name__}: {e}"
     return True, "ok"
 
 
