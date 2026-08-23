@@ -304,8 +304,13 @@ def api_mask(iid):
     mkey = S.read_meta(iid).get("model_key") or "nomodel"
     # MIN_BLOB_PX is in the tag: speck pruning changes every mask, so a cache written
     # before the rule existed -- or under a different threshold -- must not be served.
+    # The corrections mode belongs in the tag for the same reason as everything else here:
+    # paste, gate and none render different masks from identical inputs, so without it the
+    # first mode rendered would be served for all three and the Advanced toggle would look
+    # broken in the most confusing way -- the URL changing, the picture not.
+    cmode = _corrections_mode()
     tag = (f"{mkey}_{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
-           f"_p{0 if pp else P.MIN_BLOB_PX}")
+           f"_p{0 if pp else P.MIN_BLOB_PX}_c{cmode}")
     cache = S.path(iid, "overlays", f"{tag}.png")
     srcs = [S.path(iid, "prob.npy"), S.path(iid, "correction.npy")]
     # Strictly older, not "not newer". Filesystem timestamps are coarse enough that an
@@ -323,7 +328,7 @@ def api_mask(iid):
     # pass the freshness test above forever -- surviving reloads and restarts.
     stamp = max([os.path.getmtime(p) for p in srcs if os.path.exists(p)] or [0])
 
-    mask = P.effective_mask(iid, threshold=thr, postprocess=pp)
+    mask = P.effective_mask(iid, threshold=thr, postprocess=pp, corrections=cmode)
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     from PIL import Image
@@ -382,7 +387,8 @@ def api_stats(iid):
     # numbers for threshold 0.50 no matter what the user was actually looking at --
     # move Sensitivity to 0.30 and the picture changed while the crack % did not.
     t, pp = _opts()
-    mask = P.effective_mask(iid, threshold=t, postprocess=pp)
+    mask = P.effective_mask(iid, threshold=t, postprocess=pp,
+                            corrections=_corrections_mode())
     if mask is not None:
         from skimage.measure import label
         m = dict(m, area_fraction=float(mask.mean()),
