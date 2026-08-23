@@ -49,15 +49,21 @@ record of how the model was arrived at.
 
 ## What the model is
 
-A mean-probability ensemble of a 17-hand-crafted-feature MLP and a SAM ViT-H + 17
-hybrid. Leave-one-image-out on the 4 external reference images, with false
-positives measured on 6 owner-confirmed crack-free specimens:
+A mean-probability ensemble of a 17-hand-crafted-feature MLP and a SAM ViT-H + 17 hybrid.
+As deployed, measured by cross-validation grouped by whole image — train and test never share
+a frame — with false positives on 6 owner-confirmed crack-free specimens:
 
-| approach | mean IoU | pixel-weighted | recall | crack-free FP |
-|---|---|---|---|---|
-| 17 features alone | 0.744 | 0.721 | 0.891 | 7.43% |
-| SAM + 17 (hybrid alone) | 0.795 | 0.719 | 0.894 | 0.14% |
-| **ensemble (deployed)** | **0.821** | **0.777** | **0.914** | **0.11%** |
+| | value |
+|---|---|
+| held-out IoU (grouped by image) | **0.789** ±0.039, worst fold 0.721 |
+| precision / recall | 0.933 / 0.837 |
+| crack-free false positives | **0.209%** of area, 1.83 indications/frame |
+
+The per-member comparison that chose the ensemble over either member alone was measured on
+leave-one-image-out over 4 externally-labelled frames (17 alone 0.744, hybrid alone 0.795,
+ensemble 0.821). Those labels came from another tool and are used nowhere in the project now,
+so that table is history, not a current measurement — it is why the ensemble was chosen, and
+the numbers above are what the choice delivers on the basis that remains.
 
 ## Read next
 

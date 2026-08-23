@@ -1,5 +1,12 @@
 # Two changes: the reference frames left training, and the classifier changed
 
+> **Superseded in part.** This records why the four externally-labelled frames left training
+> and what that cost, and those measurements stand. What changed since: those labels are no
+> longer a test set either — they came from another tool and are used nowhere in the project.
+> The four frames are ordinary training images now, labelled by the owner like every other,
+> and generalisation is estimated by grouped-by-image cross-validation alone. The reproducer
+> cited below, `code/experiment_no_gt.py`, was removed in a later cleanup; it is in git history.
+
 Both were measured before being made. `code/experiment_no_gt.py` reproduces everything here.
 
 ## 1. The four reference frames are the test set now

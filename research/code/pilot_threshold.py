@@ -80,4 +80,6 @@ def main():
     print(f"    stride  8 @0.50   IoU 0.1555   33.2 px")
     print("THRESH_DONE")
 
-main()
+
+if __name__ == "__main__":
+    main()

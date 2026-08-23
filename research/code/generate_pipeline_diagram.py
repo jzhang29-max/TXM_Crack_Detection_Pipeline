@@ -15,7 +15,11 @@ WHAT CHANGED FROM THE PREVIOUS VERSION, and why the old figure was wrong:
   * (D) documented the legacy hysteresis post-processing, which is off by default because it
     measurably deletes thin crack (-0.08 IoU). The default is a threshold plus speck pruning.
   * the gate had five checks and trained on externally-derived bootstrap labels. It now has
-    three recipe-aware axes, and those reference frames are held OUT of training.
+    two recipe-aware axes -- cross-validation grouped by image, and predicted area on
+    crack-free specimens -- and no external labels are used anywhere, for anything.
+  * (D) said the embedding was read back by bilinear lookup from abutting tiles. Tiles now
+    overlap and are blended, because abutting ones stepped at every boundary and the step
+    reached the output as a visible seam (docs/TILE_SEAMS.md).
 
 Usage:
     python3 generate_pipeline_diagram.py [dataset_cache_stem]
@@ -100,8 +104,9 @@ def main():
              thumbs=[("Model input: the RAW array", _shrink(s["img01"]), None),
                      (f"{s['feature_name']} (1 of 17)", _shrink(s["feature_map"]), "viridis")]),
         dict(key="D", title="SAM ViT-H embedding", icon="grid",
-             subtitle=f"{s['n_tiles']} tiles of 1024 px, each giving a 64x64 grid of "
-                      f"{s['emb_channels']}-d vectors -- one per 16x16 block",
+             subtitle=f"{s['n_tiles']} tiles of 1024 px at stride {s['tile_stride']}, so they "
+                      f"overlap and blend with no seam. One {s['emb_channels']}-d vector "
+                      f"per 16x16 block",
              thumbs=[("Model input: the RAW array", _shrink(s["img01"]), None),
                      (f"SAM embedding: 3 PCs of {s['emb_channels']}", s["sam_rgb"], None)]),
         dict(key="E", title="Ensemble prediction", icon="classifier",
@@ -127,27 +132,67 @@ def main():
                              f'Valid: {sorted(VALID_ICONS)}')
 
     gate_lines = s["gate_lines"] or [
-        ("Reference frames (held out)", "not measured yet", True),
         ("Crack-free specimens", "not measured yet", True),
         ("Grouped-by-image cross-val", "not measured yet", True),
     ]
-    gate_card = stat_card("Retrain gate: three axes", gate_lines, PART2_COLORS[1],
+    gate_card = stat_card("Retrain gate: two axes", gate_lines, PART2_COLORS[1],
                           FONT_PATH, FONT_BOLD_PATH)
 
     part2_stages = [
         dict(key="G", title="Manual correction", icon="brush",
              subtitle="Add missed crack, erase false positives, or flip a whole region. "
                       "Every stroke saves itself",
-             thumbs=[("Model output on the display view", _shrink(s["overlay_model"], "min"), None),
-                     ("Hand-labelled truth", _shrink(s["overlay_gt"], "min"), None)]),
+             thumbs=[("Display view: what you mark on", _shrink(s["display"]), None),
+                     ("Model output on it", _shrink(s["overlay_model"], "min"), None)]),
         dict(key="H", title="Gated retrain", icon="shield",
-             subtitle="Trains on your corrections ONLY. The four reference frames are the "
-                      "held-out test set, not training data",
+             subtitle="Trains on your corrections ONLY -- no external labels. Held out by "
+                      "image, so train and test never share a frame",
              thumbs=[("Gate report (real run)", np.array(gate_card), None),
                      ("Deployed result", _shrink(s["overlay_model"], "min"), None)]),
     ]
 
     # ---------------------------------------------------------- geometry
+    # The caption is built HERE, before the geometry, because the figure's height depends on
+    # how many lines it wraps to. CAPTION_H used to be the constant 320 while wrap_tspans
+    # returned a line count the caller discarded, so editing the caption silently ran the
+    # text off the bottom of the canvas -- which is exactly what happened when this paragraph
+    # was corrected and nothing complained.
+    import textwrap as _tw
+    CAP_WRAP = 148
+    CAP_LINE_H = 21
+    caption = (
+        f"Figure 1. Crack-detection pipeline for transmission X-ray microscopy (TXM), as "
+        f"deployed. Every panel is a real array from the app's own modules. A raw float32 "
+        f"tile is destitched by notching the one-to-two frequency bins the periodic mosaic "
+        f"grid occupies (A), then flat-fielded and percentile-stretched (B) -- that pair is "
+        f"the DISPLAY view only, and both steps preserve geometry so a mask still registers "
+        f"pixel-for-pixel. The model is fed the raw normalised array on purpose: "
+        f"flat-fielding the model input was tried and cost 0.169 IoU, because large-radius "
+        f"intensity features carry ~41% of the model's importance and flat-fielding removes "
+        f"exactly those. Each pixel is described by 17 multi-scale hand-crafted features (C) "
+        f"and by a {s['emb_channels']}-dimensional SAM ViT-H image embedding, computed over "
+        f"{s['n_tiles']} overlapping tiles of 1024 px stepped by {s['tile_stride']} so that "
+        f"one vector covers each 16x16 block and is "
+        f"read back as a Hann-weighted blend of every tile covering it (D) -- with tiles "
+        f"abutting instead, the embedding stepped across each boundary and the step reached "
+        f"the output as a visible seam; SAM contributes its frozen encoder only, and its "
+        f"prompt encoder and mask decoder are never called. Two MLPs -- one on the 17 "
+        f"features, one on all 273 -- are averaged (E); the average, not the hybrid alone, is "
+        f"what wins on the largest mosaics. A 0.50 threshold and removal of blobs under 2000 "
+        f"px give the final mask (F), while the older hysteresis cleanup is off by default "
+        f"because it measurably deletes thin crack. Corrections are painted in the browser "
+        f"(G) and are the ONLY thing a retrain learns from (H): there is no external ground "
+        f"truth in this project, nothing is held back from training, and generalisation is "
+        f"estimated by cross-validation grouped by whole image, so train and test never "
+        f"share a frame. Grouping matters -- the same architecture reads 0.930 IoU on random "
+        f"pixel folds against 0.789 grouped by image, because a randomly held-out pixel "
+        f"almost always has a training pixel beside it carrying the same measurement. The "
+        f"gate is two recipe-aware axes, that cross-validation and predicted area on "
+        f"specimens confirmed to contain no crack, and a candidate is only ever compared "
+        f"against a baseline measured the same way. Worked example: {esc(name)}."
+    )
+    CAPTION_H = max(320, (len(_tw.wrap(caption, CAP_WRAP)) - 1) * CAP_LINE_H + 104)
+
     W = 1350
     MARGIN = 70
     CARD_GAP = 60
@@ -157,7 +202,6 @@ def main():
     TITLE_H = 260
     PART2_TITLE_H = 110
     PART2_CARD_H = 460
-    CAPTION_H = 320
 
     n_rows = (len(stages) + 1) // 2
     col_x = [MARGIN, MARGIN + CARD_W + CARD_GAP]
@@ -276,8 +320,9 @@ def main():
             f'fill="{PART2_COLORS[1]}">Correction and gated retraining</text>')
     svg.raw(f'<text x="{W/2}" y="{part2_y0 + 44}" text-anchor="middle" '
             f'font-family="Helvetica, Arial, sans-serif" font-size="14" font-style="italic" '
-            f'fill="{SUBTEXT}">The candidate deploys itself only if all three axes hold — '
-            f'and the reference frames it is judged on are never trained on</text>')
+            f'fill="{SUBTEXT}">The candidate deploys itself only if both axes hold — '
+            f'cross-validation grouped by image, and false positives on crack-free '
+            f'specimens</text>')
     p2_boxes = {}
     for i, stage in enumerate(part2_stages):
         x = col_x[i]
@@ -300,33 +345,7 @@ def main():
     cap_y = H - CAPTION_H + 30
     svg.raw(rounded_rect(MARGIN, cap_y - 24, W - 2 * MARGIN, CAPTION_H - 40, 10, "white",
                          stroke="#D8E0E4", sw=1.5, filter_id="cardShadow"))
-    caption = (
-        f"Figure 1. Crack-detection pipeline for transmission X-ray microscopy (TXM), as "
-        f"deployed. Every panel is a real array from the app's own modules. A raw float32 "
-        f"tile is destitched by notching the one-to-two frequency bins the periodic mosaic "
-        f"grid occupies (A), then flat-fielded and percentile-stretched (B) -- that pair is "
-        f"the DISPLAY view only, and both steps preserve geometry so a mask still registers "
-        f"pixel-for-pixel. The model is fed the raw normalised array on purpose: "
-        f"flat-fielding the model input was tried and cost 0.169 IoU, because large-radius "
-        f"intensity features carry ~41% of the model's importance and flat-fielding removes "
-        f"exactly those. Each pixel is described by 17 multi-scale hand-crafted features (C) "
-        f"and by a {s['emb_channels']}-dimensional SAM ViT-H image embedding, computed over "
-        f"{s['n_tiles']} tiles of 1024 px so that one vector covers each 16x16 block and is "
-        f"read back by bilinear lookup (D); SAM contributes its frozen encoder only, and its "
-        f"prompt encoder and mask decoder are never called. Two MLPs -- one on the 17 "
-        f"features, one on all 273 -- are averaged (E); the average, not the hybrid alone, is "
-        f"what wins on the largest mosaics. A 0.50 threshold and removal of blobs under 2000 "
-        f"px give the final mask (F), while the older hysteresis cleanup is off by default "
-        f"because it measurably deletes thin crack. Corrections are painted in the browser "
-        f"(G) and are the ONLY thing a retrain learns from (H): the four dense reference "
-        f"frames, and corrections on their specimens, are held out as the test set, which "
-        f"costs nothing across specimen groups and is what makes the gate's number mean "
-        f"something -- the same architecture scores 0.921 on those frames while training on "
-        f"them and 0.714 held out. The gate is three recipe-aware axes, and a candidate is "
-        f"only ever compared against a baseline measured the same way. Worked example: "
-        f"{esc(name)}."
-    )
-    tspans, _ = wrap_tspans(caption, 148, MARGIN + 24, 21)
+    tspans, _ = wrap_tspans(caption, CAP_WRAP, MARGIN + 24, CAP_LINE_H)
     svg.raw(f'<text x="{MARGIN+24}" y="{cap_y+6}" font-family="Georgia, serif" font-size="13.2" '
             f'fill="{INK}">{tspans}</text>')
 

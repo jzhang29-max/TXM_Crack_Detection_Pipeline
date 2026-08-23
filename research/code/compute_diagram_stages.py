@@ -70,7 +70,14 @@ def sam_pc_rgb(coords, embs, shape):
 
 
 def gate_lines_from_history():
-    """The three real gate axes from the last recorded retrain, or None."""
+    """The two real gate axes from the last recorded retrain, or None.
+
+    There used to be a third, scoring candidates against four externally-labelled frames.
+    Those labels are gone from the project, and this function kept emitting the axis anyway:
+    it read the CROSS-VALIDATION IoU and captioned it "Reference frames (held out)", then
+    coloured it from gate_detail["iou_ok"], a key the gate no longer sets -- so a passing
+    retrain rendered with a failed axis and a mislabelled number.
+    """
     try:
         hist = P.retrain_history()
     except Exception:                                            # noqa: BLE001
@@ -79,12 +86,7 @@ def gate_lines_from_history():
         return None
     L = hist[-1]
     gd = L.get("gate_detail") or {}
-    cand, inc = (L.get("candidate") or {}), (L.get("incumbent") or {})
     lines = []
-    ci = cand.get("iou")
-    lines.append(("Reference frames (held out)",
-                  f"IoU {ci:.3f}" if ci is not None else "not measured",
-                  bool(gd.get("iou_ok"))))
     cf, if_ = L.get("candidate_clean_fp"), L.get("incumbent_clean_fp")
     lines.append((f"Crack-free specimens ({L.get('clean_specimens') or 0})",
                   (f"{if_*100:.2f}% -> {cf*100:.2f}% of area"
@@ -135,8 +137,6 @@ def compute_stages(image_key="338_13"):
     raw_thresh = p_ens > 0.5
     final_mask = P.prune_specks(raw_thresh)
 
-    gt_p = os.path.join(GT_CACHE, f"{image_key}_gt.npy")
-    gt = np.load(gt_p).astype(bool) if os.path.exists(gt_p) else None
 
     return dict(
         name=image_key,
@@ -147,6 +147,7 @@ def compute_stages(image_key="338_13"):
         feature_name=FEATURE_NAMES[fi],
         sam_rgb=sam_rgb,
         n_tiles=int(len(coords)),
+        tile_stride=int(M.TILE_STRIDE),
         emb_channels=int(embs.shape[1]),
         p17=p17,
         p_ens=p_ens,
@@ -154,8 +155,6 @@ def compute_stages(image_key="338_13"):
         final_mask_display=np.where(final_mask, 0, 255).astype(np.uint8),
         final_mask=final_mask,
         overlay_model=to_rgb_overlay(display, final_mask),
-        overlay_gt=(to_rgb_overlay(display, gt) if gt is not None else
-                    to_rgb_overlay(display, final_mask)),
         model_describe=ens.describe(),
         gate_lines=gate_lines_from_history(),
     )

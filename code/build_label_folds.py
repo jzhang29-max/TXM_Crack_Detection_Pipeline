@@ -110,8 +110,8 @@ def sample_image(iid, per_image, rng):
         return None
 
     x17, xsam, y = [], [], []
-    z = np.load(S.path(iid, "emb.npz")) if os.path.exists(S.path(iid, "emb.npz")) else None
-    coords, embs = (z["coords"], z["emb"]) if z is not None else (None, None)
+    got = M.read_emb(S.path(iid, "emb.npz"))
+    coords, embs = got if got is not None else (None, None)
     by_band = {}
     for r0, r1, lo, rr, cc, yy in picks:
         by_band.setdefault((r0, r1), []).append((rr, cc, yy))
@@ -121,16 +121,9 @@ def sample_image(iid, per_image, rng):
             x17.append(feats[rr - r0, cc, :])
             y.append(yy)
             if coords is not None:
-                out = np.zeros((len(rr), embs.shape[1]), np.float32)
-                todo = np.ones(len(rr), bool)
-                for t in range(len(coords) - 1, -1, -1):
-                    y0, x0 = int(coords[t][0]), int(coords[t][1])
-                    s = (todo & (rr >= y0) & (rr < y0 + M.TILE)
-                         & (cc >= x0) & (cc < x0 + M.TILE))
-                    if s.any():
-                        out[s] = M.interp_tile(embs[t], rr[s] - y0, cc[s] - x0)
-                        todo &= ~s
-                xsam.append(out)
+                # M.emb_rows, not a local last-tile-wins copy: a second implementation of
+                # the pixel -> embedding mapping is a mismatch waiting to happen.
+                xsam.append(M.emb_rows(coords, embs, rr, cc))
         del feats
     if not x17:
         return None

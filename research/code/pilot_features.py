@@ -83,4 +83,6 @@ def main():
     print("\n  reference: stride 8 (7.2 h re-embed)  IoU 0.1555   33.2 px")
     print("FEAT_DONE")
 
-main()
+
+if __name__ == "__main__":
+    main()

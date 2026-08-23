@@ -1,5 +1,7 @@
 # Which SAM combination works best — 78 variants, leave-one-image-out
 
+> The script cited below for reproduction (`code/detection_report.py`) was removed in a later cleanup. The measurements stand as recorded; the code is in git history.
+
 **Answer: the combination already deployed.** Nothing tested beat it by more than measurement
 noise, and the two things that looked like wins died under controls. The useful output is the
 mechanism — *why* the deployed shape is right — plus a list of where the real headroom is not.

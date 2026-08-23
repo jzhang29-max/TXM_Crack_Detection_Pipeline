@@ -7,9 +7,14 @@ SAM ViT forward pass, or how the 273-dim feature vector is assembled -- which is
 the point: the frontend can offer "predict", "correct", "retrain" as buttons
 because all of that complexity is behind this class.
 
-WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Measured under
-leave-one-image-out on the 4 external reference images, with the crack-free
-axis measured on the 6 owner-confirmed undamaged specimens:
+WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Measured under leave-one-image-out on 4
+externally-labelled frames, with the crack-free axis on the 6 owner-confirmed undamaged
+specimens. THIS IS THE HISTORICAL BASIS: those labels came from another tool and are used
+nowhere in this project now -- not for training, not for scoring -- so the table below is why
+the ensemble was chosen, not a current measurement. On the basis that remains
+(cross-validation grouped by whole image) the deployed ensemble holds IoU 0.789 +-0.039 with
+0.209% predicted area on the crack-free specimens; the per-member split has not been
+re-measured on that basis.
 
   approach                        mean IoU   pixel-weighted   recall   crack-free FP
   17 hand-crafted features          0.744        0.721         0.891       7.43%
@@ -32,6 +37,8 @@ Set ensemble=False to run the hybrid alone (about 2x faster, measurably worse).
 
 import os
 import sys
+import threading
+import zipfile
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +50,19 @@ for p in (_CODE, _HERE):
 
 TILE = 1024
 EMB_STRIDE = 16
+
+# How far apart tile origins sit when embedding. Below TILE, adjacent tiles OVERLAP, and
+# that overlap is the whole reason the embedding field can be made continuous: with
+# TILE_STRIDE == TILE the tiles abut, a 3914 px frame sits at x = 0, 1024, 2048, 2890, and
+# every boundary but the last has no shared data at all -- so the embedding STEPS across it.
+# Measured on a 3044x2354 frame, the worst row carried 32.8x the median row-to-row
+# probability change, all of it at the y=1023 tile boundary. At stride 896 the worst row is
+# 7.8x and sits at y=677, which is crack, not a boundary. Lookup-time fixes were tried first
+# and both failed: reaching past a tile's edge has to invent data and raised false positives
+# on crack-free specimens 6.2x, while a window that stops at the edge cannot fix anything
+# where only one tile covers the pixel -- it reduces to last-tile-wins exactly. Only real
+# overlap works. Costs 13% more tiles (1190 vs 1050 over the corpus, ~37 min to rebuild).
+TILE_STRIDE = 896
 # THE SHIPPED MODEL: both members fitted on the owner's corrections and nothing else.
 #
 # Every earlier model in this project inherited its 17-feature member from a research-phase
@@ -55,8 +75,8 @@ EMB_STRIDE = 16
 # IoU 0.776, sd 0.029, worst fold 0.733, precision 0.929, recall 0.824. On the six specimens
 # confirmed to contain no crack: 0.188% of area predicted crack, 2.83 false indications per
 # frame -- both better than the model it replaced (0.250%, 4.0).
-DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v3_20260822.joblib")
-DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v3_20260822.joblib")
+DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v4_20260823.joblib")
+DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v4_20260823.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"
 
 
@@ -90,7 +110,7 @@ def _get_sam():
     the app "falls back to the 17-feature model alone" when SAM is missing; until this
     existed that promise was false, and a researcher on a network that blocks
     huggingface.co got a red job error on every single image with no way to reach the
-    17-feature model sitting in models/f17_v3_20260822.joblib.
+    17-feature model sitting in models/f17_v4_20260823.joblib.
     """
     global _sam, sam_unavailable_reason
     if sam_unavailable_reason:
@@ -117,23 +137,25 @@ def _get_sam():
     return _sam
 
 
-def tiles(shape, size=TILE):
-    """Non-overlapping-by-construction tiles, clamped inward at the edges so
-    every tile is exactly `size` -- which keeps the pixel->embedding mapping a
-    clean divide-by-16 with no padding to reason about."""
+def tiles(shape, size=TILE, stride=None):
+    """Tiles of exactly `size`, stepped by `stride` and clamped inward at the edges.
+
+    Clamping inward (rather than padding) keeps the pixel->embedding mapping a clean
+    divide-by-16 with no padding to reason about. `stride` defaults to `size`, which makes
+    the tiles abut -- see TILE_STRIDE for why that produces visible seams and why embedding
+    passes should hand in a smaller stride so adjacent tiles overlap.
+    """
     H, W = shape[:2]
-    out = []
-    for y0 in range(0, max(H - 1, 1), size):
-        for x0 in range(0, max(W - 1, 1), size):
-            y1, x1 = min(y0 + size, H), min(x0 + size, W)
-            out.append((max(y1 - size, 0), y1, max(x1 - size, 0), x1))
-    return sorted(set(out))
+    st = size if stride is None else int(stride)
+    ys = sorted({max(min(y0 + size, H) - size, 0) for y0 in range(0, max(H - 1, 1), st)})
+    xs = sorted({max(min(x0 + size, W) - size, 0) for x0 in range(0, max(W - 1, 1), st)})
+    return [(y, min(y + size, H), x, min(x + size, W)) for y in ys for x in xs]
 
 
 def embed_image(img01, progress=None):
     """Tiled SAM ViT embeddings -> (coords int32 [n,2], emb float16 [n,C,64,64])."""
     proc, model, dev, torch = _get_sam()
-    tl = tiles(img01.shape)
+    tl = tiles(img01.shape, stride=TILE_STRIDE)
     coords, embs = [], []
     for k, (y0, y1, x0, x1) in enumerate(tl):
         crop = img01[y0:y1, x0:x1]
@@ -174,6 +196,113 @@ def interp_tile(emb_tile, rr, cc):
             + f[:, r1 * W + c1].T * dr * dc)
 
 
+def emb_rows(coords, embs, rr, cc):
+    """One embedding vector per (rr, cc) pixel, blended over every tile containing it.
+
+    THE ONE PLACE the pixel -> embedding mapping is defined. Inference and training-row
+    assembly both call this, and they have to: fit on one lookup and predict with another and
+    the model sees a feature distribution it never trained on. That mismatch is measurable --
+    serving blended embeddings to weights fitted on last-tile-wins raised false positives on
+    a crack-free specimen from 0.019% to 0.080%.
+
+    The weight is a Hann window over each tile's OWN extent, so it falls to ~2e-6 at that
+    tile's edge. Inside a tile's interior its own embedding dominates; across an overlap band
+    the two tiles trade off smoothly; nothing is ever read from outside a tile. A tile's
+    weight MUST vanish at the edge of its support or the field jumps wherever a tile enters
+    or leaves the blend -- an earlier version added a 1e-3 floor to keep the sum comfortably
+    positive and that floor alone put a 0.4999 step back in, because along the frame's top row
+    the window is ~0 for every tile, so the floor dominated and made it a flat unweighted
+    average. Without the floor that row is still correct: the shared row factor cancels in
+    the normalisation, leaving the right 1-D blend across x. The window never reaches exactly
+    zero inside the support (2.35e-6 at the first and last pixel), so the sum stays positive.
+    """
+    C = embs.shape[1]
+    acc = np.zeros((len(rr), C), np.float32)
+    wsum = np.zeros(len(rr), np.float32)
+    for t in range(len(coords)):
+        y0, x0 = int(coords[t][0]), int(coords[t][1])
+        ly = rr - y0
+        lx = cc - x0
+        sel = (ly >= 0) & (ly < TILE) & (lx >= 0) & (lx < TILE)
+        if not sel.any():
+            continue
+        lys, lxs = ly[sel], lx[sel]
+        wy = 0.5 * (1.0 - np.cos(2 * np.pi * (lys + 0.5) / TILE))
+        wx = 0.5 * (1.0 - np.cos(2 * np.pi * (lxs + 0.5) / TILE))
+        w = (wy * wx).astype(np.float32)
+        acc[sel] += interp_tile(embs[t], lys, lxs) * w[:, None]
+        wsum[sel] += w
+    return acc / np.maximum(wsum, 1e-12)[:, None]
+
+
+def emb_is_current(path):
+    """Is this cache usable as-is? Reads the stride tag only, not the 8-59 MB embedding.
+
+    False for a missing file, an unreadable one, or one built when tiles still abutted: a
+    zero-overlap cache cannot be blended, so serving from it would silently reintroduce the
+    seams it was rebuilt to remove.
+    """
+    if not os.path.exists(path):
+        return False
+    try:
+        z = np.load(path)
+        return "stride" in z.files and int(z["stride"]) == TILE_STRIDE
+    except (zipfile.BadZipFile, ValueError, EOFError, KeyError, OSError):
+        return False
+
+
+def read_emb(path, note=None):
+    """(coords, embs) from a cache, or None if it has to be rebuilt.
+
+    A missing file, a truncated one and a stale-stride one all mean the same thing to every
+    caller -- re-embed -- so they collapse to None here rather than each caller repeating the
+    three checks. `note` is called with a short reason when a cache is rejected, so the app
+    can say why it is spending a minute on SAM instead of appearing to hang.
+    """
+    if not os.path.exists(path):
+        return None
+    try:
+        z = np.load(path)
+        if "stride" not in z.files:
+            if note:
+                note("SAM cache predates overlapping tiles, recomputing")
+            return None
+        if int(z["stride"]) != TILE_STRIDE:
+            if note:
+                note(f"SAM cache built at stride {int(z['stride'])}, need {TILE_STRIDE}")
+            return None
+        return z["coords"], z["emb"]
+    except (zipfile.BadZipFile, ValueError, EOFError, KeyError, OSError) as e:
+        if note:
+            note(f"SAM cache damaged ({type(e).__name__}), recomputing")
+        return None
+
+
+def write_emb(path, coords, embs):
+    """Write an embedding cache atomically, tagged with the stride it was built at.
+
+    Atomic because a SAM embedding is 8-59 MB: quit or lose power partway through a bare
+    np.savez onto the final path and the file is a truncated zip forever. That used to BRICK
+    the image with no route back from the UI -- Re-apply calls ingest() without force so it
+    reused the broken file, re-dropping produced the same content-hash id, and the only
+    escape discarded that image's corrections. The same corrupt file then killed the next
+    retrain an hour in. Tagged so read_emb() can tell a blendable cache from an abutting one.
+    """
+    tmp = f"{path}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
+    try:
+        with open(tmp, "wb") as fh:
+            np.savez(fh, coords=coords, emb=embs, stride=np.int32(TILE_STRIDE))
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 # ---------------------------------------------------------------- the model
 class CrackModel:
     def __init__(self, path_17=DEFAULT_17, path_hybrid=DEFAULT_HYBRID, ensemble=True):
@@ -187,8 +316,8 @@ class CrackModel:
             self.n_hybrid = (b.get("n_features", 273) if isinstance(b, dict) else 273)
         if self.m17 is None and self.hybrid is None:
             raise FileNotFoundError(
-                "no model found -- expected models/f17_v3_20260822.joblib and/or "
-                "models/hybrid_v3_20260822.joblib")
+                "no model found -- expected models/f17_v4_20260823.joblib and/or "
+                "models/hybrid_v4_20260823.joblib")
         if self.ensemble and (self.m17 is None or self.hybrid is None):
             self.ensemble = False   # fall back rather than silently averaging one thing
 
@@ -232,24 +361,23 @@ class CrackModel:
                                   if progress else None)
             coords, embs = emb
             ph = np.zeros((H, W), np.float32)
-            done = np.zeros((H, W), bool)
-            for k in range(len(coords) - 1, -1, -1):
-                y0, x0 = int(coords[k][0]), int(coords[k][1])
-                y1, x1 = min(y0 + TILE, H), min(x0 + TILE, W)
-                for b0 in range(y0, y1, band):
-                    b1 = min(b0 + band, y1)
-                    sub = ~done[b0:b1, x0:x1]
-                    if not sub.any():
-                        continue
-                    rr, cc = np.nonzero(sub)
-                    rg, cg = rr + b0, cc + x0
-                    X = np.concatenate([np.asarray(f17[rg, cg, :], np.float32),
-                                        interp_tile(embs[k], rg - y0, cg - x0)], axis=1)
-                    pr = self.hybrid.predict_proba(X)[:, 1].astype(np.float32)
-                    blk = ph[b0:b1, x0:x1]; blk[rr, cc] = pr; ph[b0:b1, x0:x1] = blk
-                    d = done[b0:b1, x0:x1]; d[rr, cc] = True; done[b0:b1, x0:x1] = d
+            # Walks the OUTPUT in blocks rather than walking the tiles, because a blended
+            # embedding needs every tile covering a pixel at once -- the old tile-by-tile
+            # loop with a `done` mask was last-tile-wins by construction, which is the seam.
+            # Block size is unchanged, so the peak footprint is too: 128 x 1024 pixels at 273
+            # float32 features is 143 MB, against 26 GB for a 23.5 MP frame materialised whole.
+            for b0 in range(0, H, band):
+                b1 = min(b0 + band, H)
+                for c0 in range(0, W, TILE):
+                    c1 = min(c0 + TILE, W)
+                    rr = np.repeat(np.arange(b0, b1), c1 - c0)
+                    cc = np.tile(np.arange(c0, c1), b1 - b0)
+                    X = np.concatenate([np.asarray(f17[rr, cc, :], np.float32),
+                                        emb_rows(coords, embs, rr, cc)], axis=1)
+                    ph[b0:b1, c0:c1] = self.hybrid.predict_proba(X)[:, 1] \
+                        .astype(np.float32).reshape(b1 - b0, c1 - c0)
                 if progress:
-                    progress("hybrid model", len(coords) - k, len(coords))
+                    progress("hybrid model", b1, H)
         del f17
 
         if self.ensemble and p17 is not None and ph is not None:

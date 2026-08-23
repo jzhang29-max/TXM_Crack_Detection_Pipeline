@@ -101,10 +101,11 @@ per (image, model) and hard-linked. This is also how you roll back: select an ea
 
 ## 6. Retrain
 
-Trains on every correction across every image plus the reference ground truth, then
-deploys only if it passes the gate: IoU must not drop by more than 0.01, **and** false
-positives on the confirmed crack-free specimens must not rise by more than 0.5 points. If it
-refuses, the message says which axis failed and by how much, and the model file is kept.
+Trains on every correction across every image — and on nothing else, no external labels
+anywhere — then deploys only if it passes the gate: IoU must not drop by more than 0.01,
+**and** false positives on the confirmed crack-free specimens must not rise by more than
+0.5 points. If it refuses, the message says which axis failed and by how much, and the model
+file is kept.
 
 Neither axis uses a label you did not draw: the first is cross-validation on your own
 corrections, the second is measured on specimens you confirmed contain no crack, where any
@@ -113,10 +114,10 @@ prediction is a false positive by construction.
 Every retrain leaves a scorecard under the model picker, and it persists across reloads:
 
 ```
-held out     0.776  ±0.03
-false calls  2.83/frame
-background   0.19%  −0.06pp
-deployed 14:16 · details
+held out     0.789  ±0.04
+false calls  1.83/frame
+background   0.21%  +0.02pp
+deployed 12:35 · details
 ```
 
 Hover any row for the before/after and the trend; **details** expands to the per-image
@@ -166,6 +167,11 @@ app imports, so the figure cannot drift from what actually ships.
 concatenated with 17 hand-crafted ones: intensity, Gaussian-smoothed intensity at σ=2…64,
 gradient magnitude, Laplacian, and local-standard-deviation texture.
 
+The embedding is computed on 1024 px tiles stepped by 896 so neighbours overlap, then blended
+across the overlap. With tiles abutting, the embedding stepped at every tile boundary and the
+step reached the output as a visible seam — measured at 33× the frame's typical row-to-row
+change. Details in [docs/TILE_SEAMS.md](docs/TILE_SEAMS.md).
+
 A mean-probability ensemble of two MLPs on those features — one on the 17 alone, one on all
 273. A single HistGradientBoosting scored better on every labelled-pixel metric and was
 tried; it marked 7.5× more crack-free material as crack and was reverted. That measurement
@@ -178,12 +184,12 @@ where any prediction is a false positive by construction.
 
 ## How well it does
 
-- **IoU 0.776** under cross-validation grouped by image — train and test never share an
-  image (fold sd 0.029, worst fold 0.733, precision 0.929, recall 0.824). This is the
+- **IoU 0.789** under cross-validation grouped by image — train and test never share an
+  image (fold sd 0.039, worst fold 0.721, precision 0.933, recall 0.837). This is the
   headline number because it is the only one that answers "how will this do on an image it
   has not seen".
-- **0.188% of area** marked as crack on the six specimens confirmed to contain no crack, and
-  **2.83 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
+- **0.209% of area** marked as crack on the six specimens confirmed to contain no crack, and
+  **1.83 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
   as the NDT yardstick.
 - Zero-shot SAM, prompted the way SAM is designed to be prompted, scores **0.23–0.36** on
   the same images.

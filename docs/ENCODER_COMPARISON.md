@@ -1,5 +1,7 @@
 # Is a newer SAM encoder a better feature source than SAM 1 ViT-H?
 
+> The scripts cited below for reproduction (`code/experiment_encoders.py`, `code/encoders.py`) were removed in a later cleanup. The measurements stand as recorded; the code is in git history.
+
 Reproduce with `python3 code/experiment_encoders.py --arms sam1,sam2`. Raw numbers in
 `research/encoder_compare.json`.
 

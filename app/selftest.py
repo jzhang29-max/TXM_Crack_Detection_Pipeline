@@ -755,6 +755,80 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the shipped registry entry carries the current recipe tag", False, str(e))
 
+    # The embedding lookup, checked as arithmetic rather than by eye.
+    #
+    # Tile seams were a real shipped artifact: with tiles abutting, the worst row on one
+    # frame carried 32.8x the median row-to-row probability change, all of it at the y=1023
+    # tile boundary. The fix has three separable ways to regress silently, so each is a
+    # separate assertion. If TILE_STRIDE ever goes back to TILE the tiles stop overlapping
+    # and the seams return with no other symptom; if the window stops vanishing at a tile's
+    # own edge the field jumps wherever a tile joins the blend (a 1e-3 weight floor alone
+    # put a 0.4999 step back in); and if the weights stop normalising, every embedding is
+    # silently scaled.
+    try:
+        import numpy as _np
+        import model as _M4
+        _big = (3 * _M4.TILE, 3 * _M4.TILE)
+        _xs = sorted({t[2] for t in _M4.tiles(_big, stride=_M4.TILE_STRIDE)})
+        _laps = [_M4.TILE - (_xs[i + 1] - _xs[i]) for i in range(len(_xs) - 1)]
+        check("embedding tiles overlap, so the seams can be blended out",
+              _M4.TILE_STRIDE < _M4.TILE and _laps and min(_laps) > 0,
+              f"stride {_M4.TILE_STRIDE} of {_M4.TILE}, overlaps {_laps}")
+
+        # all-ones in must give all-ones out, or the weights are not a partition of unity
+        _c2 = _np.array([[0, 0], [0, _M4.TILE_STRIDE]], _np.int32)
+        _ones = _np.ones((2, 2, 64, 64), _np.float16)
+        _rr = _np.array([0, 0, 500, _M4.TILE - 1])
+        _cc = _np.array([0, 900, 1000, _M4.TILE + 500])
+        _err = float(_np.abs(_M4.emb_rows(_c2, _ones, _rr, _cc) - 1.0).max())
+        check("blend weights normalise to one", _err < 1e-5, f"max error {_err:.2e}")
+
+        # a hard step between two tiles must come out as a ramp, not a step. Checked on the
+        # frame's top row, where every window is near zero and a weight floor would show up.
+        _step = _np.concatenate([_np.zeros((1, 2, 64, 64), _np.float16),
+                                 _np.ones((1, 2, 64, 64), _np.float16)])
+        _x = _np.arange(0, _M4.TILE_STRIDE + _M4.TILE)
+        _worst = 0.0
+        for _row in (0, _M4.TILE // 2, _M4.TILE - 1):
+            _v = _M4.emb_rows(_c2, _step, _np.full_like(_x, _row), _x)[:, 0]
+            _worst = max(_worst, float(_np.abs(_np.diff(_v)).max()))
+        check("a step between tiles comes out as a ramp, not a seam",
+              _worst < 0.05, f"largest single-pixel jump {_worst:.4f} (last-wins would be 1.0)")
+
+        # one tile covering the pixel must reduce to a plain lookup, or interiors are wrong
+        _rng = _np.random.default_rng(0)
+        _e1 = _rng.standard_normal((1, 4, 64, 64)).astype(_np.float16)
+        _c1 = _np.array([[0, 0]], _np.int32)
+        _r1 = _np.array([0, 5, 500, _M4.TILE - 1]); _k1 = _np.array([0, 7, 600, _M4.TILE - 1])
+        _d = float(_np.abs(_M4.emb_rows(_c1, _e1, _r1, _k1)
+                           - _M4.interp_tile(_e1[0], _r1, _k1)).max())
+        check("a single covering tile reduces to a plain lookup", _d < 1e-5,
+              f"max difference {_d:.2e}")
+    except Exception as e:                                      # noqa: BLE001
+        check("the embedding lookup blends without seams", False, str(e))
+
+    # An embedding cache built before the tiles overlapped cannot be blended, and serving
+    # from one would reintroduce the seams with nothing to show for it. read_emb has to
+    # reject an untagged cache rather than trust it.
+    try:
+        import numpy as _np5
+        import model as _M5
+        import tempfile as _tf5
+        with _tf5.TemporaryDirectory() as _d5:
+            _p5 = os.path.join(_d5, "emb.npz")
+            _np5.savez(_p5, coords=_np5.zeros((1, 2), _np5.int32),
+                       emb=_np5.zeros((1, 2, 64, 64), _np5.float16))
+            _untagged = _M5.read_emb(_p5) is None and not _M5.emb_is_current(_p5)
+            _M5.write_emb(_p5, _np5.zeros((1, 2), _np5.int32),
+                          _np5.zeros((1, 2, 64, 64), _np5.float16))
+            _tagged = _M5.read_emb(_p5) is not None and _M5.emb_is_current(_p5)
+        check("a pre-overlap embedding cache is rejected, a current one accepted",
+              _untagged and _tagged,
+              f"untagged rejected={_untagged}, tagged accepted={_tagged}")
+    except Exception as e:                                      # noqa: BLE001
+        check("a pre-overlap embedding cache is rejected, a current one accepted",
+              False, str(e))
+
     # ---- the UNCACHED half of a model switch, checked structurally.
     #
     # The check above can only ever exercise the cached path: it deliberately picks a

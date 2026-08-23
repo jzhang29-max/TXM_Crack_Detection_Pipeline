@@ -1,5 +1,7 @@
 # What is publishable here, and what is not
 
+> The scripts cited below for reproduction (`code/drift_experiment.py`, `code/crossval.py`) were removed in a later cleanup. The measurements stand as recorded; the code is in git history.
+
 Written after an attempt to build a Q1 methods paper's central experiment, which did not
 come off. Recorded because the negative result changes what can honestly be claimed.
 

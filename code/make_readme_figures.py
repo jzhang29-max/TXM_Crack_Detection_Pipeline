@@ -15,7 +15,7 @@ So: figures are generated, not drawn, and from an EXPLICIT model.
 
 DEFAULTS TO THE SHIPPED BASELINE, not to whatever is deployed. A README shows a reader
 what they get when they clone the repo, and a fresh clone has no retrained model -- it
-has models/hybrid_v3_20260822.joblib. Rendering the figures from a locally-retrained model
+has models/hybrid_v4_20260823.joblib. Rendering the figures from a locally-retrained model
 would document a model that exists on exactly one laptop. Pass --model to override.
 
 CROPS, not whole frames. These are 3-32 MP images and a README renders them ~700 px

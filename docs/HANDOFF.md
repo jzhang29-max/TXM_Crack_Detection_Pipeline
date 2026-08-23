@@ -1,8 +1,11 @@
 # HANDOFF — state of play
 
-> Note: `models/pixel_flatfield_hgb.joblib` and `models/pixel_sam_hybrid.joblib` are
-> referenced below as development history. Neither ships any more -- the repo now
-> carries only the two models the deployed ensemble uses. Both remain in git history.
+> **Historical. Do not act on the model names below.** `pixel_hgb_final.joblib`,
+> `pixel_flatfield_hgb.joblib` and `pixel_sam_hybrid.joblib` are development history and none
+> of them ships any more; where this file says "current best model", it means current as of
+> when it was written. The repo carries only what the deployed ensemble uses:
+> `models/f17_v4_20260823.joblib` and `models/hybrid_v4_20260823.joblib`. All the removed
+> files remain in git history. See the README for what actually ships.
 
 
 Single source of truth for picking this up in a new session. Everything below

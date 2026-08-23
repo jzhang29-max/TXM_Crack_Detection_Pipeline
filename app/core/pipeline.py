@@ -23,9 +23,7 @@ import glob
 import json
 import os
 import sys
-import threading
 import time
-import zipfile
 
 import numpy as np
 
@@ -39,42 +37,34 @@ for p in (CODE, _HERE):
 import store as S            # noqa: E402
 import model as M            # noqa: E402
 
-# Reference data that ships with the package: the only pixel-level ground truth
-# that exists (4 images), used to validate a retrain. If it is absent the gate
-# degrades to "warn and refuse to auto-deploy" rather than silently passing.
-# The four that ship with the repo. Kept as the floor rather than the whole list, because
-# any new densely-annotated stem dropped into dataset_cache has to be picked up by the gate,
-# the cross-validation and the feature builder at once -- and hardcoding meant adding ground
-# truth required editing four call sites, which is how a stem gets used by one and missed by
-# another.
-
-
-
-
-
-# THE REFERENCE FRAMES ARE THE TEST SET, NOT TRAINING DATA.
+# NO EXTERNAL LABELS, ANYWHERE.
 #
-# Until this change every model trained on the four dense B2 frames and was then validated
-# against those same four, so the gate was grading with part of the answer key in the
-# training set. Measured cost of taking them out (code/experiment_no_gt.py, 3 repeats,
-# leave-one-group-out over AM/HC, B2, B3, wrought): cross-group AUC 0.871 without them
-# against 0.863 with, a difference at the +-0.008 noise floor -- i.e. nothing. Measured cost
-# on the B2 frames themselves: IoU 0.741 against 0.768, real but small. What is bought is a
-# gate whose number means something.
+# This project used to ship four densely-annotated B2 frames as pixel-level ground truth and
+# train on them as well as grade against them, so the gate was marking its own work with part
+# of the answer key in the training set. Measured cost of dropping them from training (3
+# repeats, leave-one-group-out over AM/HC, B2, B3, wrought): cross-group AUC 0.871 without
+# them against 0.863 with -- a difference at the +-0.008 noise floor, i.e. nothing. The
+# contamination it removed was worth 0.207 IoU (0.921 on frames trained on, 0.714 held out).
 #
-# Excluded by SPECIMEN, not by image. All four frames are also loaded in the app with the
-# owner's own corrections, and b2_343_75 and b2_343_75_LARGE are two fields of view of one
-# specimen -- so training on one while testing on the other leaks, and the leak flatters.
-# Five of 71 images are held out this way. Measured to cost nothing: raising the training
-# budget from 150 k rows to 500 k did not improve either test (0.856 vs 0.871 cross-group
-# AUC), so this project is not short of labels.
-REFERENCE_SPECIMENS = ("333_75", "336_25", "338_13", "343_75")
+# They are not a test set either, now: those labels came from another tool and are not used
+# for training or for scoring. All 71 labelled images train, and generalisation is estimated
+# by grouped-by-image cross-validation, where train and test never share an image -- the only
+# split this data supports honestly. The four frames themselves are ordinary training images,
+# labelled by the owner like every other.
 
 # Tag on every model the retrainer produces, so the gate can tell whether the model it is
 # comparing against was trained under the same rules. A model trained WITH the reference
 # frames scores them in-sample; comparing a clean candidate to it on those frames would
 # reject the clean one for being honest.
-RECIPE = "corrections_only_v3"
+#
+# Bumped to v4 for the overlapping-tile embedding. The label corpus and both architectures
+# are unchanged, but 256 of the 273 columns now mean something different: they come from a
+# Hann-weighted blend over overlapping tiles instead of whichever tile happened to be last,
+# which is exactly the change of basis this tag exists to stop the gate from comparing
+# across. v3's held-out IoU was measured on the old columns, so this run establishes its own
+# baseline against MIN_ABS_IOU rather than being scored against a number from a basis it
+# cannot be compared to. See docs/TILE_SEAMS.md.
+RECIPE = "corrections_only_v4_overlap"
 MIN_ABS_IOU = 0.60
 
 
@@ -188,10 +178,10 @@ def _score_clean(model, progress=None, cache_key=None):
         if img is None:
             continue
         emb = None
-        zp = S.path(m["id"], "emb.npz")
-        if model.needs_sam() and os.path.exists(zp):
-            z = np.load(zp)
-            emb = (z["coords"], z["emb"])
+        if model.needs_sam():
+            # None if missing, damaged, or built back when tiles abutted; predict() then
+            # embeds it itself rather than serving a lookup the weights never saw.
+            emb = M.read_emb(S.path(m["id"], "emb.npz"))
         prob = model.predict(img, emb=emb)
         f = float((prob > 0.5).mean())
         fracs.append(f)
@@ -330,12 +320,12 @@ def ingest(image_id, progress=None, force=False, predict=True):
     embp = S.path(image_id, "emb.npz")
     sam_note = None
     if mdl.needs_sam() and (M.sam_unavailable_reason or M.sam_disabled_by_env()) \
-            and not os.path.exists(embp):
+            and not M.emb_is_current(embp):
         # Already known unreachable in this process: skip straight to the 17-feature model
         # rather than attempting a 2.4 GB download once per image.
         sam_note = M.sam_unavailable_reason or "disabled by TXM_NO_SAM=1"
         mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
-    if mdl.needs_sam() and (force or not os.path.exists(embp)):
+    if mdl.needs_sam() and (force or not M.emb_is_current(embp)):
         rep("SAM embedding")
         try:
             coords, emb = M.embed_image(img01,
@@ -348,55 +338,21 @@ def ingest(image_id, progress=None, force=False, predict=True):
             rep(f"SAM unavailable ({sam_note}) -- using the 17-feature model")
             mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
             coords = emb = None
-        if coords is None:
-            pass
-        # Written atomically, the same temp+fsync+replace dance store.save_npy does twenty
-        # lines away. This used to be a bare np.savez straight onto the final path, and a
-        # SAM embedding is 8-59 MB: quit or lose power during that write and the file is a
-        # truncated zip forever. The image was then BRICKED with no route back from the UI
-        # -- Re-apply calls ingest() without force so it takes the existing broken file,
-        # re-dropping produces the same content-hash id, and the only escape (Remove and
-        # re-drop) silently discards that image's corrections. The same corrupt file then
-        # killed the next retrain an hour in, while gathering features.
         if coords is not None:
-            tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
-            try:
-                with open(tmp, "wb") as fh:
-                    np.savez(fh, coords=coords, emb=emb)
-                    fh.flush()
-                    os.fsync(fh.fileno())
-                os.replace(tmp, embp)
-            except BaseException:
-                try:
-                    os.unlink(tmp)
-                except OSError:
-                    pass
-                raise
+            M.write_emb(embp, coords, emb)
         del coords, emb
 
     rep("predicting")
     emb = None
-    if mdl.needs_sam() and os.path.exists(embp):
-        try:
-            z = np.load(embp)
-            emb = (z["coords"], z["emb"])
-        except (zipfile.BadZipFile, ValueError, EOFError, KeyError) as e:
-            # A damaged cache must not be a dead end. Recompute it rather than raising:
-            # this file is derived data, so throwing it away costs seconds of GPU and
-            # nothing else, while raising cost the user the whole image.
-            rep(f"SAM cache damaged ({type(e).__name__}), recomputing")
-            try:
-                os.unlink(embp)
-            except OSError:
-                pass
+    if mdl.needs_sam():
+        emb = M.read_emb(embp, note=rep)
+        if emb is None:
+            # An unusable cache must not be a dead end. Recompute rather than raising: this
+            # file is derived data, so throwing it away costs seconds of GPU and nothing
+            # else, while raising cost the user the whole image.
             coords, emb2 = M.embed_image(img01,
                                          progress=lambda k, n: rep("SAM embedding", k, n))
-            tmp = f"{embp}.{os.getpid()}.{threading.get_ident()}.tmp.npz"
-            with open(tmp, "wb") as fh:
-                np.savez(fh, coords=coords, emb=emb2)
-                fh.flush()
-                os.fsync(fh.fileno())
-            os.replace(tmp, embp)
+            M.write_emb(embp, coords, emb2)
             emb = (coords, emb2)
             del coords, emb2
     prob = mdl.predict(img01, emb=emb, progress=lambda st, k, n: rep(st, k, n))
@@ -725,14 +681,27 @@ def crossval_on_rows(X, y, groups, progress=None):
         for cols in (slice(0, n17), slice(0, X.shape[1])):
             probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
         prob = np.mean(probs, axis=0)
-        pred = prob > 0.5
         t = y[te]
-        tp = int((pred & t).sum()); fp = int((pred & ~t).sum()); fn = int((~pred & t).sum())
+
+        def _score(p):
+            pred = p > 0.5
+            tp = int((pred & t).sum()); fp = int((pred & ~t).sum()); fn = int((~pred & t).sum())
+            return (round(tp / max(tp + fp + fn, 1), 4),
+                    round(tp / max(tp + fp, 1), 4),
+                    round(tp / max(tp + fn, 1), 4))
+
+        # Both members are already fitted and predicted here, so scoring them individually is
+        # free. It used to be discarded, which left the choice of an ensemble over either
+        # member alone resting on a leave-one-image-out run over externally-labelled frames
+        # that this project no longer uses for anything -- an argument with no current
+        # measurement behind it. Now every retrain re-checks it on the basis that remains.
+        iou, prec, rec = _score(prob)
+        i17, _, _ = _score(probs[0])
+        ihy, _, _ = _score(probs[1])
         per_fold.append(dict(held_out=f"{len(np.unique(groups[te]))} images",
                              n=int(len(te)),
-                             iou=round(tp / max(tp + fp + fn, 1), 4),
-                             precision=round(tp / max(tp + fp, 1), 4),
-                             recall=round(tp / max(tp + fn, 1), 4)))
+                             iou=iou, precision=prec, recall=rec,
+                             iou_17_only=i17, iou_hybrid_only=ihy))
     ious = [f["iou"] for f in per_fold]
     return dict(k=k, per_fold=per_fold, grouped_by="image",
                 labelled_images_used=int(n_groups),
@@ -740,6 +709,9 @@ def crossval_on_rows(X, y, groups, progress=None):
                 mean_iou=round(float(np.mean(ious)), 4),
                 std_iou=round(float(np.std(ious, ddof=1)) if len(ious) > 1 else 0.0, 4),
                 min_iou=round(float(np.min(ious)), 4),
+                mean_iou_17_only=round(float(np.mean([f["iou_17_only"] for f in per_fold])), 4),
+                mean_iou_hybrid_only=round(
+                    float(np.mean([f["iou_hybrid_only"] for f in per_fold])), 4),
                 mean_precision=round(float(np.mean([f["precision"] for f in per_fold])), 4),
                 mean_recall=round(float(np.mean([f["recall"] for f in per_fold])), 4))
 
@@ -819,8 +791,8 @@ def record_retrain(result, stamp=None):
 def gather_training_data(progress=None):
     """Every corrected pixel across every uploaded image, as hybrid [17 | 256] features.
 
-    NOT the shipped ground truth, and not corrections on the specimens it comes from:
-    those four frames are the held-out test set. See REFERENCE_SPECIMENS.
+    Every labelled image, with no exclusions: there is no external ground truth in this
+    project and nothing is held back. See the note at the top of this file.
 
     Class balance is computed from what actually exists rather than hard-coded:
     it is the single knob that has caused four regressions in this project, and
@@ -846,11 +818,10 @@ def gather_training_data(progress=None):
 
     rng = np.random.RandomState(0)
 
-    # NO GROUND-TRUTH ROWS. They used to be sampled here, 100 k crack + 100 k background
-    # per stem, and they were the largest single block in the training set. They are the
-    # test set now -- see REFERENCE_SPECIMENS above for what that cost and what it bought.
-    # Corrections on the same specimens are excluded too, a few lines up, because those
-    # would leak the test set back in through the side door.
+    # NO GROUND-TRUTH ROWS. They used to be sampled here, 100 k crack + 100 k background per
+    # stem, and they were the largest single block in the training set. Those labels came from
+    # another tool and are gone from this project entirely -- not training, not scoring. What
+    # follows is the owner's own corrections and nothing else.
 
 
     # user corrections
@@ -874,17 +845,22 @@ def gather_training_data(progress=None):
         a = np.asarray(f17[rr, cc, :], np.float32)
         del f17
         zp = S.path(iid, "emb.npz")
-        if not os.path.exists(zp):
-            continue
-        z = np.load(zp); coords, embs = z["coords"], z["emb"]
-        b = np.zeros((len(rr), embs.shape[1]), np.float32)
-        todo = np.ones(len(rr), bool)
-        for t in range(len(coords) - 1, -1, -1):
-            y0, x0 = int(coords[t][0]), int(coords[t][1])
-            sel = todo & (rr >= y0) & (rr < y0 + M.TILE) & (cc >= x0) & (cc < x0 + M.TILE)
-            if sel.any():
-                b[sel] = M.interp_tile(embs[t], rr[sel] - y0, cc[sel] - x0)
-                todo &= ~sel
+        got = M.read_emb(zp)
+        if got is None:
+            # Re-embed rather than skip. Skipping drops this image's labels from training
+            # without saying so, and a cache built when tiles abutted cannot be blended:
+            # fitting on last-tile-wins while serving a blended lookup is exactly the
+            # mismatch that took crack-free false positives from 0.019% to 0.080%.
+            if progress:
+                progress(f"re-embedding {k}/{len(items)}", k, len(items))
+            try:
+                coords, embs = M.embed_image(np.asarray(img, np.float32))
+                M.write_emb(zp, coords, embs)
+            except M.SamUnavailable:
+                continue
+        else:
+            coords, embs = got
+        b = M.emb_rows(coords, embs, rr, cc)
         Xs.append(np.concatenate([a, b], axis=1))
         ys.append(np.concatenate([np.ones(nc, bool), np.zeros(nb, bool)]))
         del corr, img, coords, embs, a, b
