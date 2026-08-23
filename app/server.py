@@ -607,6 +607,24 @@ def api_reoverlay():
     return jsonify(ok=True, job=_job(work, f"re-overlay {len(ids)} image(s)"))
 
 
+def _weights_fingerprint(entry):
+    """Content hash of an entry's weight files, or None if they are not both readable.
+
+    Cheap: these are 63 KB and 693 KB, and the result is only used to tell the user when two
+    registry entries are the same model under different paths.
+    """
+    import hashlib
+    h = hashlib.sha256()
+    for key in ("path_17", "path_hybrid"):
+        p = entry.get(key) or ""
+        if not p or not os.path.exists(p):
+            return None
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    return h.hexdigest()[:16]
+
+
 @app.route("/api/models")
 def api_models():
     """Every model the user can switch to, and whether switching would be instant."""
@@ -624,7 +642,19 @@ def api_models():
         out.append(dict(id=e["id"], label=e.get("label") or e["id"],
                         created=e.get("created"), kind=e.get("kind", "ensemble"),
                         current=e["current"], cached_for=ready, n_images=len(ids),
-                        clean_fp=fp, clean_n=n_clean))
+                        clean_fp=fp, clean_n=n_clean,
+                        weights=_weights_fingerprint(e)))
+    # AN ENTRY WHOSE WEIGHTS ARE THE CURRENT MODEL'S IS NOT WORTH SWITCHING TO.
+    #
+    # After a retrain is copied into models/ to be shipped, the registry's default entry and
+    # the current entry point at byte-identical files by different paths. Predictions are
+    # cached per (image, model id), so the default reads "needs a pass" -- and switching to it
+    # would spend a full prediction pass over every image to produce exactly the masks already
+    # on screen. Naming it is cheaper than letting someone find out.
+    cur = next((m["weights"] for m in out if m["current"]), None)
+    for m in out:
+        m["same_weights_as_current"] = bool(
+            cur and m["weights"] and m["weights"] == cur and not m["current"])
     best = min([m["clean_fp"] for m in out if m["clean_fp"] is not None], default=None)
     for m in out:
         # "Much worse than the best measured model", not an absolute threshold: what counts

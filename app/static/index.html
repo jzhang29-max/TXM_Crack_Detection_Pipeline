@@ -331,7 +331,13 @@ async function loadModelList(){
   MODELS=r.models;
   sel.innerHTML=r.models.map(m=>{
     const n=m.n_images, ready=m.cached_for;
-    const state=n===0?"":ready===n?" · ready":ready?` · ${ready}/${n} ready`:" · needs a pass";
+    // An entry whose weight files are byte-identical to the current model is the same model
+    // under a different path -- typically the shipped default after a retrain was copied into
+    // models/. Predictions are cached per model id, so it reads "needs a pass", and switching
+    // would spend a full prediction pass to reproduce the masks already on screen. Say that
+    // instead of inviting the click.
+    const state=m.same_weights_as_current?" · same weights as current"
+      :n===0?"":ready===n?" · ready":ready?` · ${ready}/${n} ready`:" · needs a pass";
     // The measured background number goes in the OPTION, not only in a tooltip. Two
     // models in a real history mark 22% of crack-free specimen as crack; they predate
     // the false-positive gate, so they deployed legitimately and stay selectable, and
@@ -403,21 +409,6 @@ async function loadRetrainReport(){
         `specimens with nothing to find. Was ${pct(L.incumbent_clean_fp)}.`+
         (trend.length>1?` Last ${trend.length} retrains: ${trend.map(v=>pct(v)).join(" → ")}.`:""),
         delta(L.incumbent_clean_fp,L.candidate_clean_fp,false,"pp"))+
-    row("reference", (c.iou??0).toFixed(3),
-        `IoU on the four dense reference frames. These are now a HELD-OUT test set -- nothing `+
-        `trains on them, or on corrections from their specimens -- so this is a real `+
-        `generalisation number, not the in-sample one it used to be. Recall `+
-        `${(c.recall??0).toFixed(3)}.`+
-        ((L.gate_detail&&L.gate_detail.incumbent_recipe!==L.gate_detail.recipe)
-          ? ` No change figure is shown because the previous model trained ON these frames, `+
-            `so its ${(i.iou??0).toFixed(3)} is in-sample and the two are not the same `+
-            `quantity.` : ``),
-        // Only show a delta when the two numbers were measured the same way. Across a recipe
-        // change the incumbent's score is in-sample and the candidate's is held out, so the
-        // difference is mostly protocol, not quality -- rendering it as "-0.199" in red reads
-        // as a regression the model did not have.
-        ((L.gate_detail&&L.gate_detail.incumbent_recipe!==L.gate_detail.recipe)
-          ? "" : delta(i.iou,c.iou,true)))+
     `</table>`+
     `<div class="cav">`+
       (L.deployed?`deployed`:`<span style="color:var(--bad)">not deployed</span>`)+

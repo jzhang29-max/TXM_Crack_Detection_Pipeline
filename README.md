@@ -103,16 +103,20 @@ per (image, model) and hard-linked. This is also how you roll back: select an ea
 
 Trains on every correction across every image plus the reference ground truth, then
 deploys only if it passes the gate: IoU must not drop by more than 0.01, **and** false
-positives on the confirmed crack-free specimens must not rise by more than 0.5 points. If
-it refuses, the message says which half failed and by how much, and the model file is kept.
+positives on the confirmed crack-free specimens must not rise by more than 0.5 points. If it
+refuses, the message says which axis failed and by how much, and the model file is kept.
+
+Neither axis uses a label you did not draw: the first is cross-validation on your own
+corrections, the second is measured on specimens you confirmed contain no crack, where any
+prediction is a false positive by construction.
 
 Every retrain leaves a scorecard under the model picker, and it persists across reloads:
 
 ```
-held out     0.815  ±0.05
-background   0.26%  +0.03pp
-in-sample    0.940  ≈ same
-deployed 10:27 · details
+held out     0.776  ±0.03
+false calls  2.83/frame
+background   0.19%  −0.06pp
+deployed 14:16 · details
 ```
 
 Hover any row for the before/after and the trend; **details** expands to the per-image
@@ -184,7 +188,6 @@ The model's output beside the hand-labelled truth for the same window.
 - **0.188% of area** marked as crack on the six specimens confirmed to contain no crack, and
   **2.83 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
   as the NDT yardstick.
-- **100% of large flaws detected** — everything over 20 k px, which is 96.2% of all crack area.
 - Zero-shot SAM, prompted the way SAM is designed to be prompted, scores **0.23–0.36** on
   the same images.
 
