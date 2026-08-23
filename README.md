@@ -173,9 +173,11 @@ step reached the output as a visible seam — measured at 33× the frame's typic
 change. Details in [docs/TILE_SEAMS.md](docs/TILE_SEAMS.md).
 
 A mean-probability ensemble of two MLPs on those features — one on the 17 alone, one on all
-273. A single HistGradientBoosting scored better on every labelled-pixel metric and was
-tried; it marked 7.5× more crack-free material as crack and was reverted. That measurement
-is in [docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
+273. Averaging beats either member alone in **every** cross-validation fold, not just on
+average: 0.792 against 0.778 for the SAM hybrid alone and 0.651 for the 17 features alone.
+A single HistGradientBoosting scored better on every labelled-pixel metric and was tried; it
+marked 7.5× more crack-free material as crack and was reverted. That measurement is in
+[docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
 
 Nothing is held back from training, and nothing is scored against a label you did not draw.
 The retrain gate has two axes: cross-validation grouped by whole image, so train and test

@@ -7,26 +7,28 @@ SAM ViT forward pass, or how the 273-dim feature vector is assembled -- which is
 the point: the frontend can offer "predict", "correct", "retrain" as buttons
 because all of that complexity is behind this class.
 
-WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Measured under leave-one-image-out on 4
-externally-labelled frames, with the crack-free axis on the 6 owner-confirmed undamaged
-specimens. THIS IS THE HISTORICAL BASIS: those labels came from another tool and are used
-nowhere in this project now -- not for training, not for scoring -- so the table below is why
-the ensemble was chosen, not a current measurement. On the basis that remains
-(cross-validation grouped by whole image) the deployed ensemble holds IoU 0.789 +-0.039 with
-0.209% predicted area on the crack-free specimens; the per-member split has not been
-re-measured on that basis.
+WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Cross-validation grouped by whole image
+over all 71 labelled images -- train and test never share a frame -- which is the only split
+this data supports honestly:
 
-  approach                        mean IoU   pixel-weighted   recall   crack-free FP
-  17 hand-crafted features          0.744        0.721         0.891       7.43%
-  SAM 256 + 17 (the hybrid)         0.795        0.719         0.894       0.14%
-  mean probability of the two       0.821        0.777         0.914       0.11%
+  approach                      mean IoU   per fold
+  17 hand-crafted features        0.651     0.685 0.664 0.672 0.591 0.645
+  SAM 256 + 17 (the hybrid)       0.778     0.773 0.716 0.803 0.787 0.810
+  mean probability of the two     0.792     0.790 0.738 0.817 0.799 0.816
 
-The hybrid ALONE ties the old model once you weight by pixel count (0.719 vs
-0.721), because it loses badly on the one 23.5 MP mosaic -- 73% of all labelled
-pixels. Averaging fixes exactly that: it wins on all four images, on both
-weightings, with recall UP rather than traded away, and with the lowest false
-positives on specimens known to be crack-free. That combination is why this is
-the default and the hybrid alone is not.
+Averaging wins in EVERY fold, not on average -- which is the property worth having, because a
+mean can be carried by one fold. It costs about 25% more inference time than the hybrid alone.
+The 17-feature member is much weaker on its own here than the number this docstring used to
+quote (0.651 against 0.744), and that is the point of the change of basis rather than a
+regression: the old figure came from leave-one-image-out over 4 externally-labelled frames
+(17 alone 0.744, hybrid 0.795, ensemble 0.821, crack-free FP 7.43% / 0.14% / 0.11%). Those
+labels came from another tool and are used nowhere in this project now, so that table is why
+the ensemble was originally chosen and this one is why it stays. crossval_on_rows records the
+per-member split on every retrain, so this cannot go stale again.
+
+The deployed ensemble holds IoU 0.789 +-0.039 with 0.209% predicted area on the 6
+owner-confirmed crack-free specimens. That 0.789 and the 0.792 above differ because the two
+runs resampled different rows; the deployed figure is the one the gate recorded.
 
 A third member (SAM-only) was tested and adds +0.009 IoU, which is below the
 measured 0.0070 retrain-noise floor, so it is not included -- it would cost a

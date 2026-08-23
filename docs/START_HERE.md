@@ -59,11 +59,18 @@ a frame — with false positives on 6 owner-confirmed crack-free specimens:
 | precision / recall | 0.933 / 0.837 |
 | crack-free false positives | **0.209%** of area, 1.83 indications/frame |
 
-The per-member comparison that chose the ensemble over either member alone was measured on
-leave-one-image-out over 4 externally-labelled frames (17 alone 0.744, hybrid alone 0.795,
-ensemble 0.821). Those labels came from another tool and are used nowhere in the project now,
-so that table is history, not a current measurement — it is why the ensemble was chosen, and
-the numbers above are what the choice delivers on the basis that remains.
+Averaging beats either member alone on the same basis, in every fold rather than on average:
+
+| arm | mean IoU | per fold |
+|---|---|---|
+| 17 hand-crafted features | 0.651 | 0.685 0.664 0.672 0.591 0.645 |
+| SAM + 17 hybrid alone | 0.778 | 0.773 0.716 0.803 0.787 0.810 |
+| **mean-probability ensemble** | **0.792** | 0.790 0.738 0.817 0.799 0.816 |
+
+The older figures for this comparison (17 alone 0.744, hybrid 0.795, ensemble 0.821) came from
+leave-one-image-out over 4 externally-labelled frames. Those labels are used nowhere in the
+project now, so they are why the ensemble was originally chosen and the table above is why it
+stays. Every retrain re-measures it.
 
 ## Read next
 

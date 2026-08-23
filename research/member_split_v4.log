@@ -1,0 +1,93 @@
+  [  0.2m] features 1/71
+  [  0.4m] features 2/71
+  [  0.5m] features 3/71
+  [  0.7m] features 4/71
+  [  1.0m] features 5/71
+  [  1.2m] features 6/71
+  [  1.2m] features 7/71
+  [  1.2m] features 8/71
+  [  1.3m] features 9/71
+  [  1.3m] features 10/71
+  [  1.3m] features 11/71
+  [  1.4m] features 12/71
+  [  1.4m] features 13/71
+  [  1.5m] features 14/71
+  [  1.5m] features 15/71
+  [  1.8m] features 16/71
+  [  1.8m] features 17/71
+  [  2.0m] features 18/71
+  [  2.1m] features 19/71
+  [  2.2m] features 20/71
+  [  2.3m] features 21/71
+  [  2.4m] features 22/71
+  [  2.5m] features 23/71
+  [  2.6m] features 24/71
+  [  2.7m] features 25/71
+  [  2.8m] features 26/71
+  [  2.9m] features 27/71
+  [  3.0m] features 28/71
+  [  3.1m] features 29/71
+  [  3.2m] features 30/71
+  [  3.3m] features 31/71
+  [  3.4m] features 32/71
+  [  3.5m] features 33/71
+  [  3.6m] features 34/71
+  [  3.6m] features 35/71
+  [  3.7m] features 36/71
+  [  3.8m] features 37/71
+  [  3.9m] features 38/71
+  [  4.0m] features 39/71
+  [  4.2m] features 40/71
+  [  4.6m] features 41/71
+  [  4.9m] features 42/71
+  [  5.1m] features 43/71
+  [  5.3m] features 44/71
+  [  5.4m] features 45/71
+  [  5.6m] features 46/71
+  [  5.8m] features 47/71
+  [  5.9m] features 48/71
+  [  6.1m] features 49/71
+  [  6.2m] features 50/71
+  [  6.2m] features 51/71
+  [  6.3m] features 52/71
+  [  6.3m] features 53/71
+  [  6.6m] features 54/71
+  [  6.6m] features 55/71
+  [  6.8m] features 56/71
+  [  6.9m] features 57/71
+  [  7.2m] features 58/71
+  [  7.5m] features 59/71
+  [  7.6m] features 60/71
+  [  7.8m] features 61/71
+  [  7.9m] features 62/71
+  [  8.0m] features 63/71
+  [  8.1m] features 64/71
+  [  8.2m] features 65/71
+  [  8.4m] features 66/71
+  [  8.5m] features 67/71
+  [  8.6m] features 68/71
+  [  8.9m] features 69/71
+  [  9.1m] features 70/71
+  [  9.4m] features 71/71
+  rows 3,519,311  groups 71
+  [  9.4m] cross-validation fold 1/5
+  [  9.6m] cross-validation fold 2/5
+  [  9.8m] cross-validation fold 3/5
+  [ 10.1m] cross-validation fold 4/5
+  [ 10.2m] cross-validation fold 5/5
+
+================================================================
+  grouped-by-image 5-fold over 71 images
+
+  arm                         mean IoU
+  17 hand-crafted features      0.6513
+  SAM + 17 hybrid alone         0.7777
+  mean-probability ensemble     0.7921   <- deployed
+
+  per fold (17 / hybrid / ensemble):
+    14 images   0.6845  0.7728  0.7903
+    14 images   0.6638  0.7159  0.7383
+    14 images   0.6723  0.8025  0.8172
+    14 images   0.5914  0.7871  0.7992
+    15 images   0.6445  0.8102  0.8157
+MEMBER_DONE

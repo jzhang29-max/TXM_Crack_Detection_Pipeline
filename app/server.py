@@ -1086,5 +1086,15 @@ def api_export_all():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8800"))
     print(f"\n  TXM Crack Detection")
+    # Staging files from writes that were killed rather than raised. Nothing reads them and
+    # nothing else deletes them, so without this they accumulate for the life of the install
+    # -- 271 files and 12.8 GB here after one day of interrupted retrains. Only files older
+    # than an hour, so a write in flight is never touched.
+    try:
+        _n, _b = S.sweep_stale_temps()
+        if _n:
+            print(f"  cleaned {_n} unfinished staging file(s), reclaimed {_b/1e9:.1f} GB")
+    except Exception:                                           # noqa: BLE001
+        pass
     print(f"  open  http://127.0.0.1:{port}\n", flush=True)
     app.run(host="127.0.0.1", port=port, debug=False, threaded=True)

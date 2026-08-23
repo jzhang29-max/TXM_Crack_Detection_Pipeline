@@ -519,6 +519,43 @@ def available_models():
 PROB_CACHE_KEEP = 6
 
 
+def sweep_stale_temps(max_age_s=3600, dry_run=False):
+    """Delete staging files that no process is going to finish writing.
+
+    Every atomic write here stages to "<final>.<pid>.<thread>.tmp" and unlinks it on
+    exception -- but not on SIGKILL, a power cut, or a `kill` from a shell, because no
+    handler runs. Those files are invisible in the UI and never read, so they accumulate
+    silently: this repo reached 271 of them totalling 9.1 GB after a day of interrupted
+    retrains and killed servers, and a prob.npy for a 32 MP frame is 128 MB on its own.
+
+    Age, not pid, decides. Checking whether the pid is alive looks more precise and is
+    wrong: pids are recycled, and a temp written by a process that has since exited can
+    share a number with something running now. Anything older than an hour cannot belong to
+    a write still in flight -- the slowest single write in this app is a 128 MB array.
+
+    Returns (files_removed, bytes_reclaimed).
+    """
+    import time as _t
+    cutoff = _t.time() - max_age_s
+    n = freed = 0
+    for root, _dirs, files in os.walk(IMAGES):
+        for fn in files:
+            if ".tmp" not in fn:
+                continue
+            p = os.path.join(root, fn)
+            try:
+                st = os.stat(p)
+                if st.st_mtime >= cutoff:
+                    continue
+                if not dry_run:
+                    os.unlink(p)
+                n += 1
+                freed += st.st_size
+            except OSError:
+                continue
+    return n, freed
+
+
 def _prob_cache_dir(image_id):
     d = path(image_id, "probs")
     os.makedirs(d, exist_ok=True)

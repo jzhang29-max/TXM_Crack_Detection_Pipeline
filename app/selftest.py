@@ -807,6 +807,43 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the embedding lookup blends without seams", False, str(e))
 
+    # Staging files left by writes that were KILLED rather than raised. The atomic-write
+    # helpers unlink their temp on exception, but no handler runs for SIGKILL or a power cut,
+    # and nothing reads or reaps those files -- so they accumulate invisibly. This install
+    # reached 271 of them, 12.8 GB, after one day of interrupted retrains. The sweep must
+    # take the stale ones and leave anything recent, because a file being written right now
+    # looks exactly the same apart from its age.
+    try:
+        import store as _S6
+        import numpy as _np6
+        import time as _t6
+        _d6 = os.path.join(_S6.IMAGES, "SELFTEST_SWEEP__probe")
+        os.makedirs(_d6, exist_ok=True)
+        _old = os.path.join(_d6, "prob.npy.999999.888888.tmp")
+        _new = os.path.join(_d6, "prob.npy.999999.888889.tmp")
+        try:
+            for _p6 in (_old, _new):
+                with open(_p6, "wb") as _fh6:
+                    _np6.save(_fh6, _np6.zeros((4, 4), _np6.float32))
+            os.utime(_old, (_t6.time() - 7200, _t6.time() - 7200))
+            _n6, _b6 = _S6.sweep_stale_temps()
+            _gone = not os.path.exists(_old)
+            _kept = os.path.exists(_new)
+            check("unfinished staging files are reaped, recent ones spared",
+                  _gone and _kept, f"stale removed={_gone}, in-flight kept={_kept}")
+        finally:
+            for _p6 in (_old, _new):
+                try:
+                    os.unlink(_p6)
+                except OSError:
+                    pass
+            try:
+                os.rmdir(_d6)
+            except OSError:
+                pass
+    except Exception as e:                                      # noqa: BLE001
+        check("unfinished staging files are reaped, recent ones spared", False, str(e))
+
     # An embedding cache built before the tiles overlapped cannot be blended, and serving
     # from one would reintroduce the seams with nothing to show for it. read_emb has to
     # reject an untagged cache rather than trust it.
