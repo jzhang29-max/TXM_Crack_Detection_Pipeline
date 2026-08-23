@@ -111,17 +111,31 @@ def wait_job(base, jid, label, timeout=5400):
 
 
 def make_test_tiff():
-    """A test image built from the shipped ground truth, so no user data needed."""
+    """A small test image cropped from one of the shipped TXM images.
+
+    It used to come from dataset_cache's expanded ground-truth arrays. Those are gone --
+    they were the externally-labelled masks and the images that went with them -- so it now
+    crops a corner out of the smallest file in images/, which is the raw data this project
+    is actually about. Cropped rather than whole so ingest stays quick.
+    """
     import tifffile
-    gtdir = os.path.join(PROJECT, "dataset_cache")
-    cands = sorted(f for f in os.listdir(gtdir) if f.endswith("_img.npy")) if os.path.isdir(gtdir) else []
+    imgdir = os.path.join(PROJECT, "images")
+    if not os.path.isdir(imgdir):
+        return None, None
+    cands = [f for f in os.listdir(imgdir) if f.lower().endswith((".tif", ".tiff"))]
     if not cands:
         return None, None
-    # smallest first, so the test is quick
-    cands.sort(key=lambda f: os.path.getsize(os.path.join(gtdir, f)))
-    a = np.load(os.path.join(gtdir, cands[0]))
+    cands.sort(key=lambda f: os.path.getsize(os.path.join(imgdir, f)))
+    a = tifffile.imread(os.path.join(imgdir, cands[0]))
+    # 1536 square, not a smaller crop: the paint tests stroke at coordinates up to
+    # x=1320, y=1000 with radii up to 50, and the old dataset_cache image happened to be
+    # ~1700 px so they fitted. A 768 crop silently put four of them outside the image, and
+    # the failures read like paint and undo bugs rather than an out-of-bounds test fixture.
+    a = np.asarray(a)[:1536, :1536].astype(np.float64)
+    lo, hi = np.percentile(a, [1, 99])
+    a = np.clip((a - lo) / max(hi - lo, 1e-9), 0, 1)
     buf = io.BytesIO()
-    tifffile.imwrite(buf, (np.clip(a, 0, 1) * 65535).astype(np.uint16))
+    tifffile.imwrite(buf, (a * 65535).astype(np.uint16))
     return "SELFTEST_IMAGE.tif", buf.getvalue()
 
 
@@ -229,7 +243,7 @@ def main():
     # ---- upload + ingest
     fname, content = make_test_tiff()
     if content is None:
-        print("  FAIL  could not build a test image (dataset_cache missing)")
+        print("  FAIL  could not build a test image (images/ missing or empty)")
         sys.exit(1)
     _, up = req(B, "/api/upload", files={"files": (fname, content)}, timeout=120)
     check("upload accepted", up.get("ok") is True)

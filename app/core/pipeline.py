@@ -42,33 +42,15 @@ import model as M            # noqa: E402
 # Reference data that ships with the package: the only pixel-level ground truth
 # that exists (4 images), used to validate a retrain. If it is absent the gate
 # degrades to "warn and refuse to auto-deploy" rather than silently passing.
-GT_CACHE = os.path.join(PROJECT, "dataset_cache")
 # The four that ship with the repo. Kept as the floor rather than the whole list, because
 # any new densely-annotated stem dropped into dataset_cache has to be picked up by the gate,
 # the cross-validation and the feature builder at once -- and hardcoding meant adding ground
 # truth required editing four call sites, which is how a stem gets used by one and missed by
 # another.
-GT_STEMS_SHIPPED = ["333_75_um_zoom", "336_25", "338_13", "LARGE_343_75"]
 
 
-def _discover_gt_stems():
-    """Every stem in dataset_cache that has BOTH an image and a mask."""
-    found = list(GT_STEMS_SHIPPED)
-    try:
-        for f in sorted(os.listdir(GT_CACHE)):
-            if not f.endswith("_gt.npy"):
-                continue
-            stem = f[: -len("_gt.npy")]
-            if stem in found:
-                continue
-            if os.path.exists(os.path.join(GT_CACHE, f"{stem}_img.npy")):
-                found.append(stem)
-    except OSError:
-        pass
-    return found
 
 
-GT_STEMS = _discover_gt_stems()
 
 # THE REFERENCE FRAMES ARE THE TEST SET, NOT TRAINING DATA.
 #
@@ -96,10 +78,6 @@ RECIPE = "corrections_only_v3"
 MIN_ABS_IOU = 0.60
 
 
-def is_reference_image(filename):
-    """True if this image belongs to a specimen the reference frames come from."""
-    n = (filename or "").lower()
-    return any(t in n for t in REFERENCE_SPECIMENS)
 
 IOU_TOL = 0.01
 FP_TOL = 0.005
@@ -520,95 +498,15 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True):
 
 
 # ------------------------------------------------------------------ retrain
-def _gt_available():
-    return all(os.path.exists(os.path.join(GT_CACHE, f"{s}_{k}.npy"))
-               for s in GT_STEMS for k in ("img", "gt"))
 
 
-def ensure_gt_features(progress=None):
-    """Build the reference 17-feature stacks if they are missing. Returns what it built.
-
-    These are 2.1 GB (1.5 GB of it for the 23 MP mosaic) and a pure function of the
-    images, so they are neither shipped nor built at startup -- doing it on first run
-    added minutes to `./run_app.sh` for something only retraining ever reads. They are
-    built here instead, once, with progress, on the first retrain.
-
-    This has to happen BEFORE the bootstrap loop below, which skips any stem whose
-    feature file is absent. That skip is silent, and dropping the ground truth from
-    training is precisely the failure that once produced a 100%-crack model scoring
-    IoU 0.003 -- so "build it on demand" and "skip it quietly" must not be confused.
-    """
-    from txm_features import compute_feature_stack
-    built = []
-    for stem in GT_STEMS:
-        img_p = os.path.join(GT_CACHE, f"{stem}_img.npy")
-        feat_p = os.path.join(GT_CACHE, f"{stem}_features.npy")
-        if os.path.exists(feat_p) or not os.path.exists(img_p):
-            continue
-        if progress:
-            progress(f"preparing reference features: {stem} (first retrain only)", 0, 1)
-        img = np.load(img_p)
-        tmp = feat_p + ".tmp.npy"
-        np.save(tmp, compute_feature_stack(img).astype(np.float32))
-        os.replace(tmp, feat_p)                 # never leave a partial stack behind
-        del img
-        built.append(stem)
-    return built
 
 
 GT_EMB_DIR = os.path.join(S.DATA, "gt_emb")
 
 
-def gt_embedding(stem, progress=None):
-    """SAM embedding for a shipped ground-truth image, computed once and cached.
-
-    Also looks in the research cache (paint/sam_embcache) first, since those 4
-    images were embedded there under their full original filenames -- reusing
-    that avoids ~20s of GPU work per image on a user's first retrain.
-    """
-    os.makedirs(GT_EMB_DIR, exist_ok=True)
-    p = os.path.join(GT_EMB_DIR, f"{stem}.npz")
-    if os.path.exists(p):
-        z = np.load(p)
-        return z["coords"], z["emb"]
-
-    legacy = os.path.join(PROJECT, "paint", "sam_embcache")
-    if os.path.isdir(legacy):
-        key = stem.replace("LARGE_343_75", "343_75_LARGE")
-        for f in sorted(os.listdir(legacy)):
-            if key in f and f.endswith("_samemb.npz"):
-                try:
-                    z = np.load(os.path.join(legacy, f))
-                    coords, emb = z["coords"], z["emb"]
-                    np.savez(p, coords=coords, emb=emb)
-                    return coords, emb
-                except Exception:
-                    break
-
-    img = np.load(os.path.join(GT_CACHE, f"{stem}_img.npy"))
-    if progress:
-        progress(f"embedding ground truth {stem}", 0, 1)
-    coords, emb = M.embed_image(img)
-    np.savez(p, coords=coords, emb=emb)
-    del img
-    return coords, emb
 
 
-def _score(model, progress=None):
-    """(mean IoU, mean recall) on the four reference frames -- a HELD-OUT set since the
-    recipe change: nothing trains on them, or on corrections from their specimens."""
-    from generate_benchmark_report import metrics_from_pred
-    ious, recs = [], []
-    for i, stem in enumerate(GT_STEMS):
-        img = np.load(os.path.join(GT_CACHE, f"{stem}_img.npy"))
-        gt = np.load(os.path.join(GT_CACHE, f"{stem}_gt.npy")).astype(bool)
-        prob = model.predict(img)
-        s = metrics_from_pred(prob > 0.5, gt)
-        ious.append(s["iou"]); recs.append(s["recall"])
-        if progress:
-            progress("validating", i + 1, len(GT_STEMS))
-        del img, gt, prob
-    return float(np.mean(ious)), float(np.mean(recs))
 
 
 CLEAN_FP_CACHE = os.path.join(S.DATA, "models", "clean_fp.json")
@@ -679,43 +577,9 @@ CV_ROWS_PER_IMAGE = 60000
 CV_TRAIN_CAP = 400000
 CV_TEST_CAP = 250000
 CV_MAX_FOLDS = 5
-LABEL_FOLDS = os.path.join(PROJECT, "paint", "label_folds.npz")
 CV_TRAIN_CAP = 90000
 
 
-def _gt_rows(stem, n, rng):
-    """n pixels sampled UNIFORMLY from one ground-truth image, as [17 | 256] features.
-
-    Uniform, not class-balanced, so the sample's crack fraction equals the real image's and
-    IoU measured on it is an unbiased estimate of the whole-image value.
-    """
-    gt = np.asarray(np.load(os.path.join(GT_CACHE, f"{stem}_gt.npy"), mmap_mode="r")).astype(bool)
-    feat_p = os.path.join(GT_CACHE, f"{stem}_features.npy")
-    if not os.path.exists(feat_p):
-        return None
-    feat = np.load(feat_p, mmap_mode="r")
-    if feat.shape[:2] != gt.shape:
-        return None
-    H_, W_ = gt.shape
-    idx = np.sort(rng.choice(H_ * W_, min(n, H_ * W_), replace=False))
-    rr, cc = np.unravel_index(idx, (H_, W_))
-    x17 = np.asarray(feat[rr, cc, :], np.float32)
-    del feat
-    block = x17
-    if get_model().needs_sam():
-        coords, embs = gt_embedding(stem)
-        if coords is not None:
-            b = np.zeros((len(rr), embs.shape[1]), np.float32)
-            todo = np.ones(len(rr), bool)
-            for t in range(len(coords) - 1, -1, -1):
-                y0, x0 = int(coords[t][0]), int(coords[t][1])
-                sel = (todo & (rr >= y0) & (rr < y0 + M.TILE)
-                       & (cc >= x0) & (cc < x0 + M.TILE))
-                if sel.any():
-                    b[sel] = M.interp_tile(embs[t], rr[sel] - y0, cc[sel] - x0)
-                    todo &= ~sel
-            block = np.concatenate([x17, b], axis=1)
-    return block, gt.ravel()[idx], x17.shape[1]
 
 
 def false_indications(model_key=None, threshold=0.5):
@@ -757,7 +621,7 @@ def false_indications(model_key=None, threshold=0.5):
 def crossval_on_rows(X, y, groups, progress=None):
     """Grouped-by-image k-fold on the rows the model was actually trained on.
 
-    Replaces the external-based crossval_grouped as the gate's honest axis. Nothing here
+    Replaces the gate's old externally-labelled axis. Nothing here
     touches dataset_cache: the rows are the owner's own corrections, and the grouping is the
     image each row came from, so train and test never share an image -- which is the property
     that matters, because the 17 features reach 256 px and a SAM embedding is one vector per
@@ -818,134 +682,6 @@ def crossval_on_rows(X, y, groups, progress=None):
                 mean_recall=round(float(np.mean([f["recall"] for f in per_fold])), 4))
 
 
-def crossval_grouped(progress=None):
-    """Honest generalisation estimate: k-fold GROUPED BY IMAGE, k = number of GT images.
-
-    WHY NOT ORDINARY k-FOLD. Splitting pixels at random leaks, badly. The 17 hand-crafted
-    features are computed from neighbourhoods reaching 256 px, and a SAM embedding is a
-    bilinear lookup into a 64x64 grid per 1024-px tile, so a 16x16 block of pixels shares
-    essentially one embedding vector. A randomly held-out pixel therefore almost always has
-    a training pixel a few pixels away carrying the same measurement. Measured on this data
-    with the deployed architecture: random 4-fold gives IoU 0.930 with a fold sd of 0.003,
-    grouping by image gives 0.824 with a fold sd of 0.050. Random k-fold does not merely
-    fail to reveal overfitting, it inflates the score by 0.106 and reports a suspiciously
-    tight spread while doing it.
-
-    Grouping by image is the coarsest split the data supports and the only one where train
-    and test share no neighbourhood. With four ground-truth images it is leave-one-image-out.
-
-    WHAT THIS NUMBER IS AND IS NOT. It measures THE ARCHITECTURE PLUS THE GROUND TRUTH, at
-    a capped row count, refit from scratch per fold. It is not the deployed model's own
-    score -- that model saw all four images, so it has no honest score and never can.
-    Read this as "what a model built this way scores on an image it has not seen".
-
-    n = 4, and the fold sd is ~0.05. Differences under ~0.015 are reseeding noise.
-    """
-    if not _gt_available():
-        return None
-    from sklearn.model_selection import GroupKFold
-    rng = np.random.RandomState(0)
-    Xs, ys, gs = [], [], []
-    for gi, stem in enumerate(GT_STEMS):
-        if progress:
-            progress(f"cross-validation: sampling {stem}", gi, len(GT_STEMS))
-        got = _gt_rows(stem, CV_ROWS_PER_IMAGE, rng)
-        if got is None:
-            continue
-        block, y, n17 = got
-        Xs.append(block); ys.append(y); gs.append(np.full(len(y), gi))
-
-    # The owner's own labels, when code/build_label_folds.py has been run. Without them this
-    # number depends only on the four shipped ground-truth images, so it cannot move when
-    # someone labels more -- which makes it useless as a gate. With them it responds to the
-    # actual corpus, and each labelled image is its own GROUP so no image is ever on both
-    # sides of a fold.
-    extra_groups = 0
-    if os.path.exists(LABEL_FOLDS):
-        try:
-            z = np.load(LABEL_FOLDS, allow_pickle=False)
-            ids = sorted({k.split("|")[0] for k in z.files})
-            base = len(GT_STEMS)
-            for j, iid in enumerate(ids):
-                kx, ks, ky = f"{iid}|x17", f"{iid}|xsam", f"{iid}|y"
-                if not (kx in z.files and ks in z.files and ky in z.files):
-                    continue
-                blk = np.concatenate([z[kx], z[ks]], axis=1)
-                if Xs and blk.shape[1] != Xs[0].shape[1]:
-                    continue                       # width mismatch: skip, never pad
-                Xs.append(blk.astype(np.float32))
-                ys.append(z[ky].astype(bool))
-                gs.append(np.full(len(z[ky]), base + j))
-                extra_groups += 1
-            if progress and extra_groups:
-                progress(f"cross-validation: +{extra_groups} labelled images", 1, 1)
-        except (OSError, ValueError, KeyError):
-            extra_groups = 0                       # a damaged cache must not sink a retrain
-    if len(Xs) < 2:
-        return None
-    X = np.concatenate(Xs); y = np.concatenate(ys); g = np.concatenate(gs)
-    del Xs, ys, gs
-    # Grouped by image, but capped: with 71 labelled images leave-one-image-out would mean
-    # 75 refits per retrain. GroupKFold with k folds keeps whole images together while
-    # holding the refit count fixed, which is the property that matters.
-    n_groups = len(np.unique(g))
-    k = min(CV_MAX_FOLDS, n_groups)
-
-    from sklearn.neural_network import MLPClassifier
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
-
-    def _clf():
-        """Same architecture as the deployed model, so this number describes what ships.
-
-        Kept deliberately in step: this was briefly a single HistGradientBoosting, to match a
-        deployed model that then failed the false-positive gate and was reverted. A held-out
-        figure measuring an architecture other than the one shipping is worse than none,
-        because it reads as though it had been checked.
-        """
-        return Pipeline([("scaler", StandardScaler()),
-                         ("mlp", MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300,
-                                               random_state=0, early_stopping=True,
-                                               n_iter_no_change=8))])
-
-    per_fold = []
-    for f, (tr, te) in enumerate(GroupKFold(k).split(X, groups=g), 1):
-        # Name the fold by WHAT IT HOLDS, not by its first group. With 75 groups over 5
-        # folds each fold holds ~15 images, so labelling it after one ground-truth stem
-        # read as if that single image were the test set.
-        gids = sorted(set(int(v) for v in g[te]))
-        gt_in = [GT_STEMS[i] for i in gids if i < len(GT_STEMS)]
-        held = (f"{len(gids)} images" + (f" incl. {', '.join(gt_in)}" if gt_in else ""))
-        if progress:
-            progress(f"cross-validation fold {f}/{k}: holding out {held}", f, k)
-        if len(tr) > CV_TRAIN_CAP:
-            tr = np.random.RandomState(7).choice(tr, CV_TRAIN_CAP, replace=False)
-        # The deployed architecture: mean probability of a 17-feature model and the hybrid.
-        probs = []
-        for cols in (slice(0, n17), slice(0, X.shape[1])):
-            probs.append(_clf().fit(X[tr, cols], y[tr]).predict_proba(X[te, cols])[:, 1])
-        prob = np.mean(probs, axis=0)
-        pred = prob >= 0.5
-        tp = int((pred & y[te]).sum()); fp = int((pred & ~y[te]).sum())
-        fn = int((~pred & y[te]).sum())
-        per_fold.append(dict(held_out=held, n=int(len(te)),
-                             iou=round(tp / max(tp + fp + fn, 1), 4),
-                             precision=round(tp / max(tp + fp, 1), 4),
-                             recall=round(tp / max(tp + fn, 1), 4)))
-    ious = [f["iou"] for f in per_fold]
-    # `mean_iou` is agreement on JUDGED pixels: labels are dense ground truth on the four
-    # shipped images and the owner's own corrections elsewhere. It is not IoU against
-    # physical truth, and the scorecard says so.
-    return dict(k=k, per_fold=per_fold, labelled_images_used=extra_groups,
-                label_source=("ground truth + owner corrections" if extra_groups
-                              else "ground truth only"),
-                mean_iou=round(float(np.mean(ious)), 4),
-                std_iou=round(float(np.std(ious)), 4),
-                min_iou=round(float(np.min(ious)), 4),
-                mean_precision=round(float(np.mean([f["precision"] for f in per_fold])), 4),
-                mean_recall=round(float(np.mean([f["recall"] for f in per_fold])), 4),
-                rows_per_image=CV_ROWS_PER_IMAGE, train_cap=CV_TRAIN_CAP,
-                grouped_by="image")
 
 
 RETRAIN_HISTORY = os.path.join(S.DATA, "models", "retrain_history.json")

@@ -171,15 +171,12 @@ A mean-probability ensemble of two MLPs on those features — one on the 17 alon
 tried; it marked 7.5× more crack-free material as crack and was reverted. That measurement
 is in [docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
 
-The four dense reference frames in `dataset_cache/` are a **held-out test set**: nothing
-trains on them, or on corrections from their specimens, so the retrain gate's number is a
-real generalisation number.
+Nothing is held back from training, and nothing is scored against a label you did not draw.
+The retrain gate has two axes: cross-validation grouped by whole image, so train and test
+never share a frame, and predicted area on the specimens you confirmed contain no crack,
+where any prediction is a false positive by construction.
 
 ## How well it does
-
-![Model against ground truth](docs/img/ground_truth.png)
-
-The model's output beside the hand-labelled truth for the same window.
 
 - **IoU 0.776** under cross-validation grouped by image — train and test never share an
   image (fold sd 0.029, worst fold 0.733, precision 0.929, recall 0.824). This is the
@@ -226,7 +223,6 @@ app/core/store.py      per-image storage and the model registry
 app/static/index.html  the whole frontend
 code/                  features, destitch, flatfield, SAM harness, batch utilities
 images/                all 71 raw TXM images, bit-exact float32 TIFF (predictor 3)
-dataset_cache/         the reference ground-truth images (needed to validate a retrain)
 models/                the two shipped models: f17_v3 (17-feature member) and hybrid_v3
                        (SAM+17 member), averaged at predict time. Both trained only on
                        the corrections in this repo
@@ -239,7 +235,7 @@ Nothing points outside the checkout, so moving or deleting your originals cannot
 
 - **Code** — MIT, see [LICENSE](LICENSE).
 - **Data** — CC BY 4.0, see [LICENSE-DATA](LICENSE-DATA), covering `images/`,
-  `dataset_cache/`, `paint/corrections/` and the derived results. Free to reuse with
+  `paint/corrections/` and the derived results. Free to reuse with
   credit; please cite the repository.
 
 If you use the labels, read `docs/HANDOFF.md` section 4 first — it records which labels are

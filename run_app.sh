@@ -36,15 +36,14 @@ fi
 
 mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
 
-# Expand the compressed ground truth / corrections a distributed checkout ships with.
+# Expand the compressed correction masks a distributed checkout ships with
+# (1.0 GB of .npy from a ~3 MB archive).
 # Idempotent -- a no-op on every run after the first.
 #
 # --skip-features on purpose: the 17-feature reference stacks are 2.1 GB and take
 # minutes to compute, and NOTHING except retraining reads them. Building them here
 # meant the first `./run_app.sh` sat silently for several minutes before serving.
-# pipeline.ensure_gt_features() builds them on the first Retrain instead, with
-# progress in the UI.
-python3 code/unpack_package.py --skip-features || echo "==> WARNING: unpack step failed; retrain validation may be unavailable"
+python3 code/unpack_package.py || echo "==> WARNING: unpack step failed; the shipped correction labels may be missing"
 
 # SAM is optional, and as of this version that is TRUE rather than aspirational: if the
 # import fails or the weights cannot be fetched, ingest catches it, predicts with the

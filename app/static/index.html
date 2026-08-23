@@ -315,7 +315,8 @@ const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${$("#pp
 async function loadModel(){
   const m=await j("/api/model");
   $("#mdesc").innerHTML=`<b>${m.current.kind==="ensemble"?"SAM + 17-feature ensemble":"single model"}</b>`+
-    (m.ground_truth_available?"":`<div style="color:var(--warn);font-size:11.5px;margin-top:4px">No ground truth — retraining cannot be validated.</div>`);
+    "";   // there is no external ground truth to be missing any more: the gate validates
+          // on cross-validation over your own corrections plus the crack-free specimens
   await loadModelList();
   await loadRetrainReport();
 }

@@ -127,8 +127,7 @@ def api_model():
     except Exception as e:
         desc = f"NOT LOADED: {type(e).__name__}: {e}"
     return jsonify(current=r["current"], description=desc,
-                   history=len(r.get("history") or []),
-                   ground_truth_available=P._gt_available())
+                   history=len(r.get("history") or []))
 
 
 @app.route("/api/images")

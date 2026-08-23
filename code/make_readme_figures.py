@@ -44,7 +44,6 @@ import store as S            # noqa: E402
 import pipeline as P         # noqa: E402
 
 OUT = os.path.join(PROJECT, "docs", "img")
-GT_CACHE = os.path.join(PROJECT, "dataset_cache")
 
 CRACK_RGB = np.array([230, 70, 70])
 NOT_RGB = np.array([40, 190, 210])
@@ -60,9 +59,6 @@ PREPROCESS_IMAGE = "HC_316L_fatigue_1200_cycles"
 GT_IMAGE = ("336_25", "b2_336_25")          # (ground-truth stem, app filename fragment)
 # All four, for the correction figure to search: it needs a false positive that ground
 # truth can vouch for, and only one image turns out to have one big enough.
-GT_CANDIDATES = [("LARGE_343_75", "b2_343_75_LARGE"), ("336_25", "b2_336_25"),
-                 ("338_13", "b2_338_13"), ("333_75_um_zoom", "B2_333_75_um_zoom")]
-
 # Crops are PINNED, not searched, for the images above. find_crop() picks the window from
 # a model's mask, so the same figure moved when regenerated under a different model --
 # and one of those moves pushed the crack half out of frame. A README figure is a curated
@@ -257,36 +253,6 @@ def fig_detection(key, label):
          "example_detection.png")
 
 
-def fig_ground_truth(key, label):
-    stem, frag = GT_IMAGE
-    m = find_image(frag)
-    gt_p = os.path.join(GT_CACHE, f"{stem}_gt.npy")
-    if not os.path.exists(gt_p):
-        print(f"  skipping ground_truth.png -- {gt_p} missing (run unpack_package.py)")
-        return
-    gt = np.asarray(np.load(gt_p, mmap_mode="r")).astype(bool)
-    disp = np.asarray(S.load_npy(m["id"], "display.npy", mmap=True))
-    raw = np.asarray(S.load_npy(m["id"], "img.npy", mmap=True))
-    prob = prob_of(m["id"], key)
-    if gt.shape != prob.shape:
-        print(f"  skipping ground_truth.png -- gt {gt.shape} != image {prob.shape}")
-        return
-    mask = prob > 0.5
-    y, x, ch, cw = crop_for(GT_IMAGE[1], mask, raw, frac=0.62)
-    g = as_app_shows(m['id'], disp[y:y + ch, x:x + cw])
-    mk, gk = mask[y:y + ch, x:x + cw], gt[y:y + ch, x:x + cw]
-    inter, union = int((mk & gk).sum()), int((mk | gk).sum())
-    save(strip([("what you see", g),
-                (f"{label}", tint(g, mk, CRACK_RGB)),
-                ("hand-labelled ground truth", tint(g, gk, np.array([120, 200, 120])))],
-               caption=f"{stem}  -  IoU {inter/max(union,1):.3f} inside this window. "
-                       f"Read that as agreement, not accuracy: every model here is "
-                       f"fitted on these four ground-truth images, so a score measured "
-                       f"on them is in-sample. The held-out number, leave-one-image-out "
-                       f"across all four, is IoU 0.821 / recall 0.914."),
-         "ground_truth.png")
-
-
 def fig_preprocessing(key, label):
     m = find_image(PREPROCESS_IMAGE)
     raw = np.asarray(S.load_npy(m["id"], "img.npy", mmap=True))
@@ -307,87 +273,8 @@ def fig_preprocessing(key, label):
          "preprocessing.png")
 
 
-def fig_correction(key, label):
-    """Before and after one Flip region click, on a false positive GROUND TRUTH confirms.
-
-    Three earlier versions of this figure were rejected, and the reasons are worth
-    keeping because they constrain what an honest one can be:
-
-    1. Painting the not-crack LABEL directly is unreadable. Most not-crack pixels in this
-       dataset are imported research negatives covering whole crack-free areas, so every
-       candidate window came out 56-86% flat cyan with nothing else to look at.
-    2. Featuring a real flip from the label data is not defensible. On the four images
-       where truth exists, EVERY flip larger than 8 k px that overlaps predicted crack
-       removes real crack -- 72-94% of each such region is crack in ground truth. Those
-       negatives came in with the research import and are wrong; captioning one as a
-       correct correction would be showing a mislabelling as an exemplar.
-    3. The crack-free specimens, where any prediction is a false positive by definition,
-       only carry 4-23 k px of them and mostly at the frame edge. Good news about the
-       model, no figure in it.
-
-    What is left, and what this renders: the largest coherent region the model calls
-    crack that ground truth says is 0.00% crack, in a window where real crack survives
-    the click. One candidate in the whole dataset meets that bar. It happens to show the
-    model's documented main failure mode -- running wide of a crack rather than inventing
-    one somewhere else -- which is the honest thing for this figure to show.
-    """
-    from skimage import measure, morphology
-    best = None
-    for stem, frag in ((s2, f2) for s2, f2 in GT_CANDIDATES):
-        gt_p = os.path.join(GT_CACHE, f"{stem}_gt.npy")
-        if not os.path.exists(gt_p):
-            continue
-        try:
-            m = find_image(frag)
-        except SystemExit:
-            continue
-        gt = np.asarray(np.load(gt_p, mmap_mode="r")).astype(bool)
-        prob = S.load_npy_at(S.prob_cache_path(m["id"], key), mmap=True)
-        if prob is None:
-            continue
-        mask = np.asarray(prob) > 0.5
-        if mask.shape != gt.shape:
-            continue
-        lab = measure.label(morphology.binary_opening(mask & ~gt, morphology.disk(4)))
-        for pr in sorted(measure.regionprops(lab), key=lambda q: -q.area)[:4]:
-            if pr.area < 15000:
-                continue
-            reg = lab == pr.label
-            if float(gt[reg].mean()) > 0.001:          # must be verifiably not crack
-                continue
-            y0, x0, y1, x1 = pr.bbox
-            pad = int(0.85 * max(y1 - y0, x1 - x0))
-            wy0, wx0 = max(0, y0 - pad), max(0, x0 - pad)
-            wy1, wx1 = min(gt.shape[0], y1 + pad), min(gt.shape[1], x1 + pad)
-            kept = float((mask & gt)[wy0:wy1, wx0:wx1].mean())
-            if kept < 0.05:                            # real crack must stay in frame
-                continue
-            score = pr.area * min(kept, 0.20)
-            if best is None or score > best[0]:
-                best = (score, stem, m, mask, reg, (wy0, wx0, wy1 - wy0, wx1 - wx0), int(pr.area))
-    if best is None:
-        print("  skipping example_correction.png -- no ground-truth-verified false "
-              "positive is large enough to feature")
-        return
-    _, stem, m, mask, blob, (y, x, ch, cw), area = best
-
-    disp = np.asarray(S.load_npy(m["id"], "display.npy", mmap=True))
-    g = as_app_shows(m["id"], disp[y:y + ch, x:x + cw])
-    mk, bl = mask[y:y + ch, x:x + cw], blob[y:y + ch, x:x + cw]
-    save(strip([(f"{label}: red = crack", tint(g, mk, CRACK_RGB)),
-                ("after one Flip region click", tint(tint(g, mk & ~bl, CRACK_RGB),
-                                                     bl, NOT_RGB, alpha=0.45))],
-               caption=f"{stem}  -  the model ran {area:,} px past the end of this crack. "
-                       f"Ground truth says 0.00% of the cyan region is crack, so the click "
-                       f"is verifiably right, and the real crack in the same window stays "
-                       f"red. One click on the connected blob; Erase would brush the same "
-                       f"area in about a minute. Both write the same not-crack label, "
-                       f"which Retrain then learns from."),
-         "example_correction.png")
-
-
-FIGURES = dict(detection=fig_detection, ground_truth=fig_ground_truth,
-               preprocessing=fig_preprocessing, correction=fig_correction)
+FIGURES = dict(detection=fig_detection,
+               preprocessing=fig_preprocessing, )
 
 
 def rank_candidates():

@@ -2,7 +2,6 @@
 
     python3 code/annotation_tiles.py load            # tiles -> the app, WITHOUT predicting
     python3 code/annotation_tiles.py status          # how densely each tile is annotated
-    python3 code/annotation_tiles.py import          # finished tiles -> dataset_cache
 
 STEP 1, `load`. Puts every tile from code/export_annotation_tiles.py into the app as a
 normal image so it can be painted with the tools already learned -- but ingested with
@@ -15,16 +14,11 @@ STEP 2, paint. Add crack covers crack; Erase covers not-crack. Every pixel needs
 other -- that is what makes it *dense*, and dense is what makes IoU computable, because IoU
 needs the false negatives. `status` reports the fraction still untouched per tile.
 
-STEP 3, `import`. Writes each finished tile into dataset_cache as `<stem>_img.npy` and
-`<stem>_gt.npy`, which pipeline.GT_STEMS now discovers automatically -- so the retrain gate,
-crossval_grouped, crossval_groups and the scorecard all pick it up with no further wiring.
-The 17-feature stack is built by ensure_gt_features on the next retrain.
+NO STEP 3. `import` used to copy finished tiles into dataset_cache as ground-truth arrays for
+the retrain gate to score against. Nothing is scored against a separate labelled set any
+more, so a painted tile feeds training exactly the way every other image does -- through the
+corrections drawn on it -- and there is nothing left to import.
 
-REFUSES A TILE THAT IS NOT DENSE. Below --min-covered (default 0.95) of pixels judged, the
-tile is skipped with a message. A sparsely-painted tile imported as dense ground truth would
-count every unpainted crack pixel as background -- a false negative that is really a missing
-label -- and that silently deflates every recall number computed afterwards. Measured on this
-project's own sparse corrections: treating them as dense gives a mean IoU of 0.06.
 """
 
 import argparse
@@ -116,60 +110,15 @@ def cmd_status(a):
     return 0
 
 
-def cmd_import(a):
-    man = manifest()
-    have = loaded()
-    os.makedirs(P.GT_CACHE, exist_ok=True)
-    wrote, skipped = 0, []
-    for t in man["tiles"]:
-        m = have.get(t["tile"])
-        if m is None:
-            skipped.append((t["tile"], "not loaded")); continue
-        cov, cr = _judged(m["id"])
-        if cov < a.min_covered:
-            skipped.append((t["tile"], f"only {cov*100:.1f}% judged")); continue
-        corr = np.asarray(S.load_npy(m["id"], "correction.npy"))
-        img = np.asarray(S.load_npy(m["id"], "img.npy"))
-        if corr.shape != img.shape:
-            skipped.append((t["tile"], "shape mismatch")); continue
-        stem = f"annot_{os.path.splitext(t['tile'])[0]}"
-        gt = (corr == 1)
-        np.save(os.path.join(P.GT_CACHE, f"{stem}_img.npy"), img.astype(np.float32))
-        np.save(os.path.join(P.GT_CACHE, f"{stem}_gt.npy"), gt)
-        # provenance next to the data, so nobody has to guess where a stem came from
-        with open(os.path.join(P.GT_CACHE, f"{stem}_source.json"), "w") as f:
-            json.dump(dict(tile=t["tile"], source_image=t["filename"], group=t["group"],
-                           y=t["y"], x=t["x"], size=t["size"],
-                           judged_fraction=round(cov, 4), crack_fraction=round(cr, 4),
-                           sampling="uniform-random inside specimen support",
-                           annotated_by="owner, without a model overlay"), f, indent=1)
-        wrote += 1
-        print(f"  {stem}  {cr*100:5.2f}% crack, {cov*100:.1f}% judged")
-    if skipped:
-        print(f"\n  skipped {len(skipped)}:")
-        for n, why in skipped[:12]:
-            print(f"    {n}  --  {why}")
-    if wrote:
-        stems = P._discover_gt_stems()
-        print(f"\n{wrote} tile(s) written to dataset_cache.")
-        print(f"pipeline.GT_STEMS now discovers {len(stems)} stems "
-              f"({len(stems)-len(P.GT_STEMS_SHIPPED)} new).")
-        print("\nThe 17-feature stacks build on the next Retrain (ensure_gt_features), and")
-        print("from then on the gate, crossval_grouped and the scorecard all use them.")
-        print("For the first honest AM/HC number without waiting for a retrain:")
-        print("  python3 code/crossval.py")
-    return 0
-
-
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("load", "status", "import"):
+    for name in ("load", "status"):
         p = sub.add_parser(name)
         p.add_argument("--min-covered", type=float, default=0.95,
                        help="fraction of pixels that must be judged for a tile to count")
     a = ap.parse_args()
-    return {"load": cmd_load, "status": cmd_status, "import": cmd_import}[a.cmd](a)
+    return {"load": cmd_load, "status": cmd_status}[a.cmd](a)
 
 
 if __name__ == "__main__":
