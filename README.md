@@ -198,6 +198,13 @@ Full per-specimen breakdowns, the validation protocol and a 78-variant architect
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
 `SAM_COMPARISON.md`, `PUBLISHABILITY.md` and `HANDOFF.md`.
 
+**Why is the predicted crack wider than the real one?** Measured, and four fixes tried and
+rejected: [docs/OVERMARKING.md](docs/OVERMARKING.md). The model draws a ~15 px hairline about
+50 px wide, your own brush strokes are the tighter boundary, and raising the threshold,
+dropping the large smoothing scales, image-guided refinement and halving the SAM embedding
+stride all trade accuracy for thinness without localising better. The blocker is that every
+accuracy number is scored against brush strokes that over-mark too.
+
 **Why SAM 1 and not SAM 2 or SAM 3?** Measured, not assumed:
 [docs/ENCODER_COMPARISON.md](docs/ENCODER_COMPARISON.md). SAM 2's features are more
 discriminative in isolation (+0.021 IoU on the hybrid member, p=0.029) but that advantage
