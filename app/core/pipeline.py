@@ -475,8 +475,17 @@ def prune_specks(mask, min_px=None):
 CORRECTION_FLOOR = 0.20
 
 
+# Fill enclosed not-crack islands up to this many pixels. MEASURED over the first 14
+# images: 1,313 interior holes totalling 176,163 px, and the distribution is sharply
+# bimodal -- 1,302 of them (99.2%) are under 1,024 px and account for only 19.4% of the
+# hole AREA, while two holes of 59,194 and 65,505 px make up most of it. Those two are
+# islands of intact material surrounded by crack, and filling them would be a lie about
+# the specimen. So the cutoff keeps the noise and keeps the islands.
+FILL_HOLES_MAX_PX = 1024
+
+
 def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
-                   corrections="paste"):
+                   corrections="paste", fill_holes=True):
     """The model's prediction, combined with the user's corrections in one of three ways.
 
     THREE MODES, because the canvas and the export want different things and a single
@@ -525,6 +534,15 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
     mask = M.postprocess(prob) if postprocess else (prob > threshold)
     if prune and not postprocess:
         mask = prune_specks(mask)
+    if fill_holes and not postprocess:
+        # Speck pruning removes small ISLANDS of crack; this removes small islands of
+        # not-crack inside crack. They are the same argument from opposite sides: a
+        # 3-pixel gap in the middle of a crack is noise in the probability map, not a
+        # feature of the material. Legacy post-processing did fill holes, but it is off by
+        # default because of everything ELSE it did -- it measurably deleted thin crack.
+        # This is the one part of it worth keeping, on its own, with a measured cutoff.
+        from skimage.morphology import remove_small_holes
+        mask = remove_small_holes(mask, area_threshold=FILL_HOLES_MAX_PX)
     if corrections == "none":
         return mask
     corr = S.load_npy(image_id, "correction.npy")
