@@ -234,6 +234,7 @@ button:disabled{opacity:.4;cursor:default}
         <button class="ghost" id="fit">Fit</button></div>
       <div class="fld">Sensitivity <input type="range" id="thr" min="5" max="95" value="50"><span class="num" id="thrv">0.50</span></div>
       <label class="fld" style="gap:7px"><input type="checkbox" id="pp"> Legacy post-processing</label>
+      <label class="fld" style="gap:7px" title="Show the model's raw prediction, ignoring your corrections. Measured: your strokes are 2-3.6x TIGHTER than the model on thin cracks, so this WIDENS the mask rather than narrowing it. Its use is checking whether a retrain actually learned a region. Exports already use a gated mode that keeps your labels but lets the image draw the boundary."><input type="checkbox" id="modelonly"> Model output only</label>
       <div class="sp"></div>
       <button class="ghost" id="reapply" title="Re-predict every image with the current model">Re-apply model</button>
       <button class="ghost" id="undo2">Undo <span class="kbd">⌘Z</span></button>
@@ -309,6 +310,11 @@ const dur=x=>{x=Math.round(x);const h=Math.floor(x/3600),m=Math.round((x%3600)/6
 const px=n=>n>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M"
   :n>=1e3?Math.round(n/1e3)+"k":String(n);
 const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${$("#pp").checked?1:0}`+
+  // corrections=0 shows the model's own prediction. Off by default because a brush stroke
+  // has to appear the moment it is drawn; with this on, painting will not change the red
+  // overlay until the next retrain, which is the point of the switch -- it is how you see
+  // whether a retrain actually learned a region or is having your answer pasted back.
+  `${$("#modelonly")&&$("#modelonly").checked?"&corrections=none":""}`+
   `&labels=${$("#showlabels")&&$("#showlabels").checked?1:0}`;
 
 /* ---------- model + scope ---------- */
@@ -917,6 +923,8 @@ $("#reapply").onclick=async()=>{
   watch(r.job,"Re-applying model");
 };
 $("#pp").onchange=()=>{syncThrEnabled();refresh();};
+// Without this the checkbox would look active and change nothing until the next redraw.
+$("#modelonly").onchange=refresh;
 $("#thr").oninput=e=>$("#thrv").textContent=(e.target.value/100).toFixed(2);
 $("#thr").onchange=refresh;
 syncThrEnabled();

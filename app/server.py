@@ -20,7 +20,7 @@ import traceback
 import uuid
 
 import numpy as np
-from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask import after_this_request, Flask, jsonify, request, send_file, send_from_directory
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.abspath(os.path.join(HERE, ".."))
@@ -782,6 +782,32 @@ def _opts():
             request.args.get("postprocess", "0") in ("1", "true", "True"))
 
 
+def _want_labels(default=False):
+    """Whether to burn the cyan not-crack layer into an exported overlay. Off by default:
+    that layer is the brush itself, and a figure should show what was measured."""
+    v = request.args.get("labels")
+    if v is None:
+        return default
+    return v in ("1", "true", "True")
+
+
+def _corrections_mode(default="paste"):
+    """Whether to paste the user's corrections over the model's prediction.
+
+    `corrections=0` asks for the model's own output. The canvas leaves it on so a brush
+    stroke is visible immediately; the export turns it off, because an exported detection
+    result should be what the detector found.
+    """
+    v = request.args.get("corrections")
+    if v in ("paste", "gate", "none"):
+        return v
+    if v in ("0", "false", "False"):
+        return "none"
+    if v in ("1", "true", "True"):
+        return "paste"
+    return default
+
+
 def _mask_png_bytes(mask):
     """Crack = BLACK on white, matching this project's existing B&W outputs."""
     from PIL import Image
@@ -790,7 +816,7 @@ def _mask_png_bytes(mask):
     return buf.getvalue()
 
 
-def _overlay_png_bytes(iid, mask):
+def _overlay_png_bytes(iid, mask, show_labels=True):
     """The display image with the mask burned in -- what you see on screen, as a flat
     RGB image you can drop in a slide.
 
@@ -814,12 +840,22 @@ def _overlay_png_bytes(iid, mask):
     cyan = np.array([40.0, 190.0, 210.0], np.float32)
     a = 0.45
     rgb[mask] = (1 - a) * rgb[mask] + a * red
-    corr = S.load_npy(iid, "correction.npy")
-    if corr is not None:
-        corr = np.asarray(corr)
-        if corr.shape == mask.shape:
-            nc = corr == 2
-            rgb[nc] = (1 - 0.35) * rgb[nc] + 0.35 * cyan
+    # THE CYAN LAYER IS RAW BRUSH GEOMETRY, so an export leaves it out by default.
+    #
+    # It is drawn straight from `corr == 2` -- the erase strokes themselves, at full brush
+    # width, with no reference to anything the model said. On screen that is exactly right:
+    # you need to see where you have already ruled crack out. Burned into an exported figure
+    # it is the operator's scribbles, discs and drag-paths and all, and it is the thing that
+    # makes an exported overlay look hand-drawn rather than measured. It also ignored the
+    # corrections mode completely, so asking for the model's raw output still got you the
+    # brush marks.
+    if show_labels:
+        corr = S.load_npy(iid, "correction.npy")
+        if corr is not None:
+            corr = np.asarray(corr)
+            if corr.shape == mask.shape:
+                nc = corr == 2
+                rgb[nc] = (1 - 0.35) * rgb[nc] + 0.35 * cyan
     buf = io.BytesIO()
     Image.fromarray(rgb.astype(np.uint8)).save(buf, format="PNG")
     return buf.getvalue()
@@ -915,7 +951,8 @@ def _stats_csv_bytes(iid, mask):
 @app.route("/api/export/<iid>/mask.png")
 def api_export_mask(iid):
     t, pp = _opts()
-    mask = P.effective_mask(iid, threshold=t, postprocess=pp)
+    mask = P.effective_mask(iid, threshold=t, postprocess=pp,
+                            corrections=_corrections_mode(default="gate"))
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     return send_file(io.BytesIO(_mask_png_bytes(mask)), mimetype="image/png",
@@ -925,17 +962,20 @@ def api_export_mask(iid):
 @app.route("/api/export/<iid>/overlay.png")
 def api_export_overlay(iid):
     t, pp = _opts()
-    mask = P.effective_mask(iid, threshold=t, postprocess=pp)
+    mask = P.effective_mask(iid, threshold=t, postprocess=pp,
+                            corrections=_corrections_mode(default="gate"))
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
-    return send_file(io.BytesIO(_overlay_png_bytes(iid, mask)), mimetype="image/png",
-                     as_attachment=True, download_name=f"{iid}_overlay.png")
+    return send_file(io.BytesIO(_overlay_png_bytes(iid, mask, show_labels=_want_labels())),
+                     mimetype="image/png", as_attachment=True,
+                     download_name=f"{iid}_overlay.png")
 
 
 @app.route("/api/export/<iid>/stats.csv")
 def api_export_stats(iid):
     t, pp = _opts()
-    mask = P.effective_mask(iid, threshold=t, postprocess=pp)
+    mask = P.effective_mask(iid, threshold=t, postprocess=pp,
+                            corrections=_corrections_mode(default="gate"))
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     return send_file(io.BytesIO(_stats_csv_bytes(iid, mask)), mimetype="text/csv",
@@ -944,40 +984,97 @@ def api_export_stats(iid):
 
 @app.route("/api/export/all.zip")
 def api_export_all():
-    """Every ready image: mask PNG + overlay PNG + stats CSV, plus one summary CSV."""
+    """Every ready image: mask PNG + overlay PNG + stats CSV, plus one summary CSV.
+
+    THREE THINGS THIS USED TO DO BADLY, all of them felt as "the zip is taking a while".
+
+    It built the whole ~590 MB archive in a BytesIO before sending a byte, peaking around
+    3.3 GB resident -- so nothing downloaded until everything was finished, and a machine with
+    less memory than this one would swap or fail rather than merely wait. It now streams into a
+    temporary file and sends that, so peak memory is one image at a time.
+
+    It deflate-compressed at the default level 6. Measured on four images (96.4 MB of PNG
+    bytes), deflate barely earns anything on already-compressed PNG: STORED 96.4 MB in 0.0 s,
+    level 1 88.8 MB in 1.9 s, level 6 93.6 MB in 2.6 s. Level 6 is both slower AND larger than
+    level 1 here, so level 1 it is -- 8% off the size for the least CPU.
+
+    (The archive is ~1.4 GB rather than the ~590 MB an older README quoted. That is not the
+    compression: the current model predicts 20-25% crack on many frames where its predecessor
+    predicted a few percent, so the masks and overlays simply contain far more structure.)
+
+    And it computed connected components twice per image -- once inside the per-image stats
+    CSV, once again for the summary row. Now once, passed to both.
+    """
     import csv
+    import tempfile
     import zipfile
+    from skimage.measure import label
     t, pp = _opts()
+    # DEFAULT ON, and measured rather than assumed. The obvious argument says an export should
+    # be the detector's own output, not the detector's output with the operator's answer
+    # pasted over it. But mean local thickness on thin-crack frames says the operator's
+    # strokes are the TIGHTER boundary: 15.6 px painted against 56.4 px predicted on
+    # HC_316L_fatigue_600, 16.4 vs 53.9 on _800, 18.4 vs 37.5 on wrought_800_cycles. Dropping
+    # the corrections widens the mask by up to 3.6x on exactly the hairline cracks that
+    # matter, because one SAM embedding covers a 16x16 block and 41% of the feature
+    # importance is Gaussian smooths out to sigma 64 -- the model cannot resolve an edge that
+    # fine. `corrections=0` exists for anyone who wants the raw prediction, to check what a
+    # retrain actually learned; it is not the honest default.
+    ac = _corrections_mode(default="gate")
+    lab = _want_labels()
     imgs = [m for m in S.list_images() if m.get("has_prob")]
     if not imgs:
         return jsonify(ok=False, error="nothing predicted yet"), 404
-    buf = io.BytesIO()
     summary = io.StringIO()
     sw = csv.writer(summary)
+    # model_crack_px alongside crack_px: the exported mask is the model's prediction with
+    # your corrections applied on top, so these two differ exactly where you have painted.
+    # Reporting both means the difference is visible without exporting a second image.
     sw.writerow(["image", "id", "height_px", "width_px", "megapixels",
                  "crack_px", "crack_area_fraction", "n_regions",
-                 "corrected_crack_px", "corrected_not_px"])
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for m in imgs:
-            iid = m["id"]
-            mask = P.effective_mask(iid, threshold=t, postprocess=pp)
-            if mask is None:
-                continue
-            stem = os.path.splitext(m.get("filename") or iid)[0]
-            z.writestr(f"{stem}/{stem}_crack_mask.png", _mask_png_bytes(mask))
-            z.writestr(f"{stem}/{stem}_overlay.png", _overlay_png_bytes(iid, mask))
-            z.writestr(f"{stem}/{stem}_stats.csv", _stats_csv_bytes(iid, mask))
-            from skimage.measure import label
-            sw.writerow([m.get("filename"), iid, mask.shape[0], mask.shape[1],
-                         round(mask.size / 1e6, 3), int(mask.sum()),
-                         round(float(mask.mean()), 6),
-                         int(label(mask, connectivity=2).max()),
-                         m.get("corrected_crack_px", 0), m.get("corrected_not_px", 0)])
-            del mask
-        z.writestr("summary.csv", summary.getvalue())
-    buf.seek(0)
-    return send_file(buf, mimetype="application/zip", as_attachment=True,
-                     download_name="txm_crack_export.zip")
+                 "model_crack_px", "corrected_crack_px", "corrected_not_px"])
+    tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+    tmp.close()
+    try:
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED, compresslevel=1) as z:
+            for m in imgs:
+                iid = m["id"]
+                mask = P.effective_mask(iid, threshold=t, postprocess=pp,
+                                        corrections=ac)
+                if mask is None:
+                    continue
+                stem = os.path.splitext(m.get("filename") or iid)[0]
+                # STORED for the PNGs: already compressed, so deflate is pure CPU
+                z.writestr(f"{stem}/{stem}_crack_mask.png", _mask_png_bytes(mask))
+                z.writestr(f"{stem}/{stem}_overlay.png",
+                           _overlay_png_bytes(iid, mask, show_labels=lab))
+                z.writestr(f"{stem}/{stem}_stats.csv", _stats_csv_bytes(iid, mask))
+                n_regions = int(label(mask, connectivity=2).max())
+                prob = S.load_npy(iid, "prob.npy", mmap=True)
+                model_px = (int((np.asarray(prob) > t).sum()) if prob is not None else None)
+                sw.writerow([m.get("filename"), iid, mask.shape[0], mask.shape[1],
+                             round(mask.size / 1e6, 3), int(mask.sum()),
+                             round(float(mask.mean()), 6), n_regions, model_px,
+                             m.get("corrected_crack_px", 0), m.get("corrected_not_px", 0)])
+                del mask
+            z.writestr("summary.csv", summary.getvalue())
+
+        @after_this_request
+        def _cleanup(response):
+            try:
+                os.remove(tmp.name)
+            except OSError:
+                pass
+            return response
+
+        return send_file(tmp.name, mimetype="application/zip", as_attachment=True,
+                         download_name="txm_crack_export.zip", conditional=True)
+    except Exception:
+        try:
+            os.remove(tmp.name)
+        except OSError:
+            pass
+        raise
 
 
 if __name__ == "__main__":

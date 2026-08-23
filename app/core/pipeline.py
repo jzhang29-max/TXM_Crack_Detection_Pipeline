@@ -469,8 +469,44 @@ def prune_specks(mask, min_px=None):
     return morphology.remove_small_objects(mask, min_size=int(n))
 
 
-def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True):
-    """Model prediction with the user's corrections applied on top."""
+# Inside a hand-painted crack stroke, accept the model at this probability instead of the
+# display threshold. 0.20 keeps 89.6% of what the strokes were adding while dropping the
+# brush-shaped remainder; 0.35 would keep only 65.3%.
+CORRECTION_FLOOR = 0.20
+
+
+def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
+                   corrections="paste"):
+    """The model's prediction, combined with the user's corrections in one of three ways.
+
+    THREE MODES, because the canvas and the export want different things and a single
+    behaviour cannot serve both.
+
+    "paste" (default, and what the canvas uses): crack where you painted, not-crack where you
+    erased, model elsewhere. A brush stroke appears the instant you release the mouse. The
+    cost is that the brush's own shape lands in the mask -- disc bumps and circular arcs that
+    no crack has.
+
+    "gate" (what exports use): inside a crack stroke the threshold drops to CORRECTION_FLOOR
+    instead of being forced True, so the stroke means "believe weaker evidence here" and the
+    boundary is still drawn by the image. Measured over every corrected image: of the 93,633
+    px that "paste" forces on against the model's 0.5 verdict, 89.6% survive at 0.20. So it
+    keeps almost all the recall and drops the remainder, which is the brush geometry.
+
+    "none": the model's own output. The only way to see whether a retrain actually learned a
+    region or is having your answer pasted back over it.
+
+    WHY "gate" IS NOT THE DEFAULT, learned the hard way: you paint where the model is WRONG,
+    which is where its probability is lowest. Under "gate" a stroke on a confidently-wrong
+    region produces no visible change at all -- the selftest caught exactly this, as painting
+    no longer invalidating the overlay and as hand-painted crack surviving pruning at only
+    99.889%. Silently ignoring a label in the one case the label matters most is worse than an
+    ugly boundary, so the canvas pastes and only the deliverable gates.
+
+    Erase is absolute in every mode. "This is not crack" is a human statement about the
+    specimen, and 28% of the area it removes is where the model is confident (p>0.8) -- which
+    is precisely the false-positive case erasing exists to fix.
+    """
     prob = S.load_npy(image_id, "prob.npy")
     if prob is None:
         # No prediction: an annotation-only image, ingested deliberately without one so the
@@ -489,10 +525,18 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True):
     mask = M.postprocess(prob) if postprocess else (prob > threshold)
     if prune and not postprocess:
         mask = prune_specks(mask)
+    if corrections == "none":
+        return mask
     corr = S.load_npy(image_id, "correction.npy")
     if corr is not None and corr.shape == mask.shape:
         mask = mask.copy()
-        mask[corr == 1] = True
+        # See the docstring: paste stamps the brush, gate lets the image draw the edge.
+        inside = corr == 1
+        if inside.any():
+            mask[inside] = (prob[inside] > CORRECTION_FLOOR if corrections == "gate"
+                            else True)
+        # Erase stays absolute. "This is not crack" is a statement about the specimen that no
+        # amount of model confidence should override, and it can only ever remove area.
         mask[corr == 2] = False
     return mask
 

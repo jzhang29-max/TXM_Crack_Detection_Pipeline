@@ -232,8 +232,26 @@ def main():
         sys.exit(1)
     check("server reachable", True)
     check("model loaded", "NOT LOADED" not in m.get("description", ""), m.get("description", ""))
-    gt_ok = bool(m.get("ground_truth_available"))
-    check("ground truth present (needed to validate a retrain)", gt_ok)
+    # THE GATE'S REAL PREREQUISITES, since there is no external ground truth any more.
+    # This used to assert `ground_truth_available`, a flag the server stopped reporting when
+    # the externally-labelled masks were deleted. What a retrain actually needs is labelled
+    # images to cross-validate over (at least two, so a fold can hold one out) and at least
+    # one confirmed crack-free specimen to measure false positives on.
+    try:
+        sys.path.insert(0, os.path.join(PROJECT, "app", "core"))
+        sys.path.insert(0, os.path.join(PROJECT, "code"))
+        import pipeline as _Pg, store as _Sg
+        _lab = [x for x in _Sg.list_images()
+                if x.get("corrected_crack_px") or x.get("corrected_not_px")]
+        _clean = [x for x in _Sg.list_images()
+                  if any(k.lower() in (x.get("filename") or "").lower()
+                         for k in _Pg.CLEAN_SPECIMENS)]
+        check("a retrain has something to validate against",
+              len(_lab) >= 2 and len(_clean) >= 1,
+              f"{len(_lab)} labelled image(s) for the grouped cross-validation, "
+              f"{len(_clean)} confirmed crack-free specimen(s) for the false-positive axis")
+    except Exception as e:                                      # noqa: BLE001
+        check("a retrain has something to validate against", False, str(e))
 
     # Before uploading anything: the picker check needs a model cached for every image,
     # which stops being true the moment this run adds one.
