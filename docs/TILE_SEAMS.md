@@ -172,3 +172,30 @@ either way), recall on painted crack **−0.02 pp** at worst.
 What this does *not* fix: the beads themselves. Those are the brush's own geometry at ~40 px
 radius, and closing at a radius large enough to merge them would thicken thin crack
 substantially. Narrower strokes, or the eraser, are the lever there.
+
+## The actual cause of the round dots: strokes were stamped, not swept
+
+The dots reported in exported masks were **not** speckle, not downscaling, and not brush
+geometry. `_apply_correction` stamped one disc per reported pointer position and filled
+nothing between them, so a stroke was continuous only if the browser happened to deliver
+positions closer together than the brush diameter. On a 23 MP frame each `pointermove` does
+real work, the events arrive far apart, and the stroke lands as a row of separate discs.
+
+Measured on a fast flick — three points 200 px apart at radius 20:
+
+| | components | painted |
+|---|---|---|
+| stamps only (before) | **3 separate discs** | 3,771 px |
+| swept path (after) | **1 continuous stroke** | 17,657 px |
+
+Each consecutive pair of points is now filled as a capsule — every pixel within `r` of the
+segment between them — with segments split so one fast flick cannot allocate a bounding box
+the size of the frame. A 6000 px diagonal flick at radius 40 paints one component in 0.02 s.
+A single click is still bit-identical to a plain disc, so single-point marks keep their shape.
+
+This also explains the "beaded" stroke edges diagnosed earlier as inherent disc geometry.
+They were gaps, not geometry.
+
+Existing corrections already contain the stamped gaps — they are baked into
+`correction.npy`. The radius-2 closing on the export path bridges gaps up to about 4 px,
+which merged the chains on the frames checked, but a wider gap needs the stroke repainted.

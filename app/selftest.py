@@ -807,6 +807,36 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the embedding lookup blends without seams", False, str(e))
 
+    # A brush stroke must be continuous even when the pointer outruns it. The painter used
+    # to stamp one disc per reported point and nothing in between, so a stroke was only
+    # continuous if the browser happened to deliver positions closer together than the brush
+    # diameter -- and on a 23 MP frame it does not. The result was a dotted line of separate
+    # discs in the exported mask, reported as "black dots that don't look like crack", plus
+    # the beaded stroke edges that looked like brush geometry and were really gaps.
+    try:
+        import numpy as _np8
+        from skimage.measure import label as _lab8
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import server as _SV8
+        _H8 = _W8 = 600
+        _r8 = 20
+        _a8 = _np8.zeros((_H8, _W8), _np8.uint8)
+        _SV8._sweep(_a8, 1, _r8, [[100, 300], [300, 300], [500, 300]], _H8, _W8)
+        _n8 = int(_lab8(_a8 == 1, connectivity=2).max())
+        # and a lone point must still be exactly a disc, or single clicks change shape
+        _c8 = _np8.zeros((_H8, _W8), _np8.uint8)
+        _SV8._sweep(_c8, 1, _r8, [[300, 300]], _H8, _W8)
+        _yy8, _xx8 = _np8.ogrid[-_r8:_r8 + 1, -_r8:_r8 + 1]
+        _d8 = _np8.zeros((_H8, _W8), _np8.uint8)
+        _d8[300 - _r8:300 + _r8 + 1, 300 - _r8:300 + _r8 + 1][
+            (_xx8 * _xx8 + _yy8 * _yy8) <= _r8 * _r8] = 1
+        check("a fast stroke paints one continuous mark, not a row of discs",
+              _n8 == 1 and _np8.array_equal(_c8, _d8),
+              f"{_n8} component(s) from 3 points 200 px apart at radius {_r8}; "
+              f"single click still a disc: {_np8.array_equal(_c8, _d8)}")
+    except Exception as e:                                      # noqa: BLE001
+        check("a fast stroke paints one continuous mark, not a row of discs", False, str(e))
+
     # No speck survives into an export. prune_specks promises no crack blob under
     # MIN_BLOB_PX, and corrections used to be applied AFTER that prune, which quietly undid
     # it: an eraser stroke does not only remove area, it cuts THROUGH blobs and leaves the

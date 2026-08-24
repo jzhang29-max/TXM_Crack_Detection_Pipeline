@@ -406,6 +406,48 @@ def api_correction(iid):
         return _apply_correction(iid, d)
 
 
+def _sweep(corr, val, r, pts, H, W):
+    """Paint a stroke as a swept path, not a row of stamps.
+
+    This used to stamp one disc per point and nothing between them, so a stroke was only
+    continuous if the browser happened to deliver pointer positions closer together than the
+    brush diameter. Move the mouse quickly -- or drag across a 23 MP frame, where each
+    pointermove does real work -- and the events arrive far apart, leaving a dotted line of
+    separate discs. In an exported mask that reads as a row of round black dots that look
+    nothing like a crack, which is exactly what it was reported as, and it also produced the
+    "beaded" stroke edges that looked like brush geometry but were really gaps.
+
+    Each consecutive pair of points is filled as a capsule: every pixel within `r` of the
+    line segment between them. Segments are split so one fast flick cannot allocate a
+    bounding box the size of the frame.
+    """
+    step = 256
+    for i, pt in enumerate(pts):
+        x1, y1 = float(pt[0]), float(pt[1])
+        x0, y0 = (x1, y1) if i == 0 else (float(pts[i - 1][0]), float(pts[i - 1][1]))
+        n = max(1, int(np.ceil(np.hypot(x1 - x0, y1 - y0) / step)))
+        for k in range(n):
+            ax = x0 + (x1 - x0) * k / n
+            ay = y0 + (y1 - y0) * k / n
+            bx = x0 + (x1 - x0) * (k + 1) / n
+            by = y0 + (y1 - y0) * (k + 1) / n
+            cx0 = max(0, int(np.floor(min(ax, bx))) - r)
+            cx1 = min(W, int(np.ceil(max(ax, bx))) + r + 1)
+            cy0 = max(0, int(np.floor(min(ay, by))) - r)
+            cy1 = min(H, int(np.ceil(max(ay, by))) + r + 1)
+            if cx0 >= cx1 or cy0 >= cy1:
+                continue
+            Y, X = np.mgrid[cy0:cy1, cx0:cx1]
+            dx, dy = bx - ax, by - ay
+            L2 = dx * dx + dy * dy
+            if L2 <= 0:
+                d2 = (X - ax) ** 2 + (Y - ay) ** 2
+            else:
+                t = np.clip(((X - ax) * dx + (Y - ay) * dy) / L2, 0.0, 1.0)
+                d2 = (X - (ax + t * dx)) ** 2 + (Y - (ay + t * dy)) ** 2
+            corr[cy0:cy1, cx0:cx1][d2 <= r * r] = val
+
+
 def _apply_correction(iid, d):
     corr = S.load_npy(iid, "correction.npy")
     if corr is None:
@@ -429,16 +471,7 @@ def _apply_correction(iid, d):
         bx0 = max(0, int(min(xs)) - r - 1); bx1 = min(W, int(max(xs)) + r + 2)
         if by0 < by1 and bx0 < bx1:
             S.push_undo(iid, by0, by1, bx0, bx1, corr[by0:by1, bx0:bx1].copy())
-        yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
-        disk = (xx * xx + yy * yy) <= r * r
-        for pt in pts:
-            x, y = int(round(pt[0])), int(round(pt[1]))
-            y0, y1 = max(0, y - r), min(H, y + r + 1)
-            x0, x1 = max(0, x - r), min(W, x + r + 1)
-            if y0 >= y1 or x0 >= x1:
-                continue
-            sub = disk[(y0 - (y - r)):(y1 - (y - r)), (x0 - (x - r)):(x1 - (x - r))]
-            corr[y0:y1, x0:x1][sub] = val
+        _sweep(corr, val, r, pts, H, W)
     S.save_npy(iid, "correction.npy", corr)
     return jsonify(ok=True, crack_px=int((corr == 1).sum()), not_px=int((corr == 2).sum()),
                    undo_depth=S.undo_depth(iid))
