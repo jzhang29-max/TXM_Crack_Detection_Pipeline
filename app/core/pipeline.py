@@ -416,13 +416,40 @@ def get_model():
 MIN_BLOB_PX = 2000
 
 
+def _skimage_size_kw(fn, n):
+    """Keyword and value for a size threshold, across scikit-image versions.
+
+    0.26 deprecated `min_size` / `area_threshold` in favour of `max_size` AND changed the
+    comparison with it: the old parameters dropped things strictly SMALLER than the value,
+    `max_size` drops things smaller than OR EQUAL to it. Passing the same number through the
+    new spelling would silently move the floor by one pixel, so it gets n-1. requirements.txt
+    allows scikit-image >= 0.20, so both spellings have to keep working.
+    """
+    import inspect
+    if "max_size" in inspect.signature(fn).parameters:
+        return {"max_size": int(n) - 1}
+    old = "area_threshold" if "area_threshold" in inspect.signature(fn).parameters else "min_size"
+    return {old: int(n)}
+
+
+def _binary_morph(name):
+    """closing/opening under whichever name this scikit-image exposes.
+
+    0.26 deprecated binary_closing/binary_opening in favour of closing/opening, which do the
+    same thing on a boolean array.
+    """
+    from skimage import morphology
+    return getattr(morphology, name, None) or getattr(morphology, "binary_" + name)
+
+
 def prune_specks(mask, min_px=None):
     """Drop connected components below `min_px`. Never touches anything else."""
     from skimage import morphology
     n = MIN_BLOB_PX if min_px is None else min_px
     if not n or not mask.any():
         return mask
-    return morphology.remove_small_objects(mask, min_size=int(n))
+    fn = morphology.remove_small_objects
+    return fn(mask, **_skimage_size_kw(fn, n))
 
 
 # Inside a hand-painted crack stroke, accept the model at this probability instead of the
@@ -498,7 +525,8 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
         # default because of everything ELSE it did -- it measurably deleted thin crack.
         # This is the one part of it worth keeping, on its own, with a measured cutoff.
         from skimage.morphology import remove_small_holes
-        mask = remove_small_holes(mask, area_threshold=FILL_HOLES_MAX_PX)
+        mask = remove_small_holes(
+            mask, **_skimage_size_kw(remove_small_holes, FILL_HOLES_MAX_PX))
     if corrections == "none":
         return mask
     corr = S.load_npy(image_id, "correction.npy")
@@ -532,6 +560,26 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
         # this is removing. Sparing them would preserve the artefact on the one path that
         # produces the deliverable. Measured on b2_340_94: 6 sub-200 px components survive
         # with the exemption, 0 without, and crack area moves by 0.003 pp.
+        if corrections == "gate" and not postprocess:
+            # SMOOTH THE BOUNDARY, on the deliverable path only. The brush stamps discs, so a
+            # stroke is a chain of overlapping circles, and gating erodes the arcs where they
+            # meet into ragged cusps -- which is what makes an exported mask look painted
+            # rather than measured. A radius-2 close-then-open cuts boundary cusps 5-18% per
+            # frame (10,012 -> 8,211 on b2_343_75_LARGE) for +0.003 pp of area.
+            #
+            # Then RE-ERASE, which is not optional. Closing bleeds crack into regions the user
+            # erased -- measured at 0.038-0.062% of erased area before this line was added --
+            # and "this is not crack" is a human statement about the specimen that no
+            # morphology gets to overrule. Re-asserting it costs about a third of the cusp
+            # reduction and keeps the invariant exact.
+            #
+            # Not on the canvas: there a stroke must appear as drawn the instant the mouse is
+            # released, and smoothing what someone is actively painting reads as the tool
+            # fighting them. Guardrails on this: predicted area over the six crack-free
+            # specimens moves by +0.0000 pp, recall on painted crack by -0.02 pp at worst.
+            from skimage.morphology import disk
+            mask = _binary_morph("opening")(_binary_morph("closing")(mask, disk(2)), disk(2))
+            mask[corr == 2] = False
         if prune and not postprocess:
             spare = inside if corrections == "paste" else None
             mask = prune_specks_keeping(mask, spare)

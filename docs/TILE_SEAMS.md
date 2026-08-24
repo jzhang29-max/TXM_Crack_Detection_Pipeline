@@ -149,3 +149,26 @@ The fix re-prunes after corrections, with one asymmetry that matters:
 
 Verified across all 71 frames in export mode: **0 components under 2000 px**. Guarded by a
 selftest that samples 8 frames, confirmed to fail when the second prune is removed.
+
+## Boundary smoothing, on the export path only
+
+The brush stamps discs, so a stroke is a chain of overlapping circles, and gating erodes the
+arcs where they meet into ragged cusps — which is what makes an exported mask look painted
+rather than measured. A radius-2 close-then-open cuts boundary cusps 5–18% per frame
+(10,012 → 8,211 on b2_343_75_LARGE) for +0.003 pp of area.
+
+**The erase has to be re-asserted afterwards.** Closing bleeds crack into regions the user
+erased — measured at 0.038–0.062% of erased area — and "this is not crack" is a statement
+about the specimen that no morphology gets to overrule. Re-erasing costs about a third of the
+cusp reduction and keeps the invariant exact: measured over all 71 frames, crack marked inside
+erased regions is 0.000000%.
+
+Not applied on the canvas. There a stroke must appear as drawn the instant the mouse is
+released, and smoothing what someone is actively painting reads as the tool fighting them.
+
+Guardrails: predicted area over the six crack-free specimens moves **+0.0000 pp** (0.0230%
+either way), recall on painted crack **−0.02 pp** at worst.
+
+What this does *not* fix: the beads themselves. Those are the brush's own geometry at ~40 px
+radius, and closing at a radius large enough to merge them would thicken thin crack
+substantially. Narrower strokes, or the eraser, are the lever there.
