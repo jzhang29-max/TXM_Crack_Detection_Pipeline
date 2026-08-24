@@ -833,17 +833,22 @@ def main():
             if bool((_tight9 & ~_wide).any()):
                 break                       # added area: not a narrowing
             _subset += 1
-            _core = _wide & (_np9.asarray(_img9, _np9.float32)
-                             <= _np9.percentile(_np9.asarray(_img9, _np9.float32)[_wide], 20))
-            if _core.any() and (_tight9 & _core).sum() / _core.sum() > 0.90:
+            # The contract is not "keeps 90%". Narrowing rests on crack being locally
+            # darker, which is false on some frames. It is: either the dark core survives at
+            # TIGHTEN_MIN_CORE, or the frame was detected as one where the rule fails and
+            # left alone entirely. Silently deleting the crack is what must not happen.
+            _im9 = _np9.asarray(_img9, _np9.float32)
+            _core = _wide & (_im9 <= _np9.percentile(_im9[_wide], 20))
+            _ratio = ((_tight9 & _core).sum() / _core.sum()) if _core.any() else 1.0
+            if _ratio >= _P9.TIGHTEN_MIN_CORE or bool((_tight9 == _wide).all()):
                 _kept += 1
             if _checked >= 4:
                 break
-        check("tight boundary only narrows, and keeps the dark core",
+        check("tight boundary narrows, or declines when it would delete the crack",
               _checked > 0 and _subset == _checked and _kept == _checked,
-              f"{_checked} frames: {_subset} were subsets, {_kept} kept >90% of the core")
+              f"{_checked} frames: {_subset} narrowed only, {_kept} kept the core or declined")
     except Exception as e:                                      # noqa: BLE001
-        check("tight boundary only narrows, and keeps the dark core", False, str(e))
+        check("tight boundary narrows, or declines when it would delete the crack", False, str(e))
 
     # A brush stroke must be continuous even when the pointer outruns it. The painter used
     # to stamp one disc per reported point and nothing in between, so a stroke was only

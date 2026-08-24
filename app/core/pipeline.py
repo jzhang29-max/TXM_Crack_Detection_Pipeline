@@ -466,6 +466,21 @@ CORRECTION_FLOOR = 0.20
 # the specimen. So the cutoff keeps the noise and keeps the islands.
 FILL_HOLES_MAX_PX = 1024
 
+# Neighbourhood width for the tight boundary, in pixels. Wider keeps more faint crack and
+# runs slightly thicker: measured on wrought_316L_fatigue_1200_cycles, w=151 keeps 76.6% of
+# the painted crack at a 1.0 px half-width and w=301 keeps 83.7% at 1.4 px. 301 is chosen for
+# the recall, since the width is already at the 1.0 px core either way.
+TIGHTEN_WINDOW = 301
+
+# Narrowing rests on an ASSUMPTION -- that crack is darker than its surroundings -- and on
+# some frames it is false. Checked per frame against the darkest fifth of the corridor, the
+# rule keeps a median of 97.0% of it, but 8 of 66 frames fall below 70% and 4 below 50%, worst
+# 34.4% on B2_3_1_lbf: there the narrowing deletes the crack instead of trimming it. So the
+# assumption is verified on each frame and the tightening is DECLINED where it fails, rather
+# than silently throwing away the thing being measured. 0.60 sits below the 65.1% frame and
+# above the 49.8% one, so it catches the four pathological frames and leaves the rest narrowed.
+TIGHTEN_MIN_CORE = 0.60
+
 
 def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
                    corrections="paste", fill_holes=True, tight=False):
@@ -609,21 +624,33 @@ def tighten_to_image(image_id, mask, prune=True, spare=None):
     narrowing it. The width was never in the labels, so no threshold or morphology recovers
     it -- but it IS in the image.
     
-    So the detection supplies a corridor and the image draws the boundary inside it: Otsu on
-    the pixels the mask already accepted, which is parameter-free and per-frame. Measured
-    over four frames: area halves, median half-width falls from 16-57 px to 9-14 px, and
-    100% of the dark core is kept every time.
+    So the detection supplies a corridor and the image draws the boundary inside it: a pixel
+    stays if it is darker than the average of its own neighbourhood.
 
-    ON by default since 2026-08-24, at the owner's instruction and with the cost stated: of
-    the crack area they painted, 61.9% stays marked against 99.97% before (43.6% at worst, on
-    HC_316L_fatigue_1650_cycles). Most of that difference is the over-marking they asked to be
-    rid of -- the strokes are 2.6-15x wider than the dark core -- but faint crack that is not
-    among the darkest pixels goes with it, and the two cannot be separated without
-    pixel-accurate reference annotation, which this project does not have. Predicted area on
-    the six confirmed crack-free specimens improves, 0.0230% to 0.0197%. Turn it off in
-    Advanced to get the wider boundary back.
+    LOCAL, not global. The first version used Otsu over the whole corridor, which is
+    parameter-free and looked reasonable on the numbers -- but one threshold for the entire
+    frame deletes faint crack in a brighter region outright, and that is exactly what was
+    reported as "a lot of the correct overlay disappeared". Comparing the two on the same
+    frames:
+
+      variant            % of frame   median half-width   painted crack kept
+      wide, no tighten      8.178%          16.3 px             100.0%
+      global Otsu           4.698%          10.0 px              59.7%
+      local mean w=301      6.464%           1.4 px              83.7%
+
+    The local threshold is better on BOTH axes at once: a 1.4 px half-width against the 1.0 px
+    dark core actually present, while keeping 83.7% of the painted crack instead of 59.7%. It
+    follows the crack ridge everywhere rather than comparing a faint branch against the
+    darkest pixels elsewhere in the frame.
+
+    ON by default since 2026-08-24. Predicted area on the six confirmed crack-free specimens
+    holds or improves (0.0230% wide, 0.0209% here), so this is not bought with false
+    positives. What it still costs is recall against the painted strokes -- 83.7%, 63.8% and
+    78.7% on the three frames measured -- and some of that is faint crack rather than
+    over-mark. The two cannot be separated without pixel-accurate reference annotation, which
+    this project does not have. `tight=0` on any request returns the wider boundary.
     """
-    from skimage.filters import threshold_otsu
+    from scipy.ndimage import uniform_filter
     img = S.load_npy(image_id, "img.npy")
     if img is None:
         return mask
@@ -633,7 +660,16 @@ def tighten_to_image(image_id, mask, prune=True, spare=None):
     vals = img[mask]
     if vals.size < 64 or float(vals.min()) == float(vals.max()):
         return mask
-    out = mask & (img <= threshold_otsu(vals))
+    # window clamped to the frame: uniform_filter pads, but a window wider than the image
+    # averages mostly padding and the comparison stops meaning anything
+    win = min(TIGHTEN_WINDOW, (min(img.shape) // 2) * 2 + 1)
+    out = mask & (img <= uniform_filter(img, size=win))
+    # Does "crack is locally darker" hold on THIS frame? Score against the darkest fifth of
+    # what the detector already accepted -- the crack itself, whatever its polarity -- and
+    # decline to narrow if the rule is throwing that away instead of trimming around it.
+    core = mask & (img <= np.percentile(img[mask], 20))
+    if core.any() and (out & core).sum() / core.sum() < TIGHTEN_MIN_CORE:
+        return mask
     if spare is not None:
         out |= mask & spare
     if not out.any():

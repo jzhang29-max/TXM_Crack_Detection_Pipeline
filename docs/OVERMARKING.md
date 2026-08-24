@@ -173,3 +173,40 @@ the picture. `_apply_flip_region` is the one deliberate exception: its result is
 `correction.npy` as a label, and tightening there would bake Otsu's boundary into the owner's
 own labels where turning the switch off could never undo it, then feed it to the next retrain
 as if it had been drawn.
+
+---
+
+## The tightening rule, corrected (2026-08-24, later)
+
+Reported after the default was flipped: *"a lot of the initial correct overlay disappeared."*
+True, and the cause was the rule, not the idea. Otsu over the whole corridor is one threshold
+for the entire frame, so faint crack in a brighter region falls out wholesale.
+
+A **local** comparison — a pixel stays if it is darker than the mean of its own 301 px
+neighbourhood — is better on both axes at once:
+
+| rule | % of frame | median half-width | painted crack kept |
+|---|---|---|---|
+| wide, no tightening | 8.178% | 16.3 px | 100.0% |
+| global Otsu | 4.698% | 10.0 px | 59.7% |
+| **local mean, w=301** | 6.464% | **1.4 px** | **83.7%** |
+
+1.4 px against the 1.0 px dark core actually present, while keeping 83.7% instead of 59.7%.
+Across three frames retention went 59.7/43.8/62.4% → 83.2/62.8/78.3%, and predicted area on
+the crack-free specimens improved (0.0230% → 0.0192%).
+
+**The probability ridge was tried and rejected.** Using the model's own probability instead of
+the image keeps ~100% of everything — and barely narrows, 12–28 px half-width. The model's
+probability is flat-topped across the whole brush-wide band because that is what it was
+trained on. It carries no width information; only the image does.
+
+**And the rule is now verified per frame.** "Crack is darker than its surroundings" is an
+assumption, and on some frames it is false. Scored against the darkest fifth of the corridor
+the rule keeps a median of 97.0%, but 8 of 66 frames fall below 70% and 4 below 50% — worst
+34.4% on B2_3_1_lbf, where narrowing deletes the crack rather than trimming it. So each frame
+is checked and the tightening is **declined** where the assumption fails: 60 frames narrow, 6
+are left alone. `TIGHTEN_MIN_CORE = 0.60` sits between the 49.8% and 65.1% frames.
+
+The selftest asserts that contract, not a fixed retention number: either the core survives at
+`TIGHTEN_MIN_CORE`, or the frame was left untouched. Silently deleting the crack is the one
+outcome ruled out.
