@@ -241,7 +241,16 @@ def fig_detection(key, label):
     disp = np.asarray(S.load_npy(m["id"], "display.npy", mmap=True))
     raw = np.asarray(S.load_npy(m["id"], "img.npy", mmap=True))
     prob = prob_of(m["id"], key)
-    mask = prob > 0.5
+    # The same steps the app applies, in the same order, minus the owner's corrections -- this
+    # figure is "what the MODEL found", so corrections stay out of it, but a bare prob > 0.5
+    # showed wider marks than the tool produces and contradicted the pipeline described two
+    # sections above it in the README. effective_mask() cannot be used here because it always
+    # reads the current model's prob.npy, and this generator has to honour --model.
+    from skimage.morphology import remove_small_holes
+    mask = P.prune_specks(prob > 0.5)
+    mask = remove_small_holes(mask, **P._skimage_size_kw(remove_small_holes,
+                                                        P.FILL_HOLES_MAX_PX))
+    mask = P.tighten_to_image(m["id"], mask)
     y, x, ch, cw = crop_for("detection", mask, raw)
     d, mk = disp[y:y + ch, x:x + cw], mask[y:y + ch, x:x + cw]
     g = as_app_shows(m['id'], d)
