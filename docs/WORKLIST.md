@@ -7,6 +7,20 @@
 
 # WORKLIST — all 71 images
 
+## Highest-value labelling right now: frame edges
+
+The outer ~24 px of a frame is marked as crack **21.5× more often than the interior** on the
+six specimens confirmed to contain no crack — 2.4% of the border band on wrought_316L_0_cycles
+against 0.02% inside it, and it accounts for roughly a fifth of all surviving false positives.
+The cause is real: TXM mosaic illumination falls off at the edges, the border genuinely is
+darker, and multi-scale intensity carries ~41% of the model's importance, so dark reads as
+crack. No code change fixes that without making the model worse elsewhere (flat-fielding the
+model input was tried and cost 0.169 IoU).
+
+**A few eraser strokes along the frame edges of two or three specimens, then a retrain, is
+the highest-value labelling available.** Worst first: wrought_316L_fatigue_0_cycles (113.6×),
+b3_amb (39.3×), b3_3_18lbf_348_13um (13.5×). Measurement in docs/TILE_SEAMS.md.
+
 **12 / 71 marked** (has at least one force-CRACK label)
 
 Ordered by value, not alphabetically: groups with ZERO crack examples come

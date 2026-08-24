@@ -71,9 +71,43 @@ Two details that cost real time to find:
   built at a stride that leaves tiles abutting, so a stale cache cannot silently reintroduce
   the mismatch.
 
-## Not fixed here
+## Not fixed here: the frame border, which is now the dominant artifact
 
-Ranking every line surfaced a **frame-border** artifact, unrelated to tiling and larger than
-the seam: x=17 measured **134.8×** on the crack-free specimen and **136.9×** after the seam
-fix — invariant to the embedding path, so it comes from the 17-feature stack's padding in the
-first ~16 px, not from SAM. Untouched by this work.
+Ranking every line rather than the boundaries I expected also surfaced a **frame-border**
+artifact, unrelated to tiling and larger than the seam ever was. Measured on the deployed v4
+output:
+
+| frame | worst border line | ratio |
+|---|---|---|
+| b3_amb | x=16 | **62.9×** |
+| B2_2_9_lbf | x=16 | 40.2× |
+| HC_316L_600_cycles | y=6346 (bottom edge) | 12.8× |
+| b2_343_75_LARGE | x=6365 (right edge) | 13.6× |
+
+It is invariant to the embedding path — 134.8× before the seam fix and 136.9× with the
+lookup-time blend — so it is not a tiling effect. **And it marks pixels.** In the final
+pruned mask on the six crack-free specimens, the outer 24 px band is marked far more than the
+interior:
+
+| specimen | border <24 px | interior | ratio |
+|---|---|---|---|
+| wrought_316L_0_cycles | 2.362% | 0.021% | **113.6×** |
+| b3_amb | 1.623% | 0.041% | 39.3× |
+| b3_3_18lbf_348_13um | 2.674% | 0.199% | 13.5× |
+| B2_2_1_lbf, B2_amb, B2_2_9 | 0.000% | ≤0.049% | — |
+| **mean** | **1.110%** | **0.052%** | **21.5×** |
+
+The band is ~1.2% of frame area, so it contributes roughly a fifth of the false positives
+that survive pruning, on three of six specimens.
+
+**It is not a padding bug.** The borders contain no constant columns; they are genuinely
+darker than the interior (mean 0.31 against 0.43, and similar on every specimen) — the usual
+TXM mosaic illumination rolloff. A model whose strongest features are multi-scale intensity
+reads dark as crack, so it is behaving as trained. Flat-fielding the model input is not the
+answer either: it was tried and cost 0.169 IoU, because large-radius intensity features carry
+~41% of the model's importance.
+
+The fix is training signal, not code: a few eraser strokes along the frame edges of two or
+three specimens and a retrain. That is exactly what the correction workflow is for, and it is
+deliberately left to the owner rather than solved by synthesising border labels nobody drew —
+this project's whole gate rests on no label existing that the owner did not paint.
