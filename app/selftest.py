@@ -807,6 +807,44 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the embedding lookup blends without seams", False, str(e))
 
+    # "Tight crack boundary" must narrow the mask, not redraw it. The exported mask is as
+    # wide as the brush that labelled it -- measured, the strokes on these frames are 2.6x to
+    # 15x wider than the dark crack core they mark -- and no probability threshold recovers
+    # the width, because it was never in the labels. Otsu inside the accepted region uses the
+    # image instead. Two properties have to hold: it can only ever REMOVE area (a subset of
+    # what was already accepted), and it must keep the dark core rather than trimming
+    # arbitrarily.
+    try:
+        import numpy as _np9
+        import pipeline as _P9
+        import store as _S9
+        _checked = _subset = _kept = 0
+        for _m9 in _S9.list_images():
+            if "SELFTEST" in (_m9.get("filename") or ""):
+                continue
+            _wide = _P9.effective_mask(_m9["id"], corrections="gate")
+            if _wide is None or not _wide.any():
+                continue
+            _img9 = _S9.load_npy(_m9["id"], "img.npy")
+            if _img9 is None:
+                continue
+            _tight9 = _P9.effective_mask(_m9["id"], corrections="gate", tight=True)
+            _checked += 1
+            if bool((_tight9 & ~_wide).any()):
+                break                       # added area: not a narrowing
+            _subset += 1
+            _core = _wide & (_np9.asarray(_img9, _np9.float32)
+                             <= _np9.percentile(_np9.asarray(_img9, _np9.float32)[_wide], 20))
+            if _core.any() and (_tight9 & _core).sum() / _core.sum() > 0.90:
+                _kept += 1
+            if _checked >= 4:
+                break
+        check("tight boundary only narrows, and keeps the dark core",
+              _checked > 0 and _subset == _checked and _kept == _checked,
+              f"{_checked} frames: {_subset} were subsets, {_kept} kept >90% of the core")
+    except Exception as e:                                      # noqa: BLE001
+        check("tight boundary only narrows, and keeps the dark core", False, str(e))
+
     # A brush stroke must be continuous even when the pointer outruns it. The painter used
     # to stamp one disc per reported point and nothing in between, so a stroke was only
     # continuous if the browser happened to deliver positions closer together than the brush

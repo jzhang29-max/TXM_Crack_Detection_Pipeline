@@ -229,11 +229,12 @@ button:disabled{opacity:.4;cursor:default}
 
   <div id="adv">
     <div class="advrow">
-      <div class="fld">Brush <input type="range" id="brush" min="2" max="120" value="24"><span class="num" id="brushv">24</span></div>
+      <div class="fld">Brush <input type="range" id="brush" min="2" max="120" value="8"><span class="num" id="brushv">8</span></div>
       <div class="fld">Zoom <input type="range" id="zoom" min="5" max="400" value="100"><span class="num" id="zoomv">100%</span>
         <button class="ghost" id="fit">Fit</button></div>
       <div class="fld">Sensitivity <input type="range" id="thr" min="5" max="95" value="50"><span class="num" id="thrv">0.50</span></div>
       <label class="fld" style="gap:7px"><input type="checkbox" id="pp"> Legacy post-processing</label>
+      <label class="fld" style="gap:7px" title="Narrow the mask to the dark core inside it, using the image. Your strokes are 2.6-15x wider than the crack they mark (half-width 15 px against a 1 px core on wrought_316L_fatigue_1200), and the model reproduces that width because it was trained on them, so no probability threshold recovers it -- but the image still has it. Otsu inside the accepted region keeps 100% of the dark core while halving the area. OFF by default because it changes predicted crack AREA about two-fold, which is a physical number."><input type="checkbox" id="tight"> Tight crack boundary</label>
       <label class="fld" style="gap:7px" title="Show the model's raw prediction, ignoring your corrections. Measured: your strokes are 2-3.6x TIGHTER than the model on thin cracks, so this WIDENS the mask rather than narrowing it. Its use is checking whether a retrain actually learned a region. Exports already use a gated mode that keeps your labels but lets the image draw the boundary."><input type="checkbox" id="modelonly"> Model output only</label>
       <div class="sp"></div>
       <button class="ghost" id="reapply" title="Re-predict every image with the current model">Re-apply model</button>
@@ -315,7 +316,8 @@ const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${$("#pp
   // overlay until the next retrain, which is the point of the switch -- it is how you see
   // whether a retrain actually learned a region or is having your answer pasted back.
   `${$("#modelonly")&&$("#modelonly").checked?"&corrections=none":""}`+
-  `&labels=${$("#showlabels")&&$("#showlabels").checked?1:0}`;
+  `&labels=${$("#showlabels")&&$("#showlabels").checked?1:0}`+
+  `${$("#tight")&&$("#tight").checked?"&tight=1":""}`;
 
 /* ---------- model + scope ---------- */
 async function loadModel(){

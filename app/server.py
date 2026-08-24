@@ -328,7 +328,8 @@ def api_mask(iid):
     # pass the freshness test above forever -- surviving reloads and restarts.
     stamp = max([os.path.getmtime(p) for p in srcs if os.path.exists(p)] or [0])
 
-    mask = P.effective_mask(iid, threshold=thr, postprocess=pp, corrections=cmode)
+    mask = P.effective_mask(iid, threshold=thr, postprocess=pp, corrections=cmode,
+                            tight=_tight())
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     from PIL import Image
@@ -830,6 +831,18 @@ def _want_labels(default=False):
     return v in ("1", "true", "True")
 
 
+def _tight(default=False):
+    """`tight=1` narrows the mask to the dark core inside it -- see pipeline.tighten_to_image.
+
+    Off by default because it changes predicted crack AREA by roughly a factor of two, and
+    that is a physical quantity, not a styling choice.
+    """
+    v = request.args.get("tight")
+    if v is None:
+        return default
+    return v not in ("0", "false", "False", "")
+
+
 def _corrections_mode(default="paste"):
     """Whether to paste the user's corrections over the model's prediction.
 
@@ -991,7 +1004,8 @@ def _stats_csv_bytes(iid, mask):
 def api_export_mask(iid):
     t, pp = _opts()
     mask = P.effective_mask(iid, threshold=t, postprocess=pp,
-                            corrections=_corrections_mode(default="gate"))
+                            corrections=_corrections_mode(default="gate"),
+                            tight=_tight())
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     return send_file(io.BytesIO(_mask_png_bytes(mask)), mimetype="image/png",
@@ -1002,7 +1016,8 @@ def api_export_mask(iid):
 def api_export_overlay(iid):
     t, pp = _opts()
     mask = P.effective_mask(iid, threshold=t, postprocess=pp,
-                            corrections=_corrections_mode(default="gate"))
+                            corrections=_corrections_mode(default="gate"),
+                            tight=_tight())
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     return send_file(io.BytesIO(_overlay_png_bytes(iid, mask, show_labels=_want_labels())),
@@ -1014,7 +1029,8 @@ def api_export_overlay(iid):
 def api_export_stats(iid):
     t, pp = _opts()
     mask = P.effective_mask(iid, threshold=t, postprocess=pp,
-                            corrections=_corrections_mode(default="gate"))
+                            corrections=_corrections_mode(default="gate"),
+                            tight=_tight())
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     return send_file(io.BytesIO(_stats_csv_bytes(iid, mask)), mimetype="text/csv",

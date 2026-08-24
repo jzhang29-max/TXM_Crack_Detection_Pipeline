@@ -70,3 +70,68 @@ way forward is a small amount of deliberately tight ground truth — a few hundr
 annotated at pixel precision rather than with a brush — after which over-marking becomes
 measurable, and only then optimisable. That is the same missing piece as the unresolved AM/HC
 precision question and the absent second annotator.
+
+---
+
+# Why exported masks look like brush strokes (measured, 2026-08-24)
+
+Reported as "dotted or brush-like structure I don't like". It is neither speckle nor a
+rendering artefact: **the exported mask is the brush.**
+
+On wrought_316L_fatigue_1200_cycles_crack:
+
+| | % of frame |
+|---|---|
+| model alone, no corrections | 9.280% |
+| the export | 8.178% |
+| the owner's crack strokes | 5.919% |
+| the owner's eraser strokes | 20.540% |
+| in the export *only because* it was painted | **0.015%** (0.2% of the mask) |
+
+The eraser covers 20.5% of the frame, so almost everything the model found outside a crack
+stroke is removed, and inside the strokes the model already says crack at p>0.5 — so the gate
+has nothing left to narrow. The mask that survives has the brush's shape.
+
+**Width is the tell.** Median half-width along the centreline: model 28.4 px, export 16.3 px,
+the strokes 15.0 px. The export's width *is* the brush's width.
+
+**And the strokes are far wider than the cracks.** Isolating the darkest fifth inside each
+stroke — the crack itself — gives:
+
+| frame | stroke half-width | dark core | over-marked by |
+|---|---|---|---|
+| wrought_316L_fatigue_1200_cycles | 15.0 px | **1.0 px** | **15×** |
+| HC_316L_fatigue_1200_cycles | 20.0 px | 3.0 px | 6.7× |
+| HC_316L_fatigue_1650_cycles | 31.6 px | 6.1 px | 5.2× |
+| b2_338_13 | 23.7 px | 9.0 px | 2.6× |
+
+The brush shipped at **radius 24 — a 48 px wide stroke** — against cracks 2–18 px across.
+Every label over-marked by construction, and the model learned it faithfully. Raising the
+probability cut does not undo this: at p>0.95 the median half-width is still 12 px while area
+collapses from 8.18% to 2.63%, so it deletes crack instead of narrowing it. **The width was
+never in the training signal.**
+
+## Two changes
+
+**The brush default is now radius 8**, grounded in the dark-core measurement above. The
+slider still spans 2–120 for erasing large regions.
+
+**"Tight crack boundary"** (Advanced, off by default) narrows the accepted region using the
+image rather than the label: Otsu on the pixels the mask already accepted, which is
+parameter-free and per-frame.
+
+| frame | as exported | tight | median half-width |
+|---|---|---|---|
+| wrought_1200 | 8.178% | 4.683% | 16.3 → 12.1 px |
+| HC_1200 | 2.024% | 1.270% | 19.8 → 9.2 px |
+| HC_1650 | 6.882% | 3.143% | 43.0 → 14.1 px |
+| b2_338_13 | 27.329% | 13.867% | 57.2 → 11.7 px |
+
+100% of the dark core is kept in all four. It is **off by default** because it changes
+predicted crack area roughly two-fold, and that is a physical quantity someone may already
+have recorded — a tighter boundary is a better delineation, not automatically the number the
+person wants. It also drops faint branches that are not among the darkest pixels, which is a
+recall cost the owner should see rather than inherit.
+
+Neither change fixes existing labels. Thin cracks painted with a 48 px brush stay 48 px wide
+until they are repainted and the model retrained on them.
