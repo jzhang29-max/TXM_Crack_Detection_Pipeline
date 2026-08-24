@@ -19,12 +19,9 @@ Then open **http://127.0.0.1:8800**. The script makes its own virtualenv, instal
 everything and serves the app; re-running it just starts the app.
 
 **The clone is ~4.5 GB** because all 71 real TXM frames ship with it, so the app has
-something to show on first run. Add `--depth 1` to the clone to skip the history and pull
-~2.3 GB instead — everything except `git log` works the same:
-
-```bash
-git clone --depth 1 https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline.git
-```
+something to show on first run. `--depth 1` only brings that to ~4.3 GB — measured, not
+guessed: the frames are 2.1 GB of the *current* tree, so skipping history barely helps.
+Budget the full download.
 
 - **Python 3.10 is the floor, 3.12 is tested.** Check `python3 -V` first — 3.9 fails in
   pip's resolver.
