@@ -890,21 +890,28 @@ def main():
         for _m7 in _S7.list_images():
             if "SELFTEST" in (_m7.get("filename") or ""):
                 continue
-            _mask7 = _P7.effective_mask(_m7["id"], corrections="gate")
+            # tight=True: what the export actually serves by default. Testing the
+            # untightened path would pass while the real deliverable regressed.
+            _mask7 = _P7.effective_mask(_m7["id"], corrections="gate", tight=True)
             if _mask7 is None:
                 continue
             _checked += 1
             _s7 = _np7.bincount(_lab7(_mask7, connectivity=2).ravel())[1:]
             if len(_s7) == 0:
                 continue
-            _k7 = int((_s7 < _P7.MIN_BLOB_PX).sum())
+            # Below the full floor, an elongated thread is crack and a roundish blob is a
+            # dot. Tightening splits wide bands into threads, so size alone cannot judge it.
+            from skimage.measure import regionprops as _rp7
+            _k7 = sum(1 for _r7 in _rp7(_lab7(_mask7, connectivity=2))
+                      if _r7.area < _P7.MIN_BLOB_PX
+                      and _r7.major_axis_length / max(_r7.minor_axis_length, 1e-6) < 3.0)
             if _k7 > _n7:
                 _n7, _worst = _k7, (_m7.get("filename") or "")[22:50]
             if _checked >= 8:      # a sample: the full sweep is minutes, this is seconds
                 break
-        check("an exported mask carries no blob under the speck floor",
+        check("an exported mask carries no roundish sub-floor blob",
               _n7 == 0,
-              f"{_n7} sub-{_P7.MIN_BLOB_PX}px component(s) over {_checked} frames"
+              f"{_n7} roundish sub-{_P7.MIN_BLOB_PX}px component(s) over {_checked} frames"
               + (f", worst {_worst}" if _worst else ""))
     except Exception as e:                                      # noqa: BLE001
         check("an exported mask carries no blob under the speck floor", False, str(e))

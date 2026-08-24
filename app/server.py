@@ -831,11 +831,11 @@ def _want_labels(default=False):
     return v in ("1", "true", "True")
 
 
-def _tight(default=False):
+def _tight(default=True):
     """`tight=1` narrows the mask to the dark core inside it -- see pipeline.tighten_to_image.
 
-    Off by default because it changes predicted crack AREA by roughly a factor of two, and
-    that is a physical quantity, not a styling choice.
+    On by default. It changes predicted crack AREA by roughly a factor of two, so
+    `tight=0` is how you get the wider, label-shaped boundary back.
     """
     v = request.args.get("tight")
     if v is None:

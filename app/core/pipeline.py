@@ -584,11 +584,20 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
             spare = inside if corrections == "paste" else None
             mask = prune_specks_keeping(mask, spare)
     if tight and mask.any():
-        mask = tighten_to_image(image_id, mask, prune=prune and not postprocess)
+        # On the canvas ("paste") an explicitly painted pixel is never narrowed. Otherwise a
+        # stroke over a crack that is not among the darkest pixels -- a filled or bright one
+        # -- would produce no visible change at all, which is exactly the failure that
+        # disqualified "gate" as the canvas default. The deliverable still tightens fully.
+        spare = None
+        if corrections == "paste":
+            corr_p = S.load_npy(image_id, "correction.npy")
+            if corr_p is not None and corr_p.shape == mask.shape:
+                spare = corr_p == 1
+        mask = tighten_to_image(image_id, mask, prune=prune and not postprocess, spare=spare)
     return mask
 
 
-def tighten_to_image(image_id, mask, prune=True):
+def tighten_to_image(image_id, mask, prune=True, spare=None):
     """Narrow an accepted region to the dark core inside it, using the image.
 
     WHY THIS EXISTS. The exported mask is as wide as the brush that labelled it. Measured
@@ -605,10 +614,14 @@ def tighten_to_image(image_id, mask, prune=True):
     over four frames: area halves, median half-width falls from 16-57 px to 9-14 px, and
     100% of the dark core is kept every time.
 
-    NOT the default, deliberately. It changes predicted crack AREA by about a factor of two,
-    and that is a physical quantity someone may already have recorded or compared against.
-    A tighter boundary is a better crack delineation; it is not automatically the number the
-    person wants, so it is a switch they throw rather than a change made underneath them.
+    ON by default since 2026-08-24, at the owner's instruction and with the cost stated: of
+    the crack area they painted, 61.9% stays marked against 99.97% before (43.6% at worst, on
+    HC_316L_fatigue_1650_cycles). Most of that difference is the over-marking they asked to be
+    rid of -- the strokes are 2.6-15x wider than the dark core -- but faint crack that is not
+    among the darkest pixels goes with it, and the two cannot be separated without
+    pixel-accurate reference annotation, which this project does not have. Predicted area on
+    the six confirmed crack-free specimens improves, 0.0230% to 0.0197%. Turn it off in
+    Advanced to get the wider boundary back.
     """
     from skimage.filters import threshold_otsu
     img = S.load_npy(image_id, "img.npy")
@@ -621,12 +634,34 @@ def tighten_to_image(image_id, mask, prune=True):
     if vals.size < 64 or float(vals.min()) == float(vals.max()):
         return mask
     out = mask & (img <= threshold_otsu(vals))
+    if spare is not None:
+        out |= mask & spare
     if not out.any():
         return mask
-    # A tighter boundary breaks a wide band into thinner threads, so the speck floor has to
-    # be re-applied at a lower value: 2000 px is calibrated for corridor-width blobs and
-    # would delete real thread here.
-    return prune_specks(out, min_px=200) if prune else out
+    if not prune:
+        return out
+    # A tighter boundary breaks a wide band into thinner threads, so the 2000 px speck floor
+    # cannot simply be re-applied: it is calibrated for corridor-width blobs and would delete
+    # real thread. Dropping to 200 px keeps the threads but let 32 ROUNDISH blobs through
+    # across the corpus -- and a round 200 px blob is what reads as a black dot.
+    #
+    # So shape decides, not just size: below the full floor, keep what is elongated like a
+    # crack and drop what is not. Measured over 66 frames, sub-2000 px components split 75
+    # elongated (aspect >= 3) against 32 roundish, and only the second kind is unwanted.
+    out = prune_specks(out, min_px=200)
+    from skimage.measure import label as _label, regionprops as _rp
+    lab = _label(out, connectivity=2)
+    if lab.max() == 0:
+        return out
+    kill = []
+    for r in _rp(lab):
+        if r.area >= MIN_BLOB_PX:
+            continue
+        if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+            kill.append(r.label)
+    if kill:
+        out = out & ~np.isin(lab, kill)
+    return out
 
 
 def prune_specks_keeping(mask, keep, min_px=None):

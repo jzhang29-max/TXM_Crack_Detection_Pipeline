@@ -127,11 +127,34 @@ parameter-free and per-frame.
 | HC_1650 | 6.882% | 3.143% | 43.0 → 14.1 px |
 | b2_338_13 | 27.329% | 13.867% | 57.2 → 11.7 px |
 
-100% of the dark core is kept in all four. It is **off by default** because it changes
-predicted crack area roughly two-fold, and that is a physical quantity someone may already
-have recorded — a tighter boundary is a better delineation, not automatically the number the
-person wants. It also drops faint branches that are not among the darkest pixels, which is a
-recall cost the owner should see rather than inherit.
+100% of the dark core is kept in all four.
+
+**It is ON by default since 2026-08-24**, at the owner's instruction and with the cost
+measured first:
+
+| | tight off | tight on |
+|---|---|---|
+| of the crack area they painted, still marked | 99.97% | **61.91%** (43.6% worst frame) |
+| predicted area, 6 crack-free specimens | 0.0230% | **0.0197%** |
+
+Most of that 38-point difference is the over-marking this whole note is about — the strokes are
+2.6–15× wider than the dark core. But faint crack that is not among the darkest pixels goes
+with it, and the two cannot be separated without pixel-accurate reference annotation, which
+this project does not have. `tight=0`, or unticking the box in Advanced, restores the wider
+boundary.
+
+**Painted pixels are exempt on the canvas.** Under `paste` an explicitly painted pixel is
+never narrowed, because a stroke over a crack that is not among the darkest pixels would
+otherwise produce no visible change at all — the same failure that disqualified `gate` as the
+canvas default. Measured: painted crack stays at 100.00% on the canvas and narrows to 59.51%
+in the export, on the same frame.
+
+**Sub-floor components are judged by shape, not size.** Tightening splits a wide band into
+thin threads, so the 2000 px speck floor would delete real crack; dropping it to 200 px kept
+the threads but let 32 roundish blobs through across the corpus, and a round 200 px blob is
+exactly what reads as a black dot. Below the floor, elongated survives and roundish does not:
+of 107 sub-2000 px components, 75 elongated (aspect ≥ 3) are kept and all 32 roundish are
+removed.
 
 Neither change fixes existing labels. Thin cracks painted with a 48 px brush stay 48 px wide
 until they are repainted and the model retrained on them.
