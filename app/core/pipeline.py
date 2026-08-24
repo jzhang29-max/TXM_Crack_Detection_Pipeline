@@ -648,20 +648,26 @@ def tighten_to_image(image_id, mask, prune=True, spare=None):
     # So shape decides, not just size: below the full floor, keep what is elongated like a
     # crack and drop what is not. Measured over 66 frames, sub-2000 px components split 75
     # elongated (aspect >= 3) against 32 roundish, and only the second kind is unwanted.
-    out = prune_specks(out, min_px=200)
+    #
+    # `spare` is exempt from BOTH the size floor and the shape rule. A single click is a
+    # round blob of about 1250 px, so without that exemption the shape rule deleted it and a
+    # click on the canvas did nothing at all -- the selftest for "painting invalidates the
+    # cached overlay" caught it. An assertion the user drew is not judged on its shape.
     from skimage.measure import label as _label, regionprops as _rp
-    lab = _label(out, connectivity=2)
+    keep_lab = set()
+    pruned = prune_specks_keeping(out, spare, min_px=200)
+    lab = _label(pruned, connectivity=2)
     if lab.max() == 0:
-        return out
+        return pruned
+    if spare is not None and spare.any():
+        keep_lab = set(np.unique(lab[spare & pruned]).tolist())
     kill = []
     for r in _rp(lab):
-        if r.area >= MIN_BLOB_PX:
+        if r.area >= MIN_BLOB_PX or r.label in keep_lab:
             continue
         if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
             kill.append(r.label)
-    if kill:
-        out = out & ~np.isin(lab, kill)
-    return out
+    return pruned & ~np.isin(lab, kill) if kill else pruned
 
 
 def prune_specks_keeping(mask, keep, min_px=None):

@@ -158,3 +158,18 @@ removed.
 
 Neither change fixes existing labels. Thin cracks painted with a 48 px brush stay 48 px wide
 until they are repainted and the model retrained on them.
+
+**A single click must survive.** `spare` is exempt from the size floor *and* the shape rule. A
+click is a round blob of about 1250 px, so the shape rule deleted it and clicking on the canvas
+did nothing at all — caught by the selftest for "painting invalidates the cached overlay",
+which is the only reason it was not shipped. An assertion the user drew is not judged on its
+shape.
+
+**Every path that renders or counts the mask had to be wired**, not just the export: the canvas
+status bar was still reporting the wide area beside a narrowed picture, the ZIP export — the
+main deliverable — was still writing wide masks, and thumbnails disagreed with the image they
+link to. The overlay cache key gained the flag too, or toggling the box changes the URL and not
+the picture. `_apply_flip_region` is the one deliberate exception: its result is written into
+`correction.npy` as a label, and tightening there would bake Otsu's boundary into the owner's
+own labels where turning the switch off could never undo it, then feed it to the next retrain
+as if it had been drawn.

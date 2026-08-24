@@ -260,7 +260,7 @@ def api_thumb(iid):
     # it links to is worse than no thumbnail at all.
     g = _to8(disp, P.display_limits(iid) if processed else (0.0, 1.0))
     im = Image.fromarray(g).convert("RGB")
-    mask = P.effective_mask(iid)
+    mask = P.effective_mask(iid, tight=_tight())
     if mask is not None and mask.shape == g.shape:
         red = Image.new("RGB", im.size, (230, 60, 55))
         im = Image.composite(Image.blend(im, red, 0.55), im,
@@ -309,8 +309,12 @@ def api_mask(iid):
     # first mode rendered would be served for all three and the Advanced toggle would look
     # broken in the most confusing way -- the URL changing, the picture not.
     cmode = _corrections_mode()
+    # tight changes the mask, so it changes the picture, so it belongs in the key -- the
+    # same argument as MIN_BLOB_PX and the corrections mode above. Without it, toggling the
+    # box in Advanced changes the URL and not the image.
+    tightq = _tight()
     tag = (f"{mkey}_{thr:.2f}_{1 if pp else 0}_{1 if show_labels else 0}"
-           f"_p{0 if pp else P.MIN_BLOB_PX}_c{cmode}")
+           f"_p{0 if pp else P.MIN_BLOB_PX}_c{cmode}_t{1 if tightq else 0}")
     cache = S.path(iid, "overlays", f"{tag}.png")
     srcs = [S.path(iid, "prob.npy"), S.path(iid, "correction.npy")]
     # Strictly older, not "not newer". Filesystem timestamps are coarse enough that an
@@ -329,7 +333,7 @@ def api_mask(iid):
     stamp = max([os.path.getmtime(p) for p in srcs if os.path.exists(p)] or [0])
 
     mask = P.effective_mask(iid, threshold=thr, postprocess=pp, corrections=cmode,
-                            tight=_tight())
+                            tight=tightq)
     if mask is None:
         return jsonify(ok=False, error="no prediction"), 404
     from PIL import Image
@@ -388,8 +392,10 @@ def api_stats(iid):
     # numbers for threshold 0.50 no matter what the user was actually looking at --
     # move Sensitivity to 0.30 and the picture changed while the crack % did not.
     t, pp = _opts()
+    # tight too, or the number contradicts the overlay it sits beside: mask.png narrows and
+    # the status bar would keep reporting the wider area.
     mask = P.effective_mask(iid, threshold=t, postprocess=pp,
-                            corrections=_corrections_mode())
+                            corrections=_corrections_mode(), tight=_tight())
     if mask is not None:
         from skimage.measure import label
         m = dict(m, area_fraction=float(mask.mean()),
@@ -554,6 +560,10 @@ def _candidate_under_point(iid, x, y, mask, label, thr, pp):
 
 
 def _apply_flip_region(iid, x, y, mode, thr, pp, label):
+    # NOT tightened, deliberately, and this is the one place that must not be: the result of
+    # this call is written into correction.npy as a label. Tightening first would bake Otsu's
+    # boundary into the owner's own labels, where it could never be undone by turning the
+    # switch off, and would then be fed back into the next retrain as if it were drawn.
     mask = P.effective_mask(iid, threshold=thr, postprocess=pp)
     corr = S.load_npy(iid, "correction.npy")
     if mask is None or corr is None:
@@ -1076,6 +1086,8 @@ def api_export_all():
     # fine. `corrections=0` exists for anyone who wants the raw prediction, to check what a
     # retrain actually learned; it is not the honest default.
     ac = _corrections_mode(default="gate")
+    # read once, outside the loop: request.args inside a 71-image zip is the same every time
+    at = _tight()
     lab = _want_labels()
     imgs = [m for m in S.list_images() if m.get("has_prob")]
     if not imgs:
@@ -1095,7 +1107,7 @@ def api_export_all():
             for m in imgs:
                 iid = m["id"]
                 mask = P.effective_mask(iid, threshold=t, postprocess=pp,
-                                        corrections=ac)
+                                        corrections=ac, tight=at)
                 if mask is None:
                     continue
                 stem = os.path.splitext(m.get("filename") or iid)[0]
