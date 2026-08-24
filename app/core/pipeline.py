@@ -801,10 +801,41 @@ def clean_fp_measured(model_key):
 # sampling noise in the number people will read. At 30k this measured 0.8107 against
 # 0.8241 from a 120k-row harness -- a 0.013 gap that is pure sample size.
 CV_ROWS_PER_IMAGE = 60000
-CV_TRAIN_CAP = 400000
+# CV_TRAIN_CAP WAS ASSIGNED TWICE, AND THE SECOND ONE WON SILENTLY. 90000 came first, with
+# the original grouped k-fold (8690b9f, 19 Aug). The rewrite that replaced it added
+# `CV_TRAIN_CAP = 400000` three lines higher (dd5811d, 22 Aug) as the cap for
+# crossval_on_rows -- and left the older line in place below it, so 400000 was dead on
+# arrival and never took effect. The intent of the newer commit was clearly 400 k; what has
+# actually run for the two days since is 90 k.
+#
+# This is not cosmetic. Training is ~3.5 M rows over 5 grouped folds, so a fold's train side
+# is ~2.8 M and the cap is ALWAYS active: it decides how much data each fold actually fits
+# on. Every held-out IoU this project has published -- 0.789 in the README, in
+# docs/START_HERE.md and on the app's scorecard -- was fitted on 90 k rows per fold.
+#
+# The value is left at 90 k, and NOT "restored" to the intended 400 k, because 400 k was
+# measured and is worse. Same rows, same folds, same seeds:
+#
+#   cap        mean IoU        worst fold   folds won   minutes
+#   90 000     0.7959 +-0.025    0.7714      5 of 5       0.7
+#   400 000    0.7590 +-0.034    0.7109      0 of 5       4.5
+#
+# -0.0369 IoU for 6x the time, losing every fold -- larger than the 0.776 -> 0.789 the
+# overlapping-tile work bought, and far outside the +-0.007 that resampling the rows moves
+# this metric. So the dead line was the better setting by accident, and acting on the git
+# history alone would have quietly cost more than the last real improvement gained.
+#
+# NOT an iteration budget, which was the first guess and is wrong: no fit gets near
+# max_iter=300 (early stopping halts them at 27-102 iterations), and raising max_iter to 1000
+# changes the 400 k result by +0.0000, identical on every fold. The damage is confined to the
+# 273-column hybrid member, 0.7834 -> 0.7417, while the 17-feature member does not move,
+# 0.6541 -> 0.6577. The likely reason -- untested -- is that folds hold out whole IMAGES, and
+# the 256 SAM channels encode image-specific appearance, so more rows let the MLP key harder
+# on the training images' embedding statistics and transfer less. Confirming that needs
+# train-fold IoU reported next to test-fold IoU.
+CV_TRAIN_CAP = 90000
 CV_TEST_CAP = 250000
 CV_MAX_FOLDS = 5
-CV_TRAIN_CAP = 90000
 
 
 

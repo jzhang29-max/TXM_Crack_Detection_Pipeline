@@ -850,6 +850,39 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("tight boundary narrows, or declines when it would delete the crack", False, str(e))
 
+    # No module-level constant assigned twice. CV_TRAIN_CAP was set to 400000 and then to
+    # 90000 three lines later, so the intended cap was dead on arrival and the effective one
+    # was whichever line came last -- silently, for two days, while the comment above them
+    # described the value that never ran. Nothing catches that: it is valid Python, it does
+    # not shadow a name, and the tests still pass because a wrong-but-consistent constant
+    # produces wrong-but-consistent numbers. Only a duplicate-assignment check sees it.
+    #
+    # Names re-bound inside functions or under `if` are normal and not counted -- only
+    # straight-line module scope, where a second assignment can never be intentional.
+    try:
+        import ast as _ast10
+        _dupes = []
+        for _rel10 in ("app/core/pipeline.py", "app/core/model.py", "app/core/store.py",
+                       "app/server.py"):
+            _tree10 = _ast10.parse(open(os.path.join(PROJECT, _rel10)).read())
+            _seen10 = {}
+            for _n10 in _tree10.body:                    # module scope only, not nested
+                if not isinstance(_n10, _ast10.Assign):
+                    continue
+                for _t10 in _n10.targets:
+                    if not isinstance(_t10, _ast10.Name):
+                        continue
+                    if not _t10.id.isupper():            # constants; lowercase gets rebound
+                        continue
+                    if _t10.id in _seen10:
+                        _dupes.append(f"{os.path.basename(_rel10)}:{_t10.id} "
+                                      f"(lines {_seen10[_t10.id]} and {_t10.lineno})")
+                    _seen10[_t10.id] = _t10.lineno
+        check("no module-level constant is assigned twice", not _dupes,
+              "; ".join(_dupes) if _dupes else "checked 4 modules")
+    except Exception as e:                                      # noqa: BLE001
+        check("no module-level constant is assigned twice", False, str(e))
+
     # A brush stroke must be continuous even when the pointer outruns it. The painter used
     # to stamp one disc per reported point and nothing in between, so a stroke was only
     # continuous if the browser happened to deliver positions closer together than the brush

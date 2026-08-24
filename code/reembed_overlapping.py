@@ -30,12 +30,24 @@ OLD = "emb_pre_overlap.npz"
 
 
 def rollback():
-    n = 0
+    """Put the pre-overlap caches back, if they are still on disk.
+
+    They are not, after the tidy-up that followed v4 shipping: 71 files at 2.1 GB of derived
+    data kept only as a safety net for a migration that has since been validated, deployed
+    and pushed. So this says so rather than reporting "restored 0" and looking like it worked
+    -- reverting now means setting TILE_STRIDE back to TILE and re-embedding, which is the
+    same 40 minutes the migration cost in the first place.
+    """
+    n = sum(1 for m in S.list_images() if os.path.exists(S.path(m["id"], OLD)))
+    if not n:
+        print("  no pre-overlap caches on disk -- they were deleted after v4 shipped.")
+        print("  to revert: set model.TILE_STRIDE = model.TILE and rerun this script")
+        print("  (~40 min), then retrain, since the lookup must match what was fitted.")
+        return 1
     for m in S.list_images():
         src, dst = S.path(m["id"], OLD), S.path(m["id"], "emb.npz")
         if os.path.exists(src):
             os.replace(src, dst)
-            n += 1
     print(f"  restored {n} pre-overlap caches")
     return 0
 

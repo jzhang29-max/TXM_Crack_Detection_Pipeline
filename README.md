@@ -204,7 +204,9 @@ A mean-probability ensemble of two MLPs on those features — one on the 17 alon
 average: 0.792 against 0.778 for the SAM hybrid alone and 0.651 for the 17 features alone.
 A single HistGradientBoosting scored better on every labelled-pixel metric and was tried; it
 marked 7.5× more crack-free material as crack and was reverted. That measurement is in
-[docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md).
+[docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md). Adjusting the contrast
+of the model input was tested too, across 19 arms — it does not help, and most of it hurts:
+[docs/CONTRAST.md](docs/CONTRAST.md).
 
 Nothing is held back from training, and nothing is scored against a label you did not draw.
 The retrain gate has two axes: cross-validation grouped by whole image, so train and test
@@ -231,7 +233,8 @@ That is gone.
 
 Full per-specimen breakdowns, the validation protocol and a 78-variant architecture sweep
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
-`SAM_COMPARISON.md`, `PUBLISHABILITY.md` and `HANDOFF.md`.
+`SAM_COMPARISON.md`, `CONTRAST.md`, `TILE_SEAMS.md`, `OVERMARKING.md`, `PUBLISHABILITY.md`
+and `HANDOFF.md`.
 
 **Why is the predicted crack wider than the real one?** Measured, and four fixes tried and
 rejected: [docs/OVERMARKING.md](docs/OVERMARKING.md). The model draws a ~15 px hairline about
@@ -246,6 +249,13 @@ discriminative in isolation (+0.021 IoU on the hybrid member, p=0.029) but that 
 vanishes in the shipped ensemble (+0.001, p=0.87) and comes with a nominal false-positive
 cost. SAM 3's weights are gated behind Meta's manual approval; the comparison harness has its
 arm wired in and runs unchanged once access is granted.
+
+## What is in `research/`
+
+Measurement history, not a second way to use the tool: the scripts there predate the app, many
+read caches that are not shipped, and several would train from external labels this project no
+longer uses anywhere. The supported path is `./run_app.sh` and the Retrain button. The `docs/`
+notes cite those scripts as the provenance of published numbers, which is why they are kept.
 
 ## Security
 

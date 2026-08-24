@@ -1,0 +1,53 @@
+{
+ "frame": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+ "n_sample_px": 60000,
+ "cases": {
+  "exact_affine_0.5x+0.25": {
+   "max_abs_z_diff": 0.03174607156471532,
+   "per_feature": {
+    "texture_s2": 0.03174607156471532,
+    "texture_s8": 0.015780963605732334,
+    "laplacian_s1": 1.3061350067997135e-05,
+    "gradmag_s1": 8.707164190505101e-06
+   }
+  },
+  "exact_affine_0.9x+0.05": {
+   "max_abs_z_diff": 0.020374036330211398,
+   "per_feature": {
+    "texture_s2": 0.020374036330211398,
+    "texture_s8": 0.01213132196213218,
+    "laplacian_s1": 7.678137239564009e-06,
+    "gradmag_s1": 4.616214839298083e-06
+   }
+  },
+  "stretch_1_99": {
+   "max_abs_z_diff": 0.017621923095093583,
+   "per_feature": {
+    "texture_s2": 0.017621923095093583,
+    "texture_s8": 0.011624890795609688,
+    "laplacian_s1": 4.0651828704052484e-05,
+    "laplacian_s2": 3.174702091635062e-05
+   }
+  },
+  "gamma_2.0": {
+   "max_abs_z_diff": 9.7327955013732,
+   "per_feature": {
+    "gradmag_s1": 9.7327955013732,
+    "laplacian_s1": 7.957917171471035,
+    "texture_s2": 7.473881458759872,
+    "gradmag_s2": 7.463134124558534
+   }
+  },
+  "equalize_hist": {
+   "max_abs_z_diff": 18.229264964531072,
+   "per_feature": {
+    "gradmag_s1": 18.229264964531072,
+    "texture_s2": 14.519750479584633,
+    "gradmag_s2": 13.942521878938805,
+    "laplacian_s1": 12.32981031978464
+   }
+  }
+ },
+ "float32_noise_floor_max_abs_z_diff": 0.03174607156471532,
+ "note": "The floor is set by local_std (the texture_s* features): it evaluates sqrt(E[x^2] - E[x]^2), and that cancellation loses precision differently once x is rescaled. A provably-invisible affine map still moves z by ~0.0317, so any arm at that level is a no-op, while gamma_2.0 at 9.73 is a genuine change."
+}
