@@ -233,9 +233,6 @@ button:disabled{opacity:.4;cursor:default}
       <div class="fld">Zoom <input type="range" id="zoom" min="5" max="400" value="100"><span class="num" id="zoomv">100%</span>
         <button class="ghost" id="fit">Fit</button></div>
       <div class="fld">Sensitivity <input type="range" id="thr" min="5" max="95" value="50"><span class="num" id="thrv">0.50</span></div>
-      <label class="fld" style="gap:7px"><input type="checkbox" id="pp"> Legacy post-processing</label>
-      <label class="fld" style="gap:7px" title="Narrow the mask to the dark core inside it, using the image. Your strokes are 2.6-15x wider than the crack they mark (half-width 15 px against a 1 px core on wrought_316L_fatigue_1200), and the model reproduces that width because it was trained on them, so no probability threshold recovers it -- but the image still has it. Otsu inside the accepted region keeps 100% of the dark core while halving the area. ON by default: of the crack area you painted, 61.9% stays marked against 99.97% with it off, and most of that difference is over-marking. Predicted area on crack-free specimens improves. Untick for the wider, label-shaped boundary."><input type="checkbox" id="tight" checked> Tight crack boundary</label>
-      <label class="fld" style="gap:7px" title="Show the model's raw prediction, ignoring your corrections. Measured: your strokes are 2-3.6x TIGHTER than the model on thin cracks, so this WIDENS the mask rather than narrowing it. Its use is checking whether a retrain actually learned a region. Exports already use a gated mode that keeps your labels but lets the image draw the boundary."><input type="checkbox" id="modelonly"> Model output only</label>
       <div class="sp"></div>
       <button class="ghost" id="reapply" title="Re-predict every image with the current model">Re-apply model</button>
       <button class="ghost" id="undo2">Undo <span class="kbd">⌘Z</span></button>
@@ -310,14 +307,20 @@ const dur=x=>{x=Math.round(x);const h=Math.floor(x/3600),m=Math.round((x%3600)/6
   return h?`${h}h ${m}m`:(x<60?`${x}s`:`${m}m`);};
 const px=n=>n>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M"
   :n>=1e3?Math.round(n/1e3)+"k":String(n);
-const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${$("#pp").checked?1:0}`+
+// The diagnostic switches -- postprocess, corrections=none, tight=0 -- are URL parameters
+// with no control in the panel. They are for checking the tool, not using it: leaving one on
+// silently changes every picture and number afterwards, and "Model output only" in particular
+// stops the canvas showing your corrections at all, which is confusing rather than useful.
+// ck() reads a box if one is present, so the parameters keep working either way.
+const ck=id=>{const e=$(id);return !!(e&&e.checked);};
+const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${ck("#pp")?1:0}`+
   // corrections=0 shows the model's own prediction. Off by default because a brush stroke
   // has to appear the moment it is drawn; with this on, painting will not change the red
   // overlay until the next retrain, which is the point of the switch -- it is how you see
   // whether a retrain actually learned a region or is having your answer pasted back.
-  `${$("#modelonly")&&$("#modelonly").checked?"&corrections=none":""}`+
+  `${ck("#modelonly")?"&corrections=none":""}`+
   `&labels=${$("#showlabels")&&$("#showlabels").checked?1:0}`+
-  `${$("#tight")&&$("#tight").checked?"&tight=1":""}`;
+  `${ck("#tight")?"&tight=1":""}`;
 
 /* ---------- model + scope ---------- */
 async function loadModel(){
@@ -669,7 +672,7 @@ $("#cv").addEventListener("mousedown",async e=>{
   if(MODE==="region"){
     const [x,y]=xy(e);say("removing area…");
     const r=await post(`/api/image/${CUR}/flip_region`,
-      {x,y,mode:"toggle",threshold:+($("#thr").value/100).toFixed(2),postprocess:$("#pp").checked});
+      {x,y,mode:"toggle",threshold:+($("#thr").value/100).toFixed(2),postprocess:ck("#pp")});
     if(!r.ok){say(r.error||"nothing there","var(--warn)");return;}
     refresh();loadList(true);
     // Say WHICH region was taken and WHICH WAY it went. Clicking a red blob and clicking
@@ -908,7 +911,7 @@ $("#showlabels").onchange=refresh;
 // so leaving Sensitivity live while it is on presents a control that does nothing.
 // Grey it out and say why instead of letting someone drag it and see no change.
 function syncThrEnabled(){
-  const off=$("#pp").checked;
+  const off=ck("#pp");
   $("#thr").disabled=off;
   const f=$("#thr").closest(".fld");
   f.style.opacity=off?".45":"";
@@ -924,9 +927,6 @@ $("#reapply").onclick=async()=>{
   if(!r.ok){say(`could not re-apply — ${r.error}`,"var(--bad)");return;}
   watch(r.job,"Re-applying model");
 };
-$("#pp").onchange=()=>{syncThrEnabled();refresh();};
-// Without this the checkbox would look active and change nothing until the next redraw.
-$("#modelonly").onchange=refresh;
 $("#thr").oninput=e=>$("#thrv").textContent=(e.target.value/100).toFixed(2);
 $("#thr").onchange=refresh;
 syncThrEnabled();

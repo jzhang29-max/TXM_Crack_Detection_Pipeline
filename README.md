@@ -143,6 +143,19 @@ over ten images are worth far more than the same effort on one.
 
 When it does deploy, it re-applies the new model to every image inside the same job.
 
+### Diagnostics, if you ever need them
+
+Three switches used to sit in **Advanced** and were removed: leaving one on silently changes
+every picture and number afterwards, and one of them stopped the canvas showing your
+corrections at all. They are still reachable as URL parameters, appended to any
+`mask.png`, `overlay.png` or `stats` request:
+
+| parameter | effect |
+|---|---|
+| `tight=0` | the wider, label-shaped boundary — the mask before the image narrows it |
+| `corrections=none` | the model's raw prediction, ignoring your corrections. How you check whether a retrain actually learned a region or is having your answer pasted back |
+| `postprocess=1` | the legacy hysteresis cleanup. Measured to delete thin crack (−0.08 IoU); it exists to reproduce old outputs, not to improve new ones |
+
 ## 7. Export
 
 | item | what you get |
