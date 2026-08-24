@@ -111,3 +111,41 @@ The fix is training signal, not code: a few eraser strokes along the frame edges
 three specimens and a retrain. That is exactly what the correction workflow is for, and it is
 deliberately left to the owner rather than solved by synthesising border labels nobody drew —
 this project's whole gate rests on no label existing that the owner did not paint.
+
+---
+
+# Speck debris from erasing (fixed separately)
+
+Exported masks carried **tiny black dots that look nothing like crack**. They were not a
+downscaling artefact — that was checked first and ruled out: resampling the full-resolution
+mask to 812 px by nearest, bilinear, box and Lanczos all produced 2–3 specks, not the dozens
+visible.
+
+`prune_specks` promises no crack blob under `MIN_BLOB_PX` = 2000. Corrections were applied
+**after** that prune, which quietly undid it. An eraser stroke does not only remove area: it
+cuts *through* blobs and leaves the offcuts behind as separate sub-floor components.
+
+Measured on b2_343_75_LARGE (6367×3691, 19.9% crack), the worst frame of 71:
+
+| corrections | components | under 200 px | crack area |
+|---|---|---|---|
+| none | 19 | **0** | 20.005% |
+| gate / paste (before) | 70 | **51** | 19.865% |
+| gate (after) | 19 | **0** | 19.864% |
+
+Crack area moves by 0.001 pp, because the specks are tiny by definition — this is a
+cosmetic-looking defect with a real cause, not a trade-off.
+
+The fix re-prunes after corrections, with one asymmetry that matters:
+
+- **paste** (the canvas) spares any component containing a painted pixel, at any size. There a
+  stroke is an assertion, and silently deleting a deliberate dab smaller than the floor is the
+  one thing painting must never do.
+- **gate** (the export) spares nothing. A gated pixel is not an assertion that this is crack,
+  it is "believe weaker evidence here" with the boundary still drawn by the image — so a
+  stroke over a region the model barely likes shatters into slivers at the floor, and those
+  slivers *are* the specks. Sparing them would preserve the artefact on the one path that
+  produces the deliverable.
+
+Verified across all 71 frames in export mode: **0 components under 2000 px**. Guarded by a
+selftest that samples 8 frames, confirmed to fail when the second prune is removed.

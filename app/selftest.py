@@ -807,6 +807,40 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the embedding lookup blends without seams", False, str(e))
 
+    # No speck survives into an export. prune_specks promises no crack blob under
+    # MIN_BLOB_PX, and corrections used to be applied AFTER that prune, which quietly undid
+    # it: an eraser stroke does not only remove area, it cuts THROUGH blobs and leaves the
+    # offcuts behind as separate sub-floor components. Measured on b2_343_75_LARGE before the
+    # fix: 19 components with corrections off, 70 with them on, 51 of those under 200 px --
+    # visible in an exported mask as tiny black dots that look nothing like crack.
+    try:
+        import numpy as _np7
+        import pipeline as _P7
+        import store as _S7
+        from skimage.measure import label as _lab7
+        _worst, _n7, _checked = None, 0, 0
+        for _m7 in _S7.list_images():
+            if "SELFTEST" in (_m7.get("filename") or ""):
+                continue
+            _mask7 = _P7.effective_mask(_m7["id"], corrections="gate")
+            if _mask7 is None:
+                continue
+            _checked += 1
+            _s7 = _np7.bincount(_lab7(_mask7, connectivity=2).ravel())[1:]
+            if len(_s7) == 0:
+                continue
+            _k7 = int((_s7 < _P7.MIN_BLOB_PX).sum())
+            if _k7 > _n7:
+                _n7, _worst = _k7, (_m7.get("filename") or "")[22:50]
+            if _checked >= 8:      # a sample: the full sweep is minutes, this is seconds
+                break
+        check("an exported mask carries no blob under the speck floor",
+              _n7 == 0,
+              f"{_n7} sub-{_P7.MIN_BLOB_PX}px component(s) over {_checked} frames"
+              + (f", worst {_worst}" if _worst else ""))
+    except Exception as e:                                      # noqa: BLE001
+        check("an exported mask carries no blob under the speck floor", False, str(e))
+
     # Staging files left by writes that were KILLED rather than raised. The atomic-write
     # helpers unlink their temp on exception, but no handler runs for SIGKILL or a power cut,
     # and nothing reads or reaps those files -- so they accumulate invisibly. This install

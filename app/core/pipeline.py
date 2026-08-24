@@ -512,7 +512,48 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
         # Erase stays absolute. "This is not crack" is a statement about the specimen that no
         # amount of model confidence should override, and it can only ever remove area.
         mask[corr == 2] = False
+        # PRUNE AGAIN, because corrections are applied after the first prune and undo its
+        # guarantee. An eraser stroke does not just remove area: it cuts THROUGH blobs and
+        # leaves the offcuts behind as separate components below the floor. Measured on
+        # b2_343_75_LARGE, the worst case: 19 components with no corrections, 70 with them,
+        # and 51 of those 70 under 200 px. Those specks are what reads as "tiny black dots
+        # that do not look like crack" in an exported mask -- they are debris from erasing,
+        # not anything the model or the user asserted.
+        #
+        # Under "paste" a component containing any painted pixel is spared regardless of
+        # size, because there the stroke is an assertion: a small deliberate dab is a
+        # statement, an offcut of the model's output is not, and silently deleting a stroke
+        # smaller than the floor is the one thing painting must never do.
+        #
+        # Under "gate" there is no such exemption, and deliberately. A gated pixel is not an
+        # assertion that this is crack -- it is "believe weaker evidence here", with the
+        # boundary still drawn by the image. So a stroke laid over a region the model barely
+        # likes shatters into slivers at the floor, and those slivers are exactly the specks
+        # this is removing. Sparing them would preserve the artefact on the one path that
+        # produces the deliverable. Measured on b2_340_94: 6 sub-200 px components survive
+        # with the exemption, 0 without, and crack area moves by 0.003 pp.
+        if prune and not postprocess:
+            spare = inside if corrections == "paste" else None
+            mask = prune_specks_keeping(mask, spare)
     return mask
+
+
+def prune_specks_keeping(mask, keep, min_px=None):
+    """prune_specks, except components overlapping `keep` survive at any size."""
+    from skimage.measure import label as _label
+    n = MIN_BLOB_PX if min_px is None else min_px
+    lab = _label(mask, connectivity=2)
+    if lab.max() == 0:
+        return mask
+    sizes = np.bincount(lab.ravel())
+    doomed = np.flatnonzero(sizes < n)
+    if doomed.size == 0:
+        return mask
+    spared = np.unique(lab[keep & mask]) if keep is not None and keep.any() else np.array([])
+    kill = np.setdiff1d(doomed, spared)
+    if kill.size == 0:
+        return mask
+    return mask & ~np.isin(lab, kill)
 
 
 # ------------------------------------------------------------------ retrain

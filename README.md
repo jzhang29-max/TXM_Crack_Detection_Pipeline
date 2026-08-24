@@ -3,6 +3,12 @@
 Finds cracks in transmission X-ray microscopy images. Drag images in, look at what the
 model found, fix what it got wrong, press Retrain. That is the whole loop.
 
+![The app](docs/img/app.png)
+
+Red is what the model found. The sidebar carries every loaded frame, the current model, and
+the last retrain's scorecard. Regenerate this figure with
+`python3 code/make_frontend_figure.py` while the app is running.
+
 ## Run it
 
 ```bash
