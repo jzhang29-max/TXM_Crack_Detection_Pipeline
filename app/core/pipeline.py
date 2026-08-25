@@ -543,6 +543,11 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
         mask = remove_small_holes(
             mask, **_skimage_size_kw(remove_small_holes, FILL_HOLES_MAX_PX))
     if corrections == "none":
+        # tight applies here too. This used to `return mask` outright, so "Model output only"
+        # silently ignored the switch: the URL carried tight=1, the picture did not change,
+        # and nothing said why. Verified before the fix -- b2_338_13 read 27.417% either way.
+        if tight and mask.any():
+            mask = tighten_to_image(image_id, mask, prune=prune and not postprocess)
         return mask
     corr = S.load_npy(image_id, "correction.npy")
     if corr is not None and corr.shape == mask.shape:
