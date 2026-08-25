@@ -488,6 +488,14 @@ CORRECTION_FLOOR = 0.20
 # islands of intact material surrounded by crack, and filling them would be a lie about
 # the specimen. So the cutoff keeps the noise and keeps the islands.
 FILL_HOLES_MAX_PX = 1024
+#
+# Applied TWICE: once here on the corridor, and again after tighten_to_image narrows it,
+# because narrowing opens far more voids than it inherits. Swept post-narrowing over all 71
+# frames at 64 / 256 / 1024 px, the same 1024 is best on every axis at once -- enclosed voids
+# 342,963 -> 2,471 / 1,145 / 894, recall on painted crack 74.74% -> 76.02% / 76.32% / 76.58%,
+# and on-specimen false positives on the 6 crack-free frames flat at 0.0040% for every cap,
+# including no fill at all. Filling cannot add area on a frame with no enclosed voids, which
+# is why the false-positive axis does not move. Total area rises 5.979% -> 6.125%.
 
 # Neighbourhood width for the tight boundary, in pixels. Wider keeps more faint crack and
 # runs slightly thicker: measured on wrought_316L_fatigue_1200_cycles, w=151 keeps 76.6% of
@@ -641,7 +649,7 @@ def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
     return mask
 
 
-def tighten_to_image(image_id, mask, prune=True, spare=None):
+def tighten_to_image(image_id, mask, prune=True, spare=None, fill_voids=True):
     """Narrow an accepted region to the dark core inside it, using the image.
 
     WHY THIS EXISTS. The exported mask is as wide as the brush that labelled it. Measured
@@ -703,6 +711,44 @@ def tighten_to_image(image_id, mask, prune=True, spare=None):
         out |= mask & spare
     if not out.any():
         return mask
+    # NARROWING MUST NOT LEAVE THE CENTRES SPECKLED. The hole fill in effective_mask runs
+    # BEFORE this step, so every void the local threshold opens inside a wide crack survives
+    # into the export untouched: measured, enclosed voids went 177 -> 35,572 on
+    # b2_343_75_LARGE and 25 -> 2,724 on b2_338_13. In a black-and-white mask that is exactly
+    # what reads as unfilled centres -- a dust of single white pixels through the middle of a
+    # crack that the eye resolves as texture rather than as one feature.
+    #
+    # So fill again, here, after the narrowing. Same operation as FILL_HOLES_MAX_PX above,
+    # applied where the holes are actually created.
+    #
+    # WHY NOT MORPHOLOGY. A radius-1 closing looked like the safer choice on the numbers --
+    # fewer pixels added for a comparable drop in hole count -- and it is wrong. skimage's
+    # disk(1) is a 3x3 cross, and closing stamps that shape onto every void it fails to
+    # remove, so the export picks up a crystalline lattice of diamonds; square(3) gives
+    # boxes. Rendered at native resolution the artefact is obvious. Filling adds no shape of
+    # its own: it removes voids or leaves them, and what is left still looks like crack.
+    #
+    # WHY NOT SHAPE-AWARE FILLING. Filling only the ROUNDISH voids, by the same aspect test
+    # prune_specks_keeping uses on specks, was the principled-sounding version. Measured, it
+    # leaves 5,956 voids on b2_343_75_LARGE against 38 for a plain cap, because the dust is
+    # mostly 1-2 px slots whose aspect ratio is undefined-to-huge. It keeps the dust. The
+    # asymmetry is real: a speck's shape says whether it is crack, a void's does not.
+    #
+    # THE EARLIER MEASUREMENT THAT ARGUED AGAINST THIS WAS MISREAD. Median half-width jumps
+    # from 18 px to 36 px under filling, which read as "the mask got fat" and is why this was
+    # rejected once already. It is a distance transform over a mask whose topology changed:
+    # removing interior voids moves the medial axis outward without moving the OUTLINE, which
+    # filling cannot move by construction. Total area is the honest number, and it moves
+    # +0.3 to +0.5 pp.
+    #
+    # Intersected back with the corridor so the result stays a SUBSET of what the detector
+    # accepted -- filling must not push the mask past the boundary the model drew.
+    if fill_voids:
+        from skimage.morphology import remove_small_holes as _rsh
+        out = _rsh(out.copy(),
+                   **_skimage_size_kw(_rsh, FILL_HOLES_MAX_PX)) & mask
+        if spare is not None:
+            out |= mask & spare
     if not prune:
         return out
     # A tighter boundary breaks a wide band into thinner threads, so the 2000 px speck floor
@@ -1120,7 +1166,7 @@ def gather_training_data(progress=None):
         # enough to deliver nearly the whole effect of forcing the balance.
         core = corr == 1
         if core.any():
-            narrowed = tighten_to_image(iid, core, prune=False)
+            narrowed = tighten_to_image(iid, core, prune=False, fill_voids=False)
             if narrowed is not None and narrowed.any():
                 core = narrowed
         ring = (corr == 1) & ~core
