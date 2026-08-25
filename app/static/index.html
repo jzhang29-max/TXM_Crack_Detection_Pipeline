@@ -405,7 +405,14 @@ async function loadRetrainReport(){
   // expander: this column is 250 px wide and had 998 characters of text in it.
   const row=(label,val,tip,extra)=>
     `<tr title="${tip}"><td>${label}</td><td class="n">${val}${extra||""}</td></tr>`;
+  // WHOSE NUMBERS ARE THESE. The scorecard describes the LAST RETRAIN, which used to be the
+  // same thing as the current model and stops being it the moment one is refused: after that,
+  // "held out 0.700" sits directly under the current model's name while the model actually
+  // serving every request scored 0.811. Say which it is ABOVE the numbers rather than leaving
+  // the reader to notice "not deployed" three lines lower.
   el.innerHTML=
+    (L.deployed?"":`<div class="cav" style="color:var(--bad);margin:0 0 3px">`+
+      `last retrain — REFUSED, not the model in use</div>`)+
     `<table>`+
     (H?row("held out", `<b>${H.mean_iou.toFixed(3)}</b>`,
         `${H.k}-fold grouped by image: the model is refit ${H.k} times, each time leaving one `+
