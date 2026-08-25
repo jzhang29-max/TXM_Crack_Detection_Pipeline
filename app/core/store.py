@@ -478,6 +478,33 @@ def set_current(entry, remember=True):
     return r
 
 
+def remember_model(entry):
+    """Add `entry` to the pickable list WITHOUT making it current.
+
+    A retrain that fails the gate used to leave its model on disk and unreachable: the files
+    were written, the scorecard said why it was refused, and there was no way to look at what
+    it actually predicted. The refusal to auto-deploy is the point of the gate and stays --
+    but "not deployed" should mean "you have to choose it deliberately", not "you cannot see
+    it". So the candidate is registered here, appears in the picker with its verdict, and the
+    user decides.
+
+    Deduped by model_key, and never touches `current`.
+    """
+    r = registry()
+    k = model_key(entry)
+    if r.get("current") and model_key(r["current"]) == k:
+        return r
+    hist = r.setdefault("history", [])
+    for i, h in enumerate(hist):
+        if model_key(h) == k:
+            hist[i] = entry                      # refresh the verdict on a re-run
+            write_json(REGISTRY, r)
+            return r
+    hist.append(entry)
+    write_json(REGISTRY, r)
+    return r
+
+
 def available_models():
     """Every model the user can pick: the current one, everything in history, and
     the shipped baseline even if it has never been current.

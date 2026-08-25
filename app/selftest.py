@@ -850,6 +850,38 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("tight boundary narrows, or declines when it would delete the crack", False, str(e))
 
+    # A model the gate REFUSED must still be selectable. The gate's job is to stop a
+    # regression shipping by itself, not to hide it: before this, a rejected candidate was
+    # written to disk, described in the scorecard, and then unreachable -- no way to see the
+    # masks behind the numbers or compare them against the incumbent on the same frame. Two
+    # halves have to hold together: it appears in the pickable list, AND it does not become
+    # current. Either one alone is a bug, the second one silently.
+    try:
+        import store as _S12
+        _reg12 = os.path.join(PROJECT, "app_data", "models", "registry.json")
+        _saved12 = open(_reg12).read() if os.path.exists(_reg12) else None
+        try:
+            _cur_before = (_S12.registry().get("current") or {}).get("label")
+            _probe = dict(kind="ensemble",
+                          path_17=os.path.join(PROJECT, "models", "f17_v3_20260822.joblib"),
+                          path_hybrid=os.path.join(PROJECT, "models",
+                                                   "hybrid_v3_20260822.joblib"),
+                          recipe="selftest", label="SELFTEST_REFUSED",
+                          created="19700101_000000", gate_passed=False,
+                          gate_reason="selftest probe")
+            _S12.remember_model(_probe)
+            _labels = [e.get("label") for e in _S12.available_models()]
+            _cur_after = (_S12.registry().get("current") or {}).get("label")
+            check("a gate-refused model is selectable but never current",
+                  "SELFTEST_REFUSED" in _labels and _cur_after == _cur_before,
+                  f"listed={'SELFTEST_REFUSED' in _labels}, "
+                  f"current unchanged={_cur_after == _cur_before}")
+        finally:
+            if _saved12 is not None:
+                open(_reg12, "w").write(_saved12)
+    except Exception as e:                                      # noqa: BLE001
+        check("a gate-refused model is selectable but never current", False, str(e))
+
     # The operating point lives in ONE place. It used to be five literals plus two `> 0.5`
     # comparisons inside the gate's own false-positive axis, and that last pair is why this
     # check exists: had the served threshold moved without them, the gate would have kept

@@ -122,6 +122,13 @@ Neither axis uses a label you did not draw: the first is cross-validation on you
 corrections, the second is measured on specimens you confirmed contain no crack, where any
 prediction is a false positive by construction.
 
+**A refused model is still selectable.** It never becomes current on its own — that is what the
+gate is for — but it appears in the model picker marked `REFUSED by the gate`, and choosing it
+asks for confirmation and shows the gate's own reason. A rejected model used to be written to
+disk, described in the scorecard, and then unreachable, so there was no way to look at the masks
+behind the numbers or compare them against the current model on the same frame. Refusing to
+deploy something should mean you have to pick it deliberately, not that you cannot see it.
+
 Every retrain leaves a scorecard under the model picker, and it persists across reloads:
 
 ```

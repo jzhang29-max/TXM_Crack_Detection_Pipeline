@@ -1332,15 +1332,18 @@ def retrain(deploy=True, progress=None):
 
     result["heldout"] = heldout
     result["heldout_error"] = heldout_err
+    cand_entry = dict(kind="ensemble", path_17=out17, path_hybrid=out, recipe=RECIPE,
+                      label=f"retrained {stamp}", created=stamp)
     if heldout is None:
         result.update(deployed=False,
                       reason=f"cross-validation could not run ({heldout_err}); model saved "
                              f"but not deployed")
+        # Offer it anyway. Unscored is not the same as bad, and a model nobody can select is
+        # a model nobody can check.
+        S.remember_model(dict(cand_entry, gate_passed=None,
+                             gate_reason=f"not scored: {heldout_err}"))
         record_retrain(result, stamp=stamp)
         return result
-
-    cand_entry = dict(kind="ensemble", path_17=out17, path_hybrid=out, recipe=RECIPE,
-                      label=f"retrained {stamp}", created=stamp)
     inc = get_model()
     cand = M.CrackModel(path_17=cand_entry["path_17"], path_hybrid=out, ensemble=True)
     # There is no dedicated labelled test set any more, by design: nothing is held back from
@@ -1455,10 +1458,19 @@ def retrain(deploy=True, progress=None):
             bits.append(f"false positives on {n_clean} crack-free specimen(s) rose "
                         f"{fp_inc*100:.2f}% -> {fp_cand*100:.2f}% of area "
                         f"(tolerance {FP_TOL*100:.1f} points)")
+        why = ("; ".join(bits) + "." if bits else
+               "passed the gate but this retrain was asked not to deploy.")
         result.update(deployed=False,
                       reason=(None if passes else
-                              "; ".join(bits) + ". Not deployed. The model file is kept "
-                              "so you can inspect it."))
+                              "; ".join(bits) + ". Not deployed, and selectable in the model "
+                              "picker if you want to look at what it predicts."))
+        # SELECTABLE EVEN THOUGH IT WAS REFUSED. The gate's job is to stop a regression
+        # shipping by itself, not to hide it: before this, a rejected model was written to
+        # disk, described in the scorecard, and then unreachable -- there was no way to see
+        # the masks behind the numbers, or to compare them against the incumbent's on the
+        # same frame. It is registered in history, never as current, and carries its verdict
+        # so the picker can say what the gate thought of it.
+        S.remember_model(dict(cand_entry, gate_passed=bool(passes), gate_reason=why))
     # Record the scorecard whether or not it deployed. A REJECTED retrain is the most
     # useful entry in the history -- it is the one a person will want to look at again.
     record_retrain(result, stamp=stamp)

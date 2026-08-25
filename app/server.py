@@ -692,6 +692,16 @@ def api_models():
                         created=e.get("created"), kind=e.get("kind", "ensemble"),
                         current=e["current"], cached_for=ready, n_images=len(ids),
                         clean_fp=fp, clean_n=n_clean,
+                        # What the retrain gate made of it. False means it was refused and is
+                        # listed anyway so it can be inspected; None means it was never
+                        # scored. Absent for models that predate the gate entirely.
+                        gate_passed=e.get("gate_passed"),
+                        gate_reason=e.get("gate_reason"),
+                        # Absent is not the same as unscored. Entries written before the
+                        # verdict was recorded have no key at all, and calling those "not
+                        # scored" in the picker would libel models that passed a gate which
+                        # simply did not save its answer.
+                        gate_recorded=("gate_passed" in e),
                         weights=_weights_fingerprint(e)))
     # AN ENTRY WHOSE WEIGHTS ARE THE CURRENT MODEL'S IS NOT WORTH SWITCHING TO.
     #
