@@ -134,7 +134,7 @@ def compute_stages(image_key="338_13"):
 
     # (F) the DEFAULT cleanup: a threshold and speck pruning. The legacy hysteresis
     # post-processing is off by default -- measured to cost 0.08 IoU on thin crack.
-    raw_thresh = p_ens > 0.5
+    raw_thresh = p_ens > P.DEFAULT_THRESHOLD
     final_mask = P.prune_specks(raw_thresh)
 
 

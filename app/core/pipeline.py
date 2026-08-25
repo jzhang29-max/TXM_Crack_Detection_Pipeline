@@ -64,7 +64,30 @@ import model as M            # noqa: E402
 # across. v3's held-out IoU was measured on the old columns, so this run establishes its own
 # baseline against MIN_ABS_IOU rather than being scored against a number from a basis it
 # cannot be compared to. See docs/TILE_SEAMS.md.
-RECIPE = "corrections_only_v4_overlap"
+RECIPE = "thincore_v5"
+
+# ONE PLACE for the operating point, because it used to be five plus the gate.
+#
+# 0.60, not 0.50, and that is part of the thin-core model rather than a tuning tweak. Trained on
+# narrowed labels the model predicts a 5 px half-width instead of 22 px, which is close to the
+# 2.5-3 px crack actually in the image -- but a thinner mask sits lower in probability, so at a
+# matched 0.50 it marks 2-3x more crack-free area than its predecessor. Matched on FALSE ALARMS
+# instead of on threshold, it wins outright. Measured on the three largest confirmed crack-free
+# specimens, pruned identically:
+#
+#   model  thr   crack-free FP   indications/frame   width   recall vs the dark core
+#   v4     0.60      0.011%             1.0          21.6 px         99.3%
+#   v5     0.70      0.017%             1.3           5.4 px         98.4%
+#   v5     0.60      0.038%             2.0           5.1 px         99.1%
+#
+# 0.60 keeps recall at 99.1% and costs 0.038% against v4's 0.039% at ITS shipped 0.50 -- the
+# same false-alarm rate the app has always had, for a mask four times closer to the crack.
+#
+# The literals this replaces were app/server.py three times, effective_mask's signature,
+# false_indications' signature, and -- the dangerous one -- the two `> 0.5` comparisons inside
+# the gate's own false-positive axis, which would have kept scoring at 0.50 while the app served
+# something else, so the gate would have silently measured a model nobody was running.
+DEFAULT_THRESHOLD = 0.60
 MIN_ABS_IOU = 0.60
 
 
@@ -169,7 +192,7 @@ def _score_clean(model, progress=None, cache_key=None):
         if cache_key:
             cached = S.load_npy_at(S.prob_cache_path(m["id"], cache_key), mmap=True)
             if cached is not None:
-                f = float((np.asarray(cached) > 0.5).mean())
+                f = float((np.asarray(cached) > DEFAULT_THRESHOLD).mean())
                 fracs.append(f)
                 detail.append(dict(image=name, fp=round(f, 6)))
                 del cached
@@ -183,7 +206,7 @@ def _score_clean(model, progress=None, cache_key=None):
             # embeds it itself rather than serving a lookup the weights never saw.
             emb = M.read_emb(S.path(m["id"], "emb.npz"))
         prob = model.predict(img, emb=emb)
-        f = float((prob > 0.5).mean())
+        f = float((prob > DEFAULT_THRESHOLD).mean())
         fracs.append(f)
         detail.append(dict(image=name, fp=round(f, 6)))
         del img, prob, emb
@@ -304,7 +327,7 @@ def ingest(image_id, progress=None, force=False, predict=True):
         cached = S.load_npy(image_id, "prob.npy", mmap=True)
         S.write_meta(image_id, dict(status="ready", model=mdl.describe(),
                                     predicted_area=float(prune_specks(
-                                        np.asarray(cached) > 0.5).mean()),
+                                        np.asarray(cached) > DEFAULT_THRESHOLD).mean()),
                                     ingested=time.time()))
         return True
 
@@ -365,7 +388,7 @@ def ingest(image_id, progress=None, force=False, predict=True):
                                 # The pruned figure, because that is the mask the user is
                                 # shown. Reporting the raw area next to a pruned overlay
                                 # makes the sidebar disagree with the picture beside it.
-                                predicted_area=float(prune_specks(prob > 0.5).mean()),
+                                predicted_area=float(prune_specks(prob > DEFAULT_THRESHOLD).mean()),
                                 ingested=time.time()))
     return True
 
@@ -482,7 +505,7 @@ TIGHTEN_WINDOW = 301
 TIGHTEN_MIN_CORE = 0.60
 
 
-def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
+def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
                    corrections="paste", fill_holes=True, tight=False):
     """The model's prediction, combined with the user's corrections in one of three ways.
 
@@ -514,6 +537,7 @@ def effective_mask(image_id, threshold=0.5, postprocess=False, prune=True,
     specimen, and 28% of the area it removes is where the model is confident (p>0.8) -- which
     is precisely the false-positive case erasing exists to fix.
     """
+    threshold = DEFAULT_THRESHOLD if threshold is None else threshold
     prob = S.load_npy(image_id, "prob.npy")
     if prob is None:
         # No prediction: an annotation-only image, ingested deliberately without one so the
@@ -789,7 +813,7 @@ def clean_fp_measured(model_key):
         a = S.load_npy_at(S.prob_cache_path(m["id"], model_key), mmap=True)
         if a is None:
             return None, 0                      # incomplete: do not cache a partial answer
-        fracs.append(float((np.asarray(a) > 0.5).mean()))
+        fracs.append(float((np.asarray(a) > DEFAULT_THRESHOLD).mean()))
         del a
     val = [float(np.mean(fracs)), len(fracs)]
     cache[key] = val
@@ -845,7 +869,7 @@ CV_MAX_FOLDS = 5
 
 
 
-def false_indications(model_key=None, threshold=0.5):
+def false_indications(model_key=None, threshold=None):
     """Spurious INDICATIONS per frame on confirmed crack-free specimens, not just area.
 
     The NDT question that a pixel-area fraction cannot answer. "0.106% of area" tells an
@@ -859,6 +883,7 @@ def false_indications(model_key=None, threshold=0.5):
     every retrain scorecard.
     """
     from skimage import measure
+    threshold = DEFAULT_THRESHOLD if threshold is None else threshold
     key = model_key or S.model_key(S.registry().get("current"))
     per = []
     for m in S.list_images():
@@ -929,7 +954,7 @@ def crossval_on_rows(X, y, groups, progress=None):
         t = y[te]
 
         def _score(p):
-            pred = p > 0.5
+            pred = p > DEFAULT_THRESHOLD
             tp = int((pred & t).sum()); fp = int((pred & ~t).sum()); fn = int((~pred & t).sum())
             return (round(tp / max(tp + fp + fn, 1), 4),
                     round(tp / max(tp + fp, 1), 4),
@@ -1076,8 +1101,31 @@ def gather_training_data(progress=None):
         img = S.load_npy(iid, "img.npy")
         if corr is None or img is None:
             continue
-        ci = np.flatnonzero(corr.reshape(-1) == 1)
-        bi = np.flatnonzero(corr.reshape(-1) == 2)
+        # THE CRACK LABEL IS NARROWED TO ITS DARK CORE BEFORE SAMPLING, and the discarded
+        # ring joins the NEGATIVE pool at its true area weight.
+        #
+        # Measured over all 61 painted frames: the painted stroke has a median half-width of
+        # 26.93 px, the dark crack inside it 3.16 px, and the model trained on those strokes
+        # predicts 28.46 px. Correlation of predicted width with LABEL width is 0.810; with
+        # CRACK width, 0.304. The model was reproducing the brush, not the crack, and no
+        # threshold or morphology recovers a width that was never in the training signal.
+        #
+        # The ring has to be NEGATIVE, not merely dropped. Leaving it unlabelled scores well
+        # (+0.064 IoU) and does not narrow the output at all -- 14.18 px against the baseline's
+        # 13.18 -- because removing those pixels takes away nothing that pushes the boundary
+        # inward. Calling them background gives +0.091 IoU, 8.03 px, and on-specimen false
+        # positives on the six crack-free specimens halved (0.943% -> 0.483%, better on 6/6).
+        # Sampling them from the union at uniform probability keeps their true area weight:
+        # about 2.7% of negative area, ~211 of 8000 negative rows at the median, which is
+        # enough to deliver nearly the whole effect of forcing the balance.
+        core = corr == 1
+        if core.any():
+            narrowed = tighten_to_image(iid, core, prune=False)
+            if narrowed is not None and narrowed.any():
+                core = narrowed
+        ring = (corr == 1) & ~core
+        ci = np.flatnonzero(core.reshape(-1))
+        bi = np.flatnonzero(((corr == 2) | ring).reshape(-1))
         nc = min(per_img_cap, len(ci)); nb = min(neg_cap, len(bi))
         if nc + nb == 0:
             continue

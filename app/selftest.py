@@ -850,6 +850,33 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("tight boundary narrows, or declines when it would delete the crack", False, str(e))
 
+    # The operating point lives in ONE place. It used to be five literals plus two `> 0.5`
+    # comparisons inside the gate's own false-positive axis, and that last pair is why this
+    # check exists: had the served threshold moved without them, the gate would have kept
+    # scoring candidates at 0.50 while the app served something else -- measuring a model
+    # nobody was running, and reporting it as the shipped number.
+    try:
+        import re as _re11
+        import pipeline as _P11
+        _bad = []
+        for _rel11 in ("app/core/pipeline.py", "app/server.py"):
+            _src11 = open(os.path.join(PROJECT, _rel11)).read()
+            for _pat11 in (r'threshold\s*=\s*0\.\d', r'threshold"\s*,\s*0\.\d',
+                           r'>\s*0\.5\b'):
+                for _m11 in _re11.finditer(_pat11, _src11):
+                    _bol11 = _src11.rfind("\n", 0, _m11.start()) + 1
+                    _hash11 = _src11.find("#", _bol11, _m11.start())
+                    if _hash11 != -1:
+                        continue          # inside a comment -- prose about the fix, not code
+                    _ln11 = _src11[:_m11.start()].count("\n") + 1
+                    _bad.append(f"{os.path.basename(_rel11)}:{_ln11} {_m11.group(0)!r}")
+        check("the decision threshold is defined in one place",
+              not _bad and 0.05 < _P11.DEFAULT_THRESHOLD < 0.95,
+              (f"DEFAULT_THRESHOLD={_P11.DEFAULT_THRESHOLD}" if not _bad
+               else "hardcoded: " + "; ".join(_bad[:4])))
+    except Exception as e:                                      # noqa: BLE001
+        check("the decision threshold is defined in one place", False, str(e))
+
     # No module-level constant assigned twice. CV_TRAIN_CAP was set to 400000 and then to
     # 90000 three lines later, so the intended cap was dead on arrival and the effective one
     # was whichever line came last -- silently, for two days, while the comment above them

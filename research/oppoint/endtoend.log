@@ -1,0 +1,267 @@
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.major_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_major_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:704: FutureWarning: `RegionProperties.minor_axis_length` is deprecated starting in version 0.26 and will be removed in version 2.0. Use `RegionProperties.axis_minor_length` instead. 
+  if r.major_axis_length / max(r.minor_axis_length, 1e-6) < 3.0:
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+
+=== Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of01  clean=False  dense_gt=True ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43  19.6917       4       0.8077     5.5806  0.6716  0.6948  0.9526
+  gate  0.50  18.7274       3       0.8077     4.8085  0.6878  0.6902  0.9950
+  gate  0.65  18.5953       3       0.8077     4.6747  0.6838  0.6858  0.9957
+ paste  0.43  19.8298       7       1.0000     5.7954  0.6821  0.7034  0.9576
+ paste  0.50  18.9656       3       1.0000     5.1096  0.6961  0.6987  0.9946
+ paste  0.65  18.8179       3       1.0000     4.9606  0.6920  0.6941  0.9957
+
+=== Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of01  clean=False  dense_gt=True ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43  20.0211       4       0.7834    12.0686  0.6654  0.6685  0.9930
+  gate  0.50  19.8230       3       0.7834    11.9974  0.6651  0.6657  0.9987
+  gate  0.65  19.7372       3       0.7834    11.9124  0.6625  0.6630  0.9990
+ paste  0.43  21.8364       5       1.0000    14.1396  0.6970  0.7123  0.9701
+ paste  0.50  21.5339       3       1.0000    13.9815  0.6993  0.7095  0.9799
+ paste  0.65  21.4467       3       1.0000    13.8963  0.6967  0.7067  0.9800
+
+=== Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_im  clean=False  dense_gt=True ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43  18.5813       8       0.7800     4.4416  0.6687  0.6924  0.9513
+  gate  0.50  17.8782       5       0.7800     4.0984  0.6665  0.6801  0.9710
+  gate  0.65  17.4846       4       0.7800     3.7853  0.6561  0.6675  0.9745
+ paste  0.43  18.9793      10       1.0000     4.6745  0.6770  0.7038  0.9466
+ paste  0.50  18.4191       5       1.0000     4.3655  0.6758  0.6943  0.9622
+ paste  0.65  18.0101       4       1.0000     4.0281  0.6644  0.6808  0.9650
+
+=== Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosai  clean=False  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43   4.6940      20       0.7264     1.0644     nan     nan     nan
+  gate  0.50   3.1432      13       0.7264     1.0336     nan     nan     nan
+  gate  0.65   3.0759      13       0.7264     0.9868     nan     nan     nan
+ paste  0.43   5.3385      12       1.0000     1.5725     nan     nan     nan
+ paste  0.50   3.7860       5       1.0000     1.5403     nan     nan     nan
+ paste  0.65   3.7212       5       1.0000     1.4936     nan     nan     nan
+
+=== Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaic  clean=False  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43   3.6326      17       0.7678     1.3083     nan     nan     nan
+  gate  0.50   0.7456       4       0.7678     1.2923     nan     nan     nan
+  gate  0.65   0.6946       3       0.7678     1.2328     nan     nan     nan
+ paste  0.43   3.6938      16       1.0000     1.4238     nan     nan     nan
+ paste  0.50   0.8086       3       1.0000     1.4111     nan     nan     nan
+ paste  0.65   0.7566       2       1.0000     1.3495     nan     nan     nan
+
+=== Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosai  clean=False  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43   2.5202      19       0.5348     1.5247     nan     nan     nan
+  gate  0.50   0.9713       7       0.5348     1.1517     nan     nan     nan
+  gate  0.65   0.9548       7       0.5348     1.1322     nan     nan     nan
+ paste  0.43   3.2762      18       1.0000     2.4267     nan     nan     nan
+ paste  0.50   1.7458       6       1.0000     2.0701     nan     nan     nan
+ paste  0.65   1.7291       6       1.0000     2.0503     nan     nan     nan
+
+=== Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx  clean=False  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43  10.0133      21       0.8318     0.1147     nan     nan     nan
+  gate  0.50   6.3880      16       0.8318     0.0917     nan     nan     nan
+  gate  0.65   6.2917      11       0.8316     0.0762     nan     nan     nan
+ paste  0.43  10.9990      12       1.0000     0.1987     nan     nan     nan
+ paste  0.50   7.3819       6       1.0000     0.1766     nan     nan     nan
+ paste  0.65   7.2894       3       1.0000     0.1612     nan     nan     nan
+
+=== Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.x  clean=True  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43   1.2407       6          nan     0.2862     nan     nan     nan
+  gate  0.50   0.0322       2          nan     0.0450     nan     nan     nan
+  gate  0.65   0.0000       0          nan     0.0000     nan     nan     nan
+ paste  0.43   1.2399       6          nan     0.2863     nan     nan     nan
+ paste  0.50   0.0325       2          nan     0.0453     nan     nan     nan
+ paste  0.65   0.0000       0          nan     0.0000     nan     nan     nan
+
+=== Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mos  clean=True  dense_gt=False ===
+  mode     t    area%   ncomp  recall_corr  onSpecFP%   gtIoU   gtRec  gtPrec
+  gate  0.43   1.1815      10          nan     0.1481     nan     nan     nan
+  gate  0.50   0.0099       1          nan     0.0155     nan     nan     nan
+  gate  0.65   0.0000       0          nan     0.0000     nan     nan     nan
+ paste  0.43   1.1703      10          nan     0.1313     nan     nan     nan
+ paste  0.50   0.0100       1          nan     0.0156     nan     nan     nan
+ paste  0.65   0.0000       0          nan     0.0000     nan     nan     nan
+
+==============================================================================
+SUMMARY (mode=gate): 0.50 -> 0.65 end-to-end
+==============================================================================
+                                   frame   dArea%   dNcomp   dRecall   dGtIoU
+                               b2_336_25  -0.1321       +0   +0.0000  -0.0041
+                               b2_338_13  -0.0859       +0   +0.0000  -0.0026
+                       B2_333_75_um_zoom  -0.3936       -1   -0.0000  -0.0104
+         HC_316L_fatigue_1400_cycles_idx  -0.0673       +0   -0.0000     +nan
+              HC_316L_fatigue_800_cycles  -0.0510       -1   +0.0000     +nan
+             HC_316L_fatigue_1200_cycles  -0.0165       +0   +0.0000     +nan
+  wrought_316L_fatigue_1200_cycles_crack  -0.0963       -5   -0.0002     +nan
+                                  b3_amb  -0.0322       -2      +nan     +nan
+           wrought_316L_fatigue_0_cycles  -0.0099       -1      +nan     +nan

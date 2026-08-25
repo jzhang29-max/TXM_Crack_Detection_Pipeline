@@ -77,8 +77,8 @@ TILE_STRIDE = 896
 # IoU 0.776, sd 0.029, worst fold 0.733, precision 0.929, recall 0.824. On the six specimens
 # confirmed to contain no crack: 0.188% of area predicted crack, 2.83 false indications per
 # frame -- both better than the model it replaced (0.250%, 4.0).
-DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v4_20260823.joblib")
-DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v4_20260823.joblib")
+DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v5_20260824.joblib")
+DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v5_20260824.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"
 
 
@@ -112,7 +112,7 @@ def _get_sam():
     the app "falls back to the 17-feature model alone" when SAM is missing; until this
     existed that promise was false, and a researcher on a network that blocks
     huggingface.co got a red job error on every single image with no way to reach the
-    17-feature model sitting in models/f17_v4_20260823.joblib.
+    17-feature model sitting in models/f17_v5_20260824.joblib.
     """
     global _sam, sam_unavailable_reason
     if sam_unavailable_reason:
@@ -318,8 +318,8 @@ class CrackModel:
             self.n_hybrid = (b.get("n_features", 273) if isinstance(b, dict) else 273)
         if self.m17 is None and self.hybrid is None:
             raise FileNotFoundError(
-                "no model found -- expected models/f17_v4_20260823.joblib and/or "
-                "models/hybrid_v4_20260823.joblib")
+                "no model found -- expected models/f17_v5_20260824.joblib and/or "
+                "models/hybrid_v5_20260824.joblib")
         if self.ensemble and (self.m17 is None or self.hybrid is None):
             self.ensemble = False   # fall back rather than silently averaging one thing
 

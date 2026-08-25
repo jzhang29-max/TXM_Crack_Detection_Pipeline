@@ -1,0 +1,38 @@
+[width] Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack fold=3 declined=False
+    baseline          hw=12.0  area=12.1871%  recall_core=0.9345  IoU_core=0.3676
+    thin_ring_neg     hw=8.0  area=8.446%  recall_core=0.8817  IoU_core=0.4805
+    thin_plus_margin  hw=14.04  area=9.7456%  recall_core=0.8876  IoU_core=0.4241
+    core_dilate3      hw=19.1  area=10.6734%  recall_core=0.8942  IoU_core=0.3931
+    ring_neg_forced   hw=4.47  area=7.5067%  recall_core=0.8683  IoU_core=0.5239
+    reference: painted hw=15.03 (5.9195%)  core hw=4.47 (4.9202%)
+[width] Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_ fold=3 declined=False
+    2560/3691 rows  327s
+    baseline          hw=14.32  area=13.2102%  recall_core=0.7956  IoU_core=0.5512
+    thin_ring_neg     hw=7.21  area=9.7417%  recall_core=0.7178  IoU_core=0.6002
+    thin_plus_margin  hw=14.32  area=12.2432%  recall_core=0.835  IoU_core=0.6358
+    core_dilate3      hw=15.0  area=12.5047%  recall_core=0.834  IoU_core=0.6229
+    ring_neg_forced   hw=4.47  area=9.4875%  recall_core=0.7432  IoU_core=0.6481
+    reference: painted hw=84.0 (17.3703%)  core hw=1.41 (10.6621%)
+[width] Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictil fold=3 declined=False
+    2560/3680 rows  651s
+    baseline          hw=27.51  area=8.4192%  recall_core=0.8485  IoU_core=0.7212
+    thin_ring_neg     hw=15.23  area=8.1501%  recall_core=0.8406  IoU_core=0.7299
+    thin_plus_margin  hw=39.45  area=8.7404%  recall_core=0.8893  IoU_core=0.757
+    core_dilate3      hw=28.64  area=8.0613%  recall_core=0.8038  IoU_core=0.6825
+    ring_neg_forced   hw=6.32  area=6.4818%  recall_core=0.6946  IoU_core=0.6345
+    reference: painted hw=58.2 (9.345%)  core hw=1.0 (8.2135%)
+[width] Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_m fold=2 declined=False
+    baseline          hw=12.04  area=9.1684%  recall_core=0.8603  IoU_core=0.3286
+    thin_ring_neg     hw=8.06  area=5.7025%  recall_core=0.8276  IoU_core=0.483
+    thin_plus_margin  hw=9.85  area=7.3154%  recall_core=0.8948  IoU_core=0.4297
+    core_dilate3      hw=11.05  area=6.7826%  recall_core=0.8236  IoU_core=0.4098
+    ring_neg_forced   hw=6.08  area=6.0666%  recall_core=0.7938  IoU_core=0.4301
+    reference: painted hw=32.65 (6.1541%)  core hw=3.61 (3.6998%)
+crack-free specimens matched: 6
+[fp] Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictile sup=62.75% baseline=0.5895%  thin_ring_neg=0.3632%  thin_plus_margin=0.3625%  core_dilate3=0.2377%  ring_neg_forced=0.3628%
+[fp] Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictile sup=61.57% baseline=3.0747%  thin_ring_neg=2.2355%  thin_plus_margin=2.2508%  core_dilate3=1.6625%  ring_neg_forced=1.7035%
+[fp] Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosai sup=73.8% baseline=0.2975%  thin_ring_neg=0.0737%  thin_plus_margin=0.1082%  core_dilate3=0.0278%  ring_neg_forced=0.2318%
+[fp] Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_i sup=71.61% baseline=0.115%  thin_ring_neg=0.007%  thin_plus_margin=0.007%  core_dilate3=0.0202%  ring_neg_forced=0.0128%
+[fp] Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_m sup=77.98% baseline=0.191%  thin_ring_neg=0.032%  thin_plus_margin=0.0435%  core_dilate3=0.0087%  ring_neg_forced=0.0905%
+[fp] Average_mosaic_260620_wrought_316L_fatigue_0_cycles_ sup=64.0% baseline=1.39%  thin_ring_neg=0.185%  thin_plus_margin=0.4933%  core_dilate3=0.5657%  ring_neg_forced=0.3993%
+wrote /Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/research/thinlabels/frames_all.json

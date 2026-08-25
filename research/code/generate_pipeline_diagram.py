@@ -31,6 +31,10 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))), "app", "core"))
+import pipeline as P          # noqa: E402  -- for DEFAULT_THRESHOLD, so the figure cannot
+                              # describe an operating point the app is not serving
 from diagram_helpers import (
     SVG, esc, wrap_tspans, rounded_rect, draw_card, draw_document,
     doc_cy_above, doc_arrow_start_y, stat_card, DOC_COLOR, INK, SUBTEXT, _darken,
@@ -115,9 +119,9 @@ def main():
              thumbs=[("MLP(17) alone", _shrink(s["p17"], "max"), "inferno"),
                      ("Averaged with MLP(17+SAM)", _shrink(s["p_ens"], "max"), "inferno")]),
         dict(key="F", title="Threshold and speck pruning", icon="magnifier",
-             subtitle="Probability > 0.50, then blobs under 2000 px dropped. Legacy "
+             subtitle=f"Probability > {P.DEFAULT_THRESHOLD:.2f}, then blobs under 2000 px dropped. Legacy "
                       "hysteresis cleanup is OFF by default",
-             thumbs=[("Raw > 0.50 threshold", _shrink(s["raw_thresh_display"], "min"), None),
+             thumbs=[(f"Raw > {P.DEFAULT_THRESHOLD:.2f} threshold", _shrink(s["raw_thresh_display"], "min"), None),
                      ("Final mask, crack = black", _shrink(s["final_mask_display"], "min"), None)]),
     ]
 
@@ -178,7 +182,7 @@ def main():
         f"the output as a visible seam; SAM contributes its frozen encoder only, and its "
         f"prompt encoder and mask decoder are never called. Two MLPs -- one on the 17 "
         f"features, one on all 273 -- are averaged (E); the average, not the hybrid alone, is "
-        f"what wins on the largest mosaics. A 0.50 threshold and removal of blobs under 2000 "
+        f"what wins on the largest mosaics. A {P.DEFAULT_THRESHOLD:.2f} threshold and removal of blobs under 2000 "
         f"px give the final mask (F), while the older hysteresis cleanup is off by default "
         f"because it measurably deletes thin crack. Corrections are painted in the browser "
         f"(G) and are the ONLY thing a retrain learns from (H): there is no external ground "

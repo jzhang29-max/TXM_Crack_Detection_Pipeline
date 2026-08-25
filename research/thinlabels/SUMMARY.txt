@@ -1,0 +1,79 @@
+PREMISE, over all 61 frames with painted crack
+  median painted-stroke half-width   26.93 px
+  median dark-core half-width        3.16 px
+  median DEPLOYED model half-width   28.46 px
+  median painted/core width ratio    6.54x
+  median core area / painted area    0.75
+  frames where tightening declined   2/61
+  corr(pred half-width, painted half-width) = 0.810   corr(pred, core) = 0.304   (n=61)
+
+HELD-OUT ROWS, GroupKFold(5) by image, SAME fixed target (the dark core)
+arm                            IoU    prec     rec   d(IoU)  folds won  own IoU
+baseline           0.6475+-0.0229  0.7206  0.8664  +0.0000       0/5   0.7769
+thin_ring_neg      0.7382+-0.0337  0.8487  0.8506  +0.0907       5/5   0.7382
+thin_plus_margin   0.7111+-0.0325  0.7965  0.8697  +0.0636       5/5   0.8170
+core_dilate3       0.6911+-0.0371  0.7814  0.8580  +0.0436       5/5   0.8004
+ring_neg_forced    0.7413+-0.0533  0.8821  0.8230  +0.0938       5/5   0.7413
+
+POSITIVE RATE PER LABEL POOL on the same held-out rows
+arm                 dark core  inner ring  outer ring   corr==2
+baseline               0.8664      0.8009      0.6974    0.0582
+thin_ring_neg          0.8506      0.5029      0.2060    0.0383
+thin_plus_margin       0.8697      0.7045      0.3920    0.0419
+core_dilate3           0.8580      0.7430      0.4433    0.0431
+ring_neg_forced        0.8230      0.2093      0.0660    0.0499
+
+PREDICTED WIDTH, full frame, each frame held out of its arm's training fold
+  Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_cra
+    reference: painted hw= 15.03 (5.9195%)   dark core hw=  4.47 (4.9202%)
+    baseline           hw=  12.0  area= 12.187%  mean_width=  17.5px  recall_core=0.9345  IoU_core=0.3676
+    thin_ring_neg      hw=   8.0  area=  8.446%  mean_width=  12.6px  recall_core=0.8817  IoU_core=0.4805
+    thin_plus_margin   hw= 14.04  area=  9.746%  mean_width=  16.9px  recall_core=0.8876  IoU_core=0.4241
+    core_dilate3       hw=  19.1  area= 10.673%  mean_width=  22.9px  recall_core=0.8942  IoU_core=0.3931
+    ring_neg_forced    hw=  4.47  area=  7.507%  mean_width=   8.5px  recall_core=0.8683  IoU_core=0.5239
+  Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileA
+    reference: painted hw=  84.0 (17.3703%)   dark core hw=  1.41 (10.6621%)
+    baseline           hw= 14.32  area= 13.210%  mean_width=  20.6px  recall_core=0.7956  IoU_core=0.5512
+    thin_ring_neg      hw=  7.21  area=  9.742%  mean_width=  12.0px  recall_core=0.7178  IoU_core=0.6002
+    thin_plus_margin   hw= 14.32  area= 12.243%  mean_width=  21.5px  recall_core=0.8350  IoU_core=0.6358
+    core_dilate3       hw=  15.0  area= 12.505%  mean_width=  22.7px  recall_core=0.8340  IoU_core=0.6229
+    ring_neg_forced    hw=  4.47  area=  9.488%  mean_width=   9.1px  recall_core=0.7432  IoU_core=0.6481
+  Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaict
+    reference: painted hw=  58.2 (9.345%)   dark core hw=   1.0 (8.2135%)
+    baseline           hw= 27.51  area=  8.419%  mean_width=  32.3px  recall_core=0.8485  IoU_core=0.7212
+    thin_ring_neg      hw= 15.23  area=  8.150%  mean_width=  20.2px  recall_core=0.8406  IoU_core=0.7299
+    thin_plus_margin   hw= 39.45  area=  8.740%  mean_width=  43.3px  recall_core=0.8893  IoU_core=0.7570
+    core_dilate3       hw= 28.64  area=  8.061%  mean_width=  40.1px  recall_core=0.8038  IoU_core=0.6825
+    ring_neg_forced    hw=  6.32  area=  6.482%  mean_width=  11.8px  recall_core=0.6946  IoU_core=0.6345
+  Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000
+    reference: painted hw= 32.65 (6.1541%)   dark core hw=  3.61 (3.6998%)
+    baseline           hw= 12.04  area=  9.168%  mean_width=  19.1px  recall_core=0.8603  IoU_core=0.3286
+    thin_ring_neg      hw=  8.06  area=  5.702%  mean_width=  12.2px  recall_core=0.8276  IoU_core=0.4830
+    thin_plus_margin   hw=  9.85  area=  7.315%  mean_width=  15.8px  recall_core=0.8948  IoU_core=0.4297
+    core_dilate3       hw= 11.05  area=  6.783%  mean_width=  17.9px  recall_core=0.8236  IoU_core=0.4098
+    ring_neg_forced    hw=  6.08  area=  6.067%  mean_width=   9.5px  recall_core=0.7938  IoU_core=0.4301
+
+median over the four width frames
+arm                 half-width   area %  mean width  recall core
+baseline                 13.18   10.678        19.9       0.8544
+thin_ring_neg             8.03    8.298        12.4       0.8341
+thin_plus_margin         14.18    9.243        19.2       0.8884
+core_dilate3             17.05    9.367        22.8       0.8288
+ring_neg_forced           5.28    6.994         9.3       0.7685
+painted stroke           45.42    7.750
+dark core                 2.51    6.567
+
+ON-SPECIMEN FALSE POSITIVES, six confirmed crack-free specimens (400k sampled on-specimen px each)
+arm                 mean on-spec %   worst %  vs baseline  specimens better
+baseline                    0.9429    3.0747      +0.0000              0/6
+thin_ring_neg               0.4827    2.2355      -0.4602              6/6
+thin_plus_margin            0.5442    2.2508      -0.3987              6/6
+core_dilate3                0.4204    1.6625      -0.5225              6/6
+ring_neg_forced             0.4668    1.7035      -0.4762              6/6
+
+same, whole-frame (the number that inverted an earlier conclusion -- not the axis to use)
+baseline           whole-frame  3.0203%   off-specimen  7.1749%
+thin_ring_neg      whole-frame  2.2716%   off-specimen  5.8493%
+thin_plus_margin   whole-frame  2.9144%   off-specimen  7.6549%
+core_dilate3       whole-frame  2.7580%   off-specimen  7.4332%
+ring_neg_forced    whole-frame  2.9331%   off-specimen  7.8658%

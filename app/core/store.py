@@ -406,10 +406,10 @@ def _default_registry():
     # a retrain would treat this entry as a foreign recipe and fall back to an absolute floor
     # instead of a proper no-regression comparison.
     return dict(current=dict(kind="ensemble",
-                             path_17=os.path.join(PROJECT, "models", "f17_v4_20260823.joblib"),
+                             path_17=os.path.join(PROJECT, "models", "f17_v5_20260824.joblib"),
                              path_hybrid=os.path.join(PROJECT, "models",
-                                                     "hybrid_v4_20260823.joblib"),
-                             recipe="corrections_only_v4_overlap",
+                                                     "hybrid_v5_20260824.joblib"),
+                             recipe="thincore_v5",
                              label="shipped baseline",
                              created=None),
                 history=[])

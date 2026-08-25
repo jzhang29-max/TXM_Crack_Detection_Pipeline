@@ -55,9 +55,10 @@ a frame — with false positives on 6 owner-confirmed crack-free specimens:
 
 | | value |
 |---|---|
-| held-out IoU (grouped by image) | **0.789** ±0.039, worst fold 0.721 |
-| precision / recall | 0.933 / 0.837 |
-| crack-free false positives | **0.209%** of area, 1.83 indications/frame |
+| held-out IoU (grouped by image) | **0.811** ±0.023, worst fold 0.778 |
+| precision / recall | 0.936 / 0.860 |
+| crack-free false positives | **0.046%** of area, 2.0 indications/frame |
+| mask width | ~5 px half-width, against a 2.5–3 px crack |
 
 Averaging beats either member alone on the same basis, in every fold rather than on average:
 

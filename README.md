@@ -125,9 +125,9 @@ prediction is a false positive by construction.
 Every retrain leaves a scorecard under the model picker, and it persists across reloads:
 
 ```
-held out     0.789  ±0.04
-false calls  1.83/frame
-background   0.21%  +0.02pp
+held out     0.811  ±0.02
+false calls  2.0/frame
+background   0.05%  −0.16pp
 deployed 12:35 · details
 ```
 
@@ -197,8 +197,8 @@ step reached the output as a visible seam — measured at 33× the frame's typic
 change. Details in [docs/TILE_SEAMS.md](docs/TILE_SEAMS.md).
 
 A mean-probability ensemble of two MLPs on those features — one on the 17 alone, one on all
-273. Averaging beats either member alone in **every** cross-validation fold, not just on
-average: 0.792 against 0.778 for the SAM hybrid alone and 0.651 for the 17 features alone.
+273. Averaging beats either member alone: 0.811 against 0.786 for the SAM hybrid alone and 0.726
+for the 17 features alone.
 A single HistGradientBoosting scored better on every labelled-pixel metric and was tried; it
 marked 7.5× more crack-free material as crack and was reverted. That measurement is in
 [docs/REFERENCE_FRAMES_AND_HGB.md](docs/REFERENCE_FRAMES_AND_HGB.md). Adjusting the contrast
@@ -212,13 +212,16 @@ where any prediction is a false positive by construction.
 
 ## How well it does
 
-- **IoU 0.789** under cross-validation grouped by image — train and test never share an
-  image (fold sd 0.039, worst fold 0.721, precision 0.933, recall 0.837). This is the
+- **IoU 0.811** under cross-validation grouped by image — train and test never share an
+  image (fold sd 0.023, worst fold 0.778, precision 0.936, recall 0.860). This is the
   headline number because it is the only one that answers "how will this do on an image it
   has not seen".
-- **0.209% of area** marked as crack on the six specimens confirmed to contain no crack, and
-  **1.83 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
+- **0.046% of area** marked as crack on the six specimens confirmed to contain no crack, and
+  **2.0 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
   as the NDT yardstick.
+- **Masks about 5 px across rather than 22.** The model is trained on crack labels narrowed to
+  their dark core, so it predicts something close to the crack rather than the width of the
+  brush that marked it — see [docs/THIN_LABELS.md](docs/THIN_LABELS.md).
 - Zero-shot SAM, prompted the way SAM is designed to be prompted, scores **0.23–0.36** on
   the same images.
 
@@ -230,7 +233,8 @@ That is gone.
 
 Full per-specimen breakdowns, the validation protocol and a 78-variant architecture sweep
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
-`SAM_COMPARISON.md`, `CONTRAST.md`, `TILE_SEAMS.md`, `OVERMARKING.md`, `PUBLISHABILITY.md`
+`SAM_COMPARISON.md`, `CONTRAST.md`, `THIN_LABELS.md`, `TILE_SEAMS.md`, `OVERMARKING.md`,
+`PUBLISHABILITY.md`
 and `HANDOFF.md`.
 
 **Why is the predicted crack wider than the real one?** Measured, and four fixes tried and

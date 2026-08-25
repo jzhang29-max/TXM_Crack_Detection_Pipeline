@@ -1,0 +1,1858 @@
+{
+  "current_key": "20260823_145653",
+  "current": {
+    "kind": "ensemble",
+    "path_17": "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/models/f17_v4_20260823.joblib",
+    "path_hybrid": "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/models/hybrid_v4_20260823.joblib",
+    "recipe": "corrections_only_v4_overlap",
+    "label": "tile-seam fix (overlapping embedding)",
+    "created": "20260823_145653"
+  },
+  "rows": [
+    {
+      "iid": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005_xrm_bim_bim__eb4c4baa",
+      "filename": "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 14798039,
+      "corr_shape": [
+        3899,
+        3914
+      ],
+      "prob_shape": [
+        3899,
+        3914
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005_xrm_bim_bim__c51c0591",
+      "filename": "Average_mosaic_260618_B2_2_9_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 18259192,
+      "corr_shape": [
+        3703,
+        5036
+      ],
+      "prob_shape": [
+        3703,
+        5036
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010_xrm_bi__250c5bf6",
+      "filename": "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 69159,
+      "n_not": 789267,
+      "corr_shape": [
+        1671,
+        1706
+      ],
+      "prob_shape": [
+        1671,
+        1706
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010_xrm_bim_bim__71292b96",
+      "filename": "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 30752,
+      "n_not": 0,
+      "corr_shape": [
+        3703,
+        5039
+      ],
+      "prob_shape": [
+        3703,
+        5039
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010_xrm_bim_bim__b0112039",
+      "filename": "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 86156,
+      "n_not": 4000181,
+      "corr_shape": [
+        3702,
+        5028
+      ],
+      "prob_shape": [
+        3702,
+        5028
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005_xrm_bim___c644afd4",
+      "filename": "Average_mosaic_260618_B2_amb_mosaic_2_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 14484984,
+      "corr_shape": [
+        3900,
+        3908
+      ],
+      "prob_shape": [
+        3900,
+        3908
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010_xrm_bim__37d5f720",
+      "filename": "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 119104,
+      "n_not": 853572,
+      "corr_shape": [
+        1688,
+        1714
+      ],
+      "prob_shape": [
+        1688,
+        1714
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010_xrm_bim_bim__ab7335a5",
+      "filename": "Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 34486,
+      "n_not": 119101,
+      "corr_shape": [
+        1688,
+        1693
+      ],
+      "prob_shape": [
+        1688,
+        1693
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010_xrm_bim_bim__6261f4a6",
+      "filename": "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 323616,
+      "n_not": 695686,
+      "corr_shape": [
+        1694,
+        1693
+      ],
+      "prob_shape": [
+        1694,
+        1693
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010_xrm_bim_bim__cea4b1d0",
+      "filename": "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 228283,
+      "n_not": 675719,
+      "corr_shape": [
+        1706,
+        1693
+      ],
+      "prob_shape": [
+        1706,
+        1693
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010_xrm_bim_bim__c0d2117b",
+      "filename": "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 290387,
+      "n_not": 624767,
+      "corr_shape": [
+        1689,
+        1693
+      ],
+      "prob_shape": [
+        1689,
+        1693
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010_xrm_bim_bim__9866c456",
+      "filename": "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 580097,
+      "n_not": 784205,
+      "corr_shape": [
+        1683,
+        2362
+      ],
+      "prob_shape": [
+        1683,
+        2362
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010_xrm_bim_bim__3000138d",
+      "filename": "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1086871,
+      "n_not": 1085110,
+      "corr_shape": [
+        1706,
+        2355
+      ],
+      "prob_shape": [
+        1706,
+        2355
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010_xrm_bim___a66b1ab0",
+      "filename": "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 849705,
+      "n_not": 648828,
+      "corr_shape": [
+        1699,
+        2351
+      ],
+      "prob_shape": [
+        1699,
+        2351
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010_xrm_bim_bim__ea67efab",
+      "filename": "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 694679,
+      "n_not": 752781,
+      "corr_shape": [
+        1706,
+        2371
+      ],
+      "prob_shape": [
+        1706,
+        2371
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010_xrm_bim___56d03fa7",
+      "filename": "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 4082128,
+      "n_not": 7657574,
+      "corr_shape": [
+        3691,
+        6367
+      ],
+      "prob_shape": [
+        3691,
+        6367
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010_xrm_bim_bim__f36e4ce8",
+      "filename": "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 846515,
+      "n_not": 809527,
+      "corr_shape": [
+        1684,
+        2375
+      ],
+      "prob_shape": [
+        1684,
+        2375
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010_xrm_bim_bim__f08328ad",
+      "filename": "Average_mosaic_260618_b3_amb_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 13226798,
+      "corr_shape": [
+        3737,
+        3702
+      ],
+      "prob_shape": [
+        3737,
+        3702
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of__09ed91ba",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 49743,
+      "n_not": 8387180,
+      "corr_shape": [
+        3018,
+        4379
+      ],
+      "prob_shape": [
+        3018,
+        4379
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of__9d0bf16b",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 172616,
+      "n_not": 6265453,
+      "corr_shape": [
+        2368,
+        4372
+      ],
+      "prob_shape": [
+        2368,
+        4372
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of__4296df23",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 171569,
+      "n_not": 4818412,
+      "corr_shape": [
+        2363,
+        4376
+      ],
+      "prob_shape": [
+        2363,
+        4376
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of__081042c6",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 18961,
+      "n_not": 4902627,
+      "corr_shape": [
+        1689,
+        3049
+      ],
+      "prob_shape": [
+        1689,
+        3049
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001__51b19943",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1300_cycles_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 160903,
+      "n_not": 4201496,
+      "corr_shape": [
+        2352,
+        5053
+      ],
+      "prob_shape": [
+        2352,
+        5053
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of__83c0413c",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 182088,
+      "n_not": 4756198,
+      "corr_shape": [
+        2363,
+        5041
+      ],
+      "prob_shape": [
+        2363,
+        5041
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of__95dd4588",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 237342,
+      "n_not": 9187028,
+      "corr_shape": [
+        2321,
+        4377
+      ],
+      "prob_shape": [
+        2321,
+        4377
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img0__d71eab68",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 27135,
+      "n_not": 8617703,
+      "corr_shape": [
+        3006,
+        3037
+      ],
+      "prob_shape": [
+        3006,
+        3037
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of__df1e43e7",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 294360,
+      "n_not": 9091768,
+      "corr_shape": [
+        2389,
+        4359
+      ],
+      "prob_shape": [
+        2389,
+        4359
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img0__b6661578",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 369173,
+      "n_not": 4285499,
+      "corr_shape": [
+        3028,
+        3036
+      ],
+      "prob_shape": [
+        3028,
+        3036
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of__d30ef8fa",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 330449,
+      "n_not": 3383933,
+      "corr_shape": [
+        2367,
+        4355
+      ],
+      "prob_shape": [
+        2367,
+        4355
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of__4cb30dc6",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 336549,
+      "n_not": 1754281,
+      "corr_shape": [
+        2359,
+        4396
+      ],
+      "prob_shape": [
+        2359,
+        4396
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of__f73d8dda",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 394448,
+      "n_not": 3686459,
+      "corr_shape": [
+        2357,
+        4409
+      ],
+      "prob_shape": [
+        2357,
+        4409
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img0__6610c8eb",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 392666,
+      "n_not": 3005174,
+      "corr_shape": [
+        2354,
+        3044
+      ],
+      "prob_shape": [
+        2354,
+        3044
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of__6a0a53d0",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 625755,
+      "n_not": 2779485,
+      "corr_shape": [
+        2330,
+        4364
+      ],
+      "prob_shape": [
+        2330,
+        4364
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001__2695b632",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 46499,
+      "n_not": 4547476,
+      "corr_shape": [
+        2378,
+        3694
+      ],
+      "prob_shape": [
+        2378,
+        3694
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001__a365650e",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1760_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 153007,
+      "n_not": 5921362,
+      "corr_shape": [
+        2351,
+        3677
+      ],
+      "prob_shape": [
+        2351,
+        3677
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001__30787019",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 14694,
+      "n_not": 2932694,
+      "corr_shape": [
+        2371,
+        3681
+      ],
+      "prob_shape": [
+        2371,
+        3681
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img0__9e44d44b",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 51557,
+      "n_not": 4312688,
+      "corr_shape": [
+        2275,
+        3507
+      ],
+      "prob_shape": [
+        2275,
+        3507
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of__061e601b",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 289178,
+      "n_not": 1617834,
+      "corr_shape": [
+        2333,
+        5043
+      ],
+      "prob_shape": [
+        2333,
+        5043
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img0__5b53f617",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 16765,
+      "n_not": 4063816,
+      "corr_shape": [
+        2293,
+        3499
+      ],
+      "prob_shape": [
+        2293,
+        3499
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of0__23be7a8b",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 12547568,
+      "corr_shape": [
+        5044,
+        4371
+      ],
+      "prob_shape": [
+        5044,
+        4371
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of0__cb97e7ef",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 16510579,
+      "corr_shape": [
+        6372,
+        5041
+      ],
+      "prob_shape": [
+        6372,
+        5041
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of0__6b5a8408",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 60853,
+      "n_not": 14212744,
+      "corr_shape": [
+        6349,
+        5046
+      ],
+      "prob_shape": [
+        6349,
+        5046
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of0__9379d383",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 60300,
+      "n_not": 4648932,
+      "corr_shape": [
+        3694,
+        3665
+      ],
+      "prob_shape": [
+        3694,
+        3665
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of0__96ccb451",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 35997,
+      "n_not": 8468069,
+      "corr_shape": [
+        3684,
+        3710
+      ],
+      "prob_shape": [
+        3684,
+        3710
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img0__56a1f4c1",
+      "filename": "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 136214,
+      "n_not": 6284720,
+      "corr_shape": [
+        3017,
+        4380
+      ],
+      "prob_shape": [
+        3017,
+        4380
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010_xrm_bim_bim__2deda36a",
+      "filename": "Average_mosaic_260620_b3_362_50um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1943118,
+      "n_not": 1516949,
+      "corr_shape": [
+        3651,
+        4382
+      ],
+      "prob_shape": [
+        3651,
+        4382
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010_xrm_bim_bi__4b09d210",
+      "filename": "Average_mosaic_260620_b3_380_00um_4_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 741648,
+      "n_not": 1509289,
+      "corr_shape": [
+        3664,
+        6364
+      ],
+      "prob_shape": [
+        3664,
+        6364
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__42d31c46",
+      "filename": "Average_mosaic_260620_b3_380_00um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 102410,
+      "n_not": 1917060,
+      "corr_shape": [
+        1694,
+        2363
+      ],
+      "prob_shape": [
+        1694,
+        2363
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010_xrm_bim_bim__7e5607f2",
+      "filename": "Average_mosaic_260620_b3_380_00um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1626434,
+      "n_not": 4804951,
+      "corr_shape": [
+        3683,
+        6370
+      ],
+      "prob_shape": [
+        3683,
+        6370
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__9f79af8d",
+      "filename": "Average_mosaic_260620_b3_380_94um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 85057,
+      "n_not": 565263,
+      "corr_shape": [
+        1658,
+        2362
+      ],
+      "prob_shape": [
+        1658,
+        2362
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__4c28fcd7",
+      "filename": "Average_mosaic_260620_b3_381_88um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 112720,
+      "n_not": 731048,
+      "corr_shape": [
+        1652,
+        2367
+      ],
+      "prob_shape": [
+        1652,
+        2367
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__74e56e11",
+      "filename": "Average_mosaic_260620_b3_383_75um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 193351,
+      "n_not": 495397,
+      "corr_shape": [
+        1648,
+        2342
+      ],
+      "prob_shape": [
+        1648,
+        2342
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__d4fafaac",
+      "filename": "Average_mosaic_260620_b3_385_63um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 232047,
+      "n_not": 1101697,
+      "corr_shape": [
+        1663,
+        2363
+      ],
+      "prob_shape": [
+        1663,
+        2363
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010_xrm___5397bc81",
+      "filename": "Average_mosaic_260620_b3_388_13um_LARGE_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 2185119,
+      "n_not": 860928,
+      "corr_shape": [
+        3680,
+        6354
+      ],
+      "prob_shape": [
+        3680,
+        6354
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010_xrm_bim__2a8e0a9d",
+      "filename": "Average_mosaic_260620_b3_388_13um_ZOOM_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 394806,
+      "n_not": 1765989,
+      "corr_shape": [
+        1629,
+        2383
+      ],
+      "prob_shape": [
+        1629,
+        2383
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010_xrm_b__e8d6618e",
+      "filename": "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 6779572,
+      "corr_shape": [
+        3716,
+        3694
+      ],
+      "prob_shape": [
+        3716,
+        3694
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010_xrm___511a7991",
+      "filename": "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 13426021,
+      "corr_shape": [
+        3752,
+        3743
+      ],
+      "prob_shape": [
+        3752,
+        3743
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001__5c00d78f",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 21156613,
+      "corr_shape": [
+        5012,
+        4363
+      ],
+      "prob_shape": [
+        5012,
+        4363
+      ],
+      "clean": true
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img__e4928d15",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 101120,
+      "n_not": 12724194,
+      "corr_shape": [
+        5026,
+        4367
+      ],
+      "prob_shape": [
+        5026,
+        4367
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictile__b604e4b1",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 509457,
+      "n_not": 456280,
+      "corr_shape": [
+        2379,
+        3710
+      ],
+      "prob_shape": [
+        2379,
+        3710
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img__fd88ea0a",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 551480,
+      "n_not": 5771399,
+      "corr_shape": [
+        5030,
+        4380
+      ],
+      "prob_shape": [
+        5030,
+        4380
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictile__dc137639",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1200_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 610629,
+      "n_not": 2118821,
+      "corr_shape": [
+        2360,
+        4371
+      ],
+      "prob_shape": [
+        2360,
+        4371
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictile__9e764cf5",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 886572,
+      "n_not": 785065,
+      "corr_shape": [
+        2355,
+        4387
+      ],
+      "prob_shape": [
+        2355,
+        4387
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictile__aee1a727",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1260_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 997123,
+      "n_not": 648629,
+      "corr_shape": [
+        2369,
+        4392
+      ],
+      "prob_shape": [
+        2369,
+        4392
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictile__ac4f59b7",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1288323,
+      "n_not": 672077,
+      "corr_shape": [
+        2378,
+        4371
+      ],
+      "prob_shape": [
+        2378,
+        4371
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictile__f2896a3b",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1280_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1432252,
+      "n_not": 824265,
+      "corr_shape": [
+        2410,
+        4400
+      ],
+      "prob_shape": [
+        2410,
+        4400
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictile__e8b7c17d",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 1194173,
+      "n_not": 1249482,
+      "corr_shape": [
+        2394,
+        5693
+      ],
+      "prob_shape": [
+        2394,
+        5693
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictile__161c4589",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 2107411,
+      "n_not": 1878774,
+      "corr_shape": [
+        2410,
+        5717
+      ],
+      "prob_shape": [
+        2410,
+        5717
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img0__9c7e9790",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 0,
+      "n_not": 16760987,
+      "corr_shape": [
+        5051,
+        4383
+      ],
+      "prob_shape": [
+        5051,
+        4383
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img0__7fbb94ed",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 32701,
+      "n_not": 14013674,
+      "corr_shape": [
+        5032,
+        4371
+      ],
+      "prob_shape": [
+        5032,
+        4371
+      ],
+      "clean": false
+    },
+    {
+      "iid": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img0__33a185d3",
+      "filename": "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif",
+      "model_key": "20260823_145653",
+      "has_prob": true,
+      "stale": false,
+      "cached": [
+        "20260818_123934",
+        "20260818_233756",
+        "20260819_102722",
+        "20260821_105850",
+        "20260822_124730",
+        "20260823_145653"
+      ],
+      "n_crack": 38957,
+      "n_not": 15641239,
+      "corr_shape": [
+        5049,
+        4396
+      ],
+      "prob_shape": [
+        5049,
+        4396
+      ],
+      "clean": false
+    }
+  ]
+}

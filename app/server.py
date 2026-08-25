@@ -285,7 +285,7 @@ def api_mask(iid):
     The output depends only on (prediction, corrections, threshold, post-process), so
     it is safe to keep and cheap to invalidate by mtime.
     """
-    thr = float(request.args.get("threshold", 0.5))
+    thr = float(request.args.get("threshold", P.DEFAULT_THRESHOLD))
     pp = request.args.get("postprocess", "0") in ("1", "true", "True")
     # Your own not-crack labels can cover almost the whole frame -- the six
     # owner-confirmed crack-free specimens are 94% marked -- so they have to be
@@ -498,7 +498,7 @@ def api_flip_region(iid):
     d = request.get_json(force=True, silent=True) or {}
     x, y = int(round(d.get("x", -1))), int(round(d.get("y", -1)))
     mode = d.get("mode", "remove")
-    thr = float(d.get("threshold", 0.5))
+    thr = float(d.get("threshold", P.DEFAULT_THRESHOLD))
     pp = bool(d.get("postprocess", False))
 
     with S.image_lock(iid):                 # same read-modify-write as a brush stroke
@@ -828,7 +828,7 @@ def api_job(jid):
 
 # ------------------------------------------------------------------ exports
 def _opts():
-    return (float(request.args.get("threshold", 0.5)),
+    return (float(request.args.get("threshold", P.DEFAULT_THRESHOLD)),
             request.args.get("postprocess", "0") in ("1", "true", "True"))
 
 

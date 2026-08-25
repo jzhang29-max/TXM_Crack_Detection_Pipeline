@@ -1,0 +1,5 @@
+baseline           core=0.8664 inner_ring=0.8009 outer_ring=0.6974 notcrack=0.0582
+thin_ring_neg      core=0.8506 inner_ring=0.5029 outer_ring=0.2060 notcrack=0.0383
+thin_plus_margin   core=0.8697 inner_ring=0.7045 outer_ring=0.3920 notcrack=0.0419
+core_dilate3       core=0.8580 inner_ring=0.7430 outer_ring=0.4433 notcrack=0.0431
+ring_neg_forced    core=0.8230 inner_ring=0.2093 outer_ring=0.0660 notcrack=0.0499

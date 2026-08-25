@@ -1,0 +1,355 @@
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:96: FutureWarning: `binary_opening` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.opening` instead.
+  dark = morphology.binary_opening(dark, morphology.disk(3))
+/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline/app/core/pipeline.py:103: FutureWarning: `binary_closing` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.closing` instead.
+  off = morphology.binary_closing(off, morphology.disk(5))
+[1/71]   1.1s    spec Average_mosaic_260618_B2_2_1_lbf_idx00000_mosa
+[2/71]   1.0s    spec Average_mosaic_260618_B2_2_9_lbf_idx00000_mosa
+[3/71]   0.2s GT spec Average_mosaic_260618_B2_333_75_um_zoom_idx000
+[4/71]   0.7s    spec Average_mosaic_260618_B2_3_1_lbf_idx00000_mosa
+[5/71]   0.7s    spec Average_mosaic_260618_B2_3_2_lbf_idx00000_mosa
+[6/71]   0.9s    spec Average_mosaic_260618_B2_amb_mosaic_2_idx00000
+[7/71]   0.1s    spec Average_mosaic_260618_b2_335_31um_FRFR_idx0000
+[8/71]   0.2s GT spec Average_mosaic_260618_b2_336_25_idx00000_mosai
+[9/71]   0.1s    spec Average_mosaic_260618_b2_337_19_idx00000_mosai
+[10/71]   0.2s GT spec Average_mosaic_260618_b2_338_13_idx00000_mosai
+[11/71]   0.1s    spec Average_mosaic_260618_b2_339_06_idx00000_mosai
+[12/71]   0.2s    spec Average_mosaic_260618_b2_340_00_idx00000_mosai
+[13/71]   0.2s    spec Average_mosaic_260618_b2_340_94_idx00000_mosai
+[14/71]   0.2s    spec Average_mosaic_260618_b2_341_88_take2_idx00000
+[15/71]   0.2s    spec Average_mosaic_260618_b2_342_81_idx00000_mosai
+[16/71]   1.6s GT spec Average_mosaic_260618_b2_343_75_LARGE_idx00000
+[17/71]   0.2s    spec Average_mosaic_260618_b2_343_75_idx00000_mosai
+[18/71]   0.8s    spec Average_mosaic_260618_b3_amb_idx00000_mosaicti
+[19/71]   0.7s    spec Average_mosaic_260619_HC_316L_fatigue_1000_cyc
+[20/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_1100_cyc
+[21/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1200_cyc
+[22/71]   0.3s    spec Average_mosaic_260619_HC_316L_fatigue_1250_cyc
+[23/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_1300_cyc
+[24/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_1350_cyc
+[25/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_1400_cyc
+[26/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1400_cyc
+[27/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_1450_cyc
+[28/71]   0.4s    spec Average_mosaic_260619_HC_316L_fatigue_1450_cyc
+[29/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1500_cyc
+[30/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1600_cyc
+[31/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1650_cyc
+[32/71]   0.3s    spec Average_mosaic_260619_HC_316L_fatigue_1650_cyc
+[33/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1750_cyc
+[34/71]   0.4s    spec Average_mosaic_260619_HC_316L_fatigue_1750_tip
+[35/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1760_tip
+[36/71]   0.4s    spec Average_mosaic_260619_HC_316L_fatigue_1770_tip
+[37/71]   0.4s    spec Average_mosaic_260619_HC_316L_fatigue_1780_tip
+[38/71]   0.5s    spec Average_mosaic_260619_HC_316L_fatigue_1790_cyc
+[39/71]   0.4s    spec Average_mosaic_260619_HC_316L_fatigue_1790_tip
+[40/71]   1.1s    spec Average_mosaic_260619_HC_316L_fatigue_200_cycl
+[41/71]   1.5s    spec Average_mosaic_260619_HC_316L_fatigue_400_cycl
+[42/71]   1.5s    spec Average_mosaic_260619_HC_316L_fatigue_600_cycl
+[43/71]   0.6s    spec Average_mosaic_260619_HC_316L_fatigue_700_cycl
+[44/71]   0.7s    spec Average_mosaic_260619_HC_316L_fatigue_800_cycl
+[45/71]   0.7s    spec Average_mosaic_260619_HC_316L_fatigue_900_cycl
+[46/71]   0.7s    spec Average_mosaic_260620_b3_362_50um_idx00000_mos
+[47/71]   1.0s    spec Average_mosaic_260620_b3_380_00um_4_idx00000_m
+[48/71]   0.2s    spec Average_mosaic_260620_b3_380_00um_ZOOM_idx0000
+[49/71]   1.0s    spec Average_mosaic_260620_b3_380_00um_idx00000_mos
+[50/71]   0.2s    spec Average_mosaic_260620_b3_380_94um_ZOOM_idx0000
+[51/71]   0.2s    spec Average_mosaic_260620_b3_381_88um_ZOOM_idx0000
+[52/71]   0.2s    spec Average_mosaic_260620_b3_383_75um_ZOOM_idx0000
+[53/71]   0.2s    spec Average_mosaic_260620_b3_385_63um_ZOOM_idx0000
+[54/71]   0.9s    spec Average_mosaic_260620_b3_388_13um_LARGE_2_idx0
+[55/71]   0.2s    spec Average_mosaic_260620_b3_388_13um_ZOOM_idx0000
+[56/71]   0.6s    spec Average_mosaic_260620_b3_3_0lbf_268_13um_idx00
+[57/71]   0.8s    spec Average_mosaic_260620_b3_3_18lbf_348_13um_idx0
+[58/71]   1.3s    spec Average_mosaic_260620_wrought_316L_fatigue_0_c
+[59/71]   1.1s    spec Average_mosaic_260620_wrought_316L_fatigue_100
+[60/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_110
+[61/71]   0.9s    spec Average_mosaic_260620_wrought_316L_fatigue_110
+[62/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_120
+[63/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_125
+[64/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_126
+[65/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_127
+[66/71]   0.4s    spec Average_mosaic_260620_wrought_316L_fatigue_128
+[67/71]   0.5s    spec Average_mosaic_260620_wrought_316L_fatigue_129
+[68/71]   0.6s    spec Average_mosaic_260620_wrought_316L_fatigue_130
+[69/71]   1.2s    spec Average_mosaic_260620_wrought_316L_fatigue_300
+[70/71]   1.0s    spec Average_mosaic_260620_wrought_316L_fatigue_800
+[71/71]   1.1s    spec Average_mosaic_260620_wrought_316L_fatigue_900

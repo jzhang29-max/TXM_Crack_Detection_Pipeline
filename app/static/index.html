@@ -232,7 +232,7 @@ button:disabled{opacity:.4;cursor:default}
       <div class="fld">Brush <input type="range" id="brush" min="2" max="120" value="8"><span class="num" id="brushv">8</span></div>
       <div class="fld">Zoom <input type="range" id="zoom" min="5" max="400" value="100"><span class="num" id="zoomv">100%</span>
         <button class="ghost" id="fit">Fit</button></div>
-      <div class="fld">Sensitivity <input type="range" id="thr" min="5" max="95" value="50"><span class="num" id="thrv">0.50</span></div>
+      <div class="fld">Sensitivity <input type="range" id="thr" min="5" max="95" value="60"><span class="num" id="thrv">0.60</span></div>
       <div class="sp"></div>
       <button class="ghost" id="reapply" title="Re-predict every image with the current model">Re-apply model</button>
       <button class="ghost" id="undo2">Undo <span class="kbd">⌘Z</span></button>
@@ -843,7 +843,7 @@ $("#advBtn").onclick=()=>{
   $("#adv").inert=!o;                                   // belt and braces alongside the CSS
   $("#advBtn").setAttribute("aria-expanded",String(o));
   $("#advBtn").textContent="Advanced "+(o?"▴":"▾");
-  $("#advnote").innerHTML=o?`<b>Sensitivity</b> lowers or raises how much the model marks. 0.50 is the default because it sits just above a spike of background probability, not because it is calibrated — measured reliability error is 0.18, and the empirical break-even is nearer 0.65. Moving it below 0.50 is the dangerous direction: at 0.43 a fresh frame with no corrections yet renders about a third of itself as crack. `+
+  $("#advnote").innerHTML=o?`<b>Sensitivity</b> lowers or raises how much the model marks. 0.60 is the default. It is not a calibrated probability — measured reliability error is 0.18 — it is the operating point where this model's thin masks match the false-alarm rate the app has always had. Moving it DOWN is the dangerous direction: below about 0.48 the probability map is mostly off-specimen background, and at 0.43 a fresh frame whose corrections are still empty renders roughly a third of itself as crack. `+
     `<b>Legacy post-processing</b> reproduces the older pipeline's cleanup; it is off because it measurably removes thin cracks `+
     `(−0.08 accuracy, −0.07 of the crack found).`:"";
   // Opening or closing the panel changes the stage's height, so the vertical
