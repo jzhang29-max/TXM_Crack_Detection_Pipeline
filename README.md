@@ -127,7 +127,7 @@ Every retrain leaves a scorecard under the model picker, and it persists across 
 ```
 held out     0.811  ±0.02
 false calls  2.0/frame
-background   0.05%  −0.16pp
+background   0.17%  −0.03pp
 deployed 12:35 · details
 ```
 
@@ -216,9 +216,12 @@ where any prediction is a false positive by construction.
   image (fold sd 0.023, worst fold 0.778, precision 0.936, recall 0.860). This is the
   headline number because it is the only one that answers "how will this do on an image it
   has not seen".
-- **0.046% of area** marked as crack on the six specimens confirmed to contain no crack, and
-  **2.0 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls
-  as the NDT yardstick.
+- **0.174% of area** marked as crack on the six specimens confirmed to contain no crack —
+  0.046% once specks under 2000 px are pruned, which is what an export actually contains — and
+  **2.0 false indications per frame**. MIL-HDBK-1823A treats ≤1% probability of false calls as
+  the NDT yardstick. Against the previous model this axis is roughly a wash: 0.209% → 0.174%
+  unpruned, 0.035% → 0.046% pruned, 1.83 → 2.0 indications. The gain is in width and IoU, not
+  here.
 - **Masks about 5 px across rather than 22.** The model is trained on crack labels narrowed to
   their dark core, so it predicts something close to the crack rather than the width of the
   brush that marked it — see [docs/THIN_LABELS.md](docs/THIN_LABELS.md).

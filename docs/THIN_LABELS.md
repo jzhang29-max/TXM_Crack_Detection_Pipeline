@@ -45,7 +45,8 @@ crack-free area than v4. Matched on false alarms instead, it wins outright.
 |---|---|---|
 | held-out grouped IoU | 0.789 ±0.040 | **0.811 ±0.023** (own recipe baseline) |
 | precision / recall | 0.933 / 0.837 | 0.936 / 0.860 |
-| crack-free area | 0.209% | **0.046%** |
+| crack-free area, unpruned | 0.209% | **0.174%** |
+| crack-free area, pruned | 0.035% | 0.046% |
 | false indications / frame | 1.83 | 2.0 |
 | mask half-width | 22 px | **5 px** |
 
