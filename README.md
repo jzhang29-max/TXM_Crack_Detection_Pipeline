@@ -207,7 +207,9 @@ In words, for one image:
    sees all 273. Their average is the crack probability. Averaging beats either alone.
 4. **Turn probability into a mask.** Keep pixels above 0.60, drop isolated blobs under 2000 px,
    fill pinholes, then narrow what is left to the darker core inside it using the image itself.
-   That last step is why the mask is a few pixels across rather than tens.
+   That last step is why the mask is a few pixels across rather than tens. Narrowing opens new
+   pinholes of its own — 342,963 of them across the corpus, which is what read as unfilled
+   centres in a black-and-white export — so the fill runs again afterwards, leaving 894.
 5. **You correct it.** Paint missed crack, erase false positives, or click once to remove a whole
    wrong region. Your strokes are saved immediately and always win over the model on screen.
 6. **Retrain learns from your corrections and nothing else.** No external labels are used

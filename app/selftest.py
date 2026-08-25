@@ -850,6 +850,65 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("tight boundary narrows, or declines when it would delete the crack", False, str(e))
 
+    # Narrowing to the dark core opens pinholes INSIDE wide crack, and effective_mask's hole
+    # fill runs BEFORE that, so nothing was left to close them: measured 2,724 enclosed voids
+    # on b2_338_13 and 35,572 on b2_343_75_LARGE. In a black-and-white export that is what
+    # reads as unfilled centres. Filling again after the narrowing fixes it; this guards both
+    # halves -- that it runs on the export, and that it cannot invent crack outside the
+    # corridor the detector accepted.
+    try:
+        import numpy as _npH
+        import pipeline as _PH
+        import store as _SH
+        from skimage.measure import label as _lblH
+
+        def _holes(_mk):
+            _lab = _lblH(~_mk, connectivity=1)
+            _edge = set(_npH.unique(_npH.concatenate(
+                [_lab[0], _lab[-1], _lab[:, 0], _lab[:, -1]])))
+            _sz = _npH.bincount(_lab.ravel())
+            return sum(1 for _i in range(1, len(_sz)) if _i not in _edge and _sz[_i])
+
+        _fr = _closed_fewer = _inside = 0
+        for _mH in _SH.list_images():
+            if "SELFTEST" in (_mH.get("filename") or ""):
+                continue
+            _wideH = _PH.effective_mask(_mH["id"], corrections="gate")
+            if _wideH is None or _wideH.mean() < 0.01:      # need real width to have centres
+                continue
+            _open = _PH.tighten_to_image(_mH["id"], _wideH, fill_voids=False)
+            _shut = _PH.tighten_to_image(_mH["id"], _wideH, fill_voids=True)
+            if _open is None or _shut is None:
+                continue
+            _fr += 1
+            if _holes(_shut) < _holes(_open):
+                _closed_fewer += 1
+            if not bool((_shut & ~_wideH).any()):           # never outside the corridor
+                _inside += 1
+            if _fr >= 3:
+                break
+        check("exported centres are filled, and filling stays inside the corridor",
+              _fr > 0 and _closed_fewer == _fr and _inside == _fr,
+              f"{_fr} frames: {_closed_fewer} lost holes, {_inside} added nothing outside")
+    except Exception as e:                                      # noqa: BLE001
+        check("exported centres are filled, and filling stays inside the corridor",
+              False, str(e))
+
+    # The closing is for the picture, not the labels. If it leaked into thin-core sampling it
+    # would quietly widen every training core and change what `thincore_v5` means, while the
+    # shipped model stayed on disk trained the old way -- a recipe tag that no longer
+    # describes its own data is worse than no tag.
+    try:
+        import inspect as _insP
+        import pipeline as _PP
+        _srcP = _insP.getsource(_PP.gather_training_data)
+        _callsP = [l.strip() for l in _srcP.splitlines() if "tighten_to_image" in l]
+        check("thin-core training labels are sampled without the hole fill",
+              bool(_callsP) and all("fill_voids=False" in l for l in _callsP),
+              f"{len(_callsP)} call(s): {_callsP}")
+    except Exception as e:                                      # noqa: BLE001
+        check("thin-core training labels are sampled without the hole fill", False, str(e))
+
     # A model the gate REFUSED must still be selectable. The gate's job is to stop a
     # regression shipping by itself, not to hide it: before this, a rejected candidate was
     # written to disk, described in the scorecard, and then unreachable -- no way to see the

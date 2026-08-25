@@ -54,6 +54,62 @@ The IoU figures are not directly comparable — v5's target is the narrowed labe
 it carries its own `RECIPE` tag and was gated against the absolute floor rather than against
 v4's number.
 
+## The narrowing left the centres unfilled
+
+Reported from a black-and-white export: the middle of a wide crack came out speckled rather
+than solid. The cause is ordering. `effective_mask` fills small holes at
+`FILL_HOLES_MAX_PX = 1024`, then hands the corridor to `tighten_to_image`, which re-cuts the
+boundary from the image — so every void the local threshold opens is created *after* the only
+step that would have closed it. Nothing was wrong with either step; the fill just ran too early
+to see the holes.
+
+| enclosed voids | before narrowing | after narrowing | after the second fill |
+|---|---|---|---|
+| b2_343_75_LARGE | 177 | 35,572 | 38 |
+| b2_338_13 | 25 | 2,724 | — |
+| wrought_316L_fatigue_1200_cycles | 80 | 3,732 | — |
+| **all 71 frames, total** | | **342,963** | **894** |
+
+The fix is the same `remove_small_holes` at the same 1024 px, applied a second time after the
+narrowing, intersected back with the corridor so it stays a subset of what the detector
+accepted. Swept over all 71 frames, 1024 is the best of 64 / 256 / 1024 on every axis at once:
+
+| post-narrowing cap | none | ≤64 px | ≤256 px | ≤1024 px |
+|---|---|---|---|---|
+| enclosed voids, all frames | 342,963 | 2,471 | 1,145 | **894** |
+| recall on painted crack | 74.74% | 76.02% | 76.32% | **76.58%** |
+| on-specimen FP, 6 crack-free frames | 0.0040% | 0.0040% | 0.0040% | 0.0040% |
+| leak into painted not-crack | 0.000% | 0.000% | 0.000% | 0.000% |
+| mean predicted area | 5.979% | 6.083% | 6.107% | 6.125% |
+
+Recall rose on 58 of 61 painted frames and fell on none. The false-positive axis does not move
+at any cap because filling cannot add area on a frame with no enclosed voids, and a crack-free
+frame has none — the operation is inert exactly where a false alarm would be expensive.
+
+### Two treatments that measured better and looked worse
+
+- **Radius-1 closing** removes fewer pixels for a comparable drop in void count, which is why
+  it was tried first. skimage's `disk(1)` is a 3×3 cross, and closing stamps that shape onto
+  every void it fails to remove: the export picks up a lattice of diamonds, and `square(3)`
+  gives boxes. Filling imposes no shape of its own — it removes a void or leaves it.
+- **Shape-aware filling** — fill only the roundish voids, by the same aspect test
+  `prune_specks_keeping` applies to specks — sounded more principled and keeps the speckle:
+  5,956 voids left on b2_343_75_LARGE against 38 for a plain cap, because the dust is mostly
+  1–2 px slots with no meaningful aspect ratio. A speck's shape says whether it is crack; a
+  void's does not.
+
+### The measurement that argued against the fix
+
+Median half-width jumps 18 px → 36 px under filling, and on that number the whole approach was
+rejected once. It is a distance transform over a mask whose *topology* changed: removing
+interior voids moves the medial axis outward without moving the outline, which filling cannot
+move by construction. Area is the honest number and it moves +0.15 pp. Rendering the two masks
+at native resolution settles it in a way neither number did.
+
+Filling is off for thin-core label sampling (`fill_voids=False`). Widening the training core
+would change what `thincore_v5` means while the model already on disk stayed fitted the old
+way, and a recipe tag that no longer describes its own data is worse than no tag.
+
 ## Limits
 
 - **~5 px against a 2.5–3 px core.** Label refinement closes roughly half the width gap, not
