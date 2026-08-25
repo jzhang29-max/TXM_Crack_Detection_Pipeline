@@ -7,6 +7,24 @@
 
 # WORKLIST — all 71 images
 
+## Open lead: a patch CNN, attempted and never finished
+
+A patch U-Net was set up as an alternative to the per-pixel MLP ensemble and **never produced an
+evaluated prediction** — the run died with the machine asleep, its report reads "frames with a
+U-Net prediction: 0", and its 11 GB of patch caches and checkpoints were deleted. So it is
+UNMEASURED, not refuted, and this note exists so nobody reads it as either.
+
+What it did establish before dying: receptive field is not the constraint (a 5-level, 157 px
+model scored 0.443 on inner validation against a 4-level, 92 px model's 0.483), and both sat
+well below the MLP ensemble's ~0.65 on the same axis. Suggestive of a loss, not a measurement —
+inner validation on a small patch sample is not the grouped-by-image number.
+
+If it is picked up again, the two things that make it hard here are worth knowing in advance:
+labels are sparse (most pixels carry no verdict, so the loss must be masked or the model learns
+to predict background) and 71 frames from four specimens is a small, specimen-clustered training
+set — see docs/RIDGE_FILTERS.md for what that split does to any measurement here.
+
+
 ## Highest-value labelling right now: frame edges
 
 The outer ~24 px of a frame is marked as crack **21.5× more often than the interior** on the
