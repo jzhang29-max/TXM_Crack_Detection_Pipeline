@@ -1,0 +1,83 @@
+[   0.2m] rows 3/71  B2_333_75_um_zoom_idx00000_mos  core 8000 neg 8000
+[   1.6m] rows 5/71  B2_3_2_lbf_idx00000_mosaictile  core 8000 neg 8000
+[   1.8m] rows 7/71  b2_335_31um_FRFR_idx00000_mosa  core 8000 neg 8000
+[   2.0m] rows 8/71  b2_336_25_idx00000_mosaictileA  core 8000 neg 8000
+[   2.2m] rows 9/71  b2_337_19_idx00000_mosaictileA  core 8000 neg 8000
+[   2.4m] rows 10/71  b2_338_13_idx00000_mosaictileA  core 8000 neg 8000
+[   2.6m] rows 11/71  b2_339_06_idx00000_mosaictileA  core 8000 neg 8000
+[   2.8m] rows 12/71  b2_340_00_idx00000_mosaictileA  core 8000 neg 8000
+[   3.1m] rows 13/71  b2_340_94_idx00000_mosaictileA  core 8000 neg 8000
+[   3.4m] rows 14/71  b2_341_88_take2_idx00000_mosai  core 8000 neg 8000
+[   3.6m] rows 15/71  b2_342_81_idx00000_mosaictileA  core 8000 neg 8000
+[   5.6m] rows 16/71  b2_343_75_LARGE_idx00000_mosai  core 8000 neg 8000
+[   5.9m] rows 17/71  b2_343_75_idx00000_mosaictileA  core 8000 neg 8000
+[   6.7m] rows 19/71  HC_316L_fatigue_1000_cycles_id  core 8000 neg 8000
+[   7.4m] rows 20/71  HC_316L_fatigue_1100_cycles_id  core 8000 neg 8000
+[   8.1m] rows 21/71  HC_316L_fatigue_1200_cycles_id  core 8000 neg 8000
+[   8.4m] rows 22/71  HC_316L_fatigue_1250_cycles_id  core 8000 neg 8000
+[   9.1m] rows 23/71  HC_316L_fatigue_1300_cycles_2_  core 8000 neg 8000
+[   9.9m] rows 24/71  HC_316L_fatigue_1350_cycles_id  core 8000 neg 8000
+[  10.5m] rows 25/71  HC_316L_fatigue_1400_cycles_id  core 8000 neg 8000
+[  11.1m] rows 26/71  HC_316L_fatigue_1400_cycles_ti  core 8000 neg 8000
+[  11.8m] rows 27/71  HC_316L_fatigue_1450_cycles_id  core 8000 neg 8000
+[  12.4m] rows 28/71  HC_316L_fatigue_1450_cycles_ti  core 8000 neg 8000
+[  13.1m] rows 29/71  HC_316L_fatigue_1500_cycles_id  core 8000 neg 8000
+[  13.7m] rows 30/71  HC_316L_fatigue_1600_cycles_id  core 8000 neg 8000
+[  14.4m] rows 31/71  HC_316L_fatigue_1650_cycles_id  core 8000 neg 8000
+[  14.9m] rows 32/71  HC_316L_fatigue_1650_cycles_ti  core 8000 neg 8000
+[  15.5m] rows 33/71  HC_316L_fatigue_1750_cycles_id  core 8000 neg 8000
+[  16.1m] rows 34/71  HC_316L_fatigue_1750_tip_zoom_  core 8000 neg 8000
+[  16.6m] rows 35/71  HC_316L_fatigue_1760_tip_zoom_  core 8000 neg 8000
+[  17.2m] rows 36/71  HC_316L_fatigue_1770_tip_zoom_  core 6371 neg 8000
+[  17.7m] rows 37/71  HC_316L_fatigue_1780_tip_zoom_  core 8000 neg 8000
+[  18.6m] rows 38/71  HC_316L_fatigue_1790_cycles_id  core 8000 neg 8000
+[  19.1m] rows 39/71  HC_316L_fatigue_1790_tip_zoom_  core 8000 neg 8000
+[  21.5m] rows 42/71  HC_316L_fatigue_600_cycles_idx  core 8000 neg 8000
+[  22.5m] rows 43/71  HC_316L_fatigue_700_cycles_idx  core 8000 neg 8000
+[  23.5m] rows 44/71  HC_316L_fatigue_800_cycles_idx  core 8000 neg 8000
+[  24.5m] rows 45/71  HC_316L_fatigue_900_cycles_FRF  core 8000 neg 8000
+[  25.7m] rows 46/71  b3_362_50um_idx00000_mosaictil  core 8000 neg 8000
+[  27.5m] rows 47/71  b3_380_00um_4_idx00000_mosaict  core 8000 neg 8000
+[  27.8m] rows 48/71  b3_380_00um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  29.8m] rows 49/71  b3_380_00um_idx00000_mosaictil  core 8000 neg 8000
+[  30.1m] rows 50/71  b3_380_94um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  30.4m] rows 51/71  b3_381_88um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  30.7m] rows 52/71  b3_383_75um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  30.9m] rows 53/71  b3_385_63um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  32.7m] rows 54/71  b3_388_13um_LARGE_2_idx00000_m  core 8000 neg 8000
+[  32.9m] rows 55/71  b3_388_13um_ZOOM_idx00000_mosa  core 8000 neg 8000
+[  34.7m] rows 59/71  wrought_316L_fatigue_1000_cycl  core 8000 neg 8000
+[  35.3m] rows 60/71  wrought_316L_fatigue_1100_cycl  core 8000 neg 8000
+[  37.0m] rows 61/71  wrought_316L_fatigue_1100_cycl  core 8000 neg 8000
+[  37.7m] rows 62/71  wrought_316L_fatigue_1200_cycl  core 8000 neg 8000
+[  38.4m] rows 63/71  wrought_316L_fatigue_1250_cycl  core 8000 neg 8000
+[  39.1m] rows 64/71  wrought_316L_fatigue_1260_cycl  core 8000 neg 8000
+[  39.7m] rows 65/71  wrought_316L_fatigue_1270_cycl  core 8000 neg 8000
+[  40.4m] rows 66/71  wrought_316L_fatigue_1280_cycl  core 8000 neg 8000
+[  41.3m] rows 67/71  wrought_316L_fatigue_1290_cycl  core 8000 neg 8000
+[  42.2m] rows 68/71  wrought_316L_fatigue_1300_cycl  core 8000 neg 8000
+[  43.8m] rows 70/71  wrought_316L_fatigue_800_cycle  core 8000 neg 8000
+[  45.5m] rows 71/71  wrought_316L_fatigue_900_cycle  core 8000 neg 8000
+[  45.5m] rows cached: 958,371
+[  45.8m] LOGO hold out AM/HC    baseline_17          IoU 0.5072
+[  46.3m] LOGO hold out AM/HC    17_plus_meijering    IoU 0.4897
+[  47.1m] LOGO hold out AM/HC    17_plus_all_ridge    IoU 0.4884
+[  47.2m] LOGO hold out AM/HC    17_plus_noise9       IoU 0.4035
+[  47.5m] LOGO hold out B2       baseline_17          IoU 0.5676
+[  48.1m] LOGO hold out B2       17_plus_meijering    IoU 0.5280
+[  49.1m] LOGO hold out B2       17_plus_all_ridge    IoU 0.5140
+[  49.3m] LOGO hold out B2       17_plus_noise9       IoU 0.1289
+[  50.1m] LOGO hold out B3       baseline_17          IoU 0.6275
+[  51.1m] LOGO hold out B3       17_plus_meijering    IoU 0.5805
+[  52.0m] LOGO hold out B3       17_plus_all_ridge    IoU 0.5253
+[  52.2m] LOGO hold out B3       17_plus_noise9       IoU 0.1416
+[  52.9m] LOGO hold out wrought  baseline_17          IoU 0.6729
+[  53.5m] LOGO hold out wrought  17_plus_meijering    IoU 0.4989
+[  54.0m] LOGO hold out wrought  17_plus_all_ridge    IoU 0.4425
+[  54.1m] LOGO hold out wrought  17_plus_noise9       IoU 0.1649
+[  58.5m] KFOLD baseline_17          IoU 0.7437 +-0.0156
+[  62.5m] KFOLD 17_plus_meijering    IoU 0.7573 +-0.0170
+[  66.3m] KFOLD 17_plus_all_ridge    IoU 0.7503 +-0.0276
+[  67.7m] KFOLD 17_plus_noise9       IoU 0.2762 +-0.0786
+[  67.7m] scores written
+[  67.7m] RIDGE_V5_DONE

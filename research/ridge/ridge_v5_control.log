@@ -1,0 +1,5 @@
+  kfold baseline_17        0.7437
+  logo  baseline_17        {'AM/HC': 0.5072, 'B2': 0.5676, 'B3': 0.6275, 'wrought': 0.6729}
+  kfold 17_plus_noise9     0.7398
+  logo  17_plus_noise9     {'AM/HC': 0.5072, 'B2': 0.4962, 'B3': 0.5965, 'wrought': 0.6599}
+CONTROL_DONE

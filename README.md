@@ -222,6 +222,13 @@ where any prediction is a false positive by construction.
 - **Masks about 5 px across rather than 22.** The model is trained on crack labels narrowed to
   their dark core, so it predicts something close to the crack rather than the width of the
   brush that marked it — see [docs/THIN_LABELS.md](docs/THIN_LABELS.md).
+- **What that IoU does and does not answer.** Folds hold out whole *images*, and the 71 frames
+  come from four specimens, so a held-out frame still has siblings in training. That makes it
+  the right number for the normal use of this tool — tracking a crack across a load series on a
+  specimen you have labelled. It is **not** the number for an unlabelled specimen: holding out a
+  whole specimen group instead drops the same measurement to **0.51–0.67**. Both are honest;
+  they answer different questions. [docs/RIDGE_FILTERS.md](docs/RIDGE_FILTERS.md) has the
+  side-by-side.
 - Zero-shot SAM, prompted the way SAM is designed to be prompted, scores **0.23–0.36** on
   the same images.
 
@@ -233,7 +240,8 @@ That is gone.
 
 Full per-specimen breakdowns, the validation protocol and a 78-variant architecture sweep
 are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
-`SAM_COMPARISON.md`, `CONTRAST.md`, `THIN_LABELS.md`, `TILE_SEAMS.md`, `OVERMARKING.md`,
+`SAM_COMPARISON.md`, `CONTRAST.md`, `THIN_LABELS.md`, `RIDGE_FILTERS.md`, `TILE_SEAMS.md`,
+`OVERMARKING.md`,
 `PUBLISHABILITY.md`
 and `HANDOFF.md`.
 
