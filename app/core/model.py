@@ -122,7 +122,9 @@ def sam_device(torch):
         Linux runner reproduces 0.1880 with the same backend the macOS one used, so it cannot
         be the distinguishing variable. Measured directly: 9 flipped pixels out of 2,857,784.
     The one remaining difference is that the macOS runner ran the encoder on MPS and the Linux
-    runner on CPU. On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a
+    runner on CPU. On real Apple silicon the two agree closely -- measured, embeddings differ
+    by at most one float16 storage quantum (4.9e-4), ZERO pixels change side of the 0.60
+    threshold, and the predicted area is 0.187972 either way -- so this is a
     property of some GPU/driver stacks and not of MPS as such -- which is exactly why it needs
     an override rather than a blanket ban.
 

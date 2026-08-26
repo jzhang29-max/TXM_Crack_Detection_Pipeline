@@ -26,9 +26,12 @@ something to show on first run. `--depth 1` only brings that to ~4.3 GB — meas
 guessed: the frames are 2.1 GB of the *current* tree, so skipping history barely helps.
 Budget the full download.
 
-- **Python 3.10 is the floor, 3.12 is tested.** Check `python3 -V` first — 3.9 fails in
-  pip's resolver.
-- Apple Silicon, CUDA and CPU-only all work. A GPU makes the SAM step ~10× faster.
+- **Python 3.10 is the floor; 3.11 and 3.12 are tested in CI.** Check `python3 -V` first — 3.9
+  fails in pip's resolver.
+- Apple Silicon, CUDA and CPU-only all work. A GPU makes the SAM step ~10× faster. If a
+  mask ever comes out shattered into speckle, force the encoder onto the CPU with
+  `TXM_SAM_DEVICE=cpu` — one virtualised Metal stack is known to disagree, and CI now
+  checks both paths ([Continuous integration](#continuous-integration)).
 - `PORT=9000 ./run_app.sh` if 8800 is taken.
 - SAM ViT-H (~2.4 GB) downloads on the first prediction and caches in `~/.cache/huggingface`.
 - To check the install rather than trust it: `python3 app/selftest.py`
@@ -387,7 +390,9 @@ hand-installed here and is now pinned — but the Linux runner reproduces 0.1880
 backend the macOS one used, at 9 flipped pixels out of 2,857,784).
 
 What remains is the device: the macOS runner ran the encoder on **MPS**, the Linux runner on
-CPU. On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a property of that
+CPU. On real Apple silicon the two agree closely — embeddings differ by at most one float16
+storage quantum (4.9e-4), no pixel changes side of the threshold, and the predicted area is
+0.187972 either way — so this is a property of that
 virtualised Metal stack rather than of MPS itself. The macOS job now runs as a two-arm matrix,
 `auto` and `cpu`, on the same runner image — the `cpu` arm is asserted strictly against the
 reference, so if the device is the whole story the two arms disagree in exactly one place.
