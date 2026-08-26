@@ -341,6 +341,16 @@ clone that installed exactly what was listed could not read a single one of its 
 Every development machine had it installed by hand, which is why it went unnoticed. The
 `suite` job now asserts a real frame decodes, so it cannot go missing again.
 
+Investigating what the no-SAM mode actually produces turned up a second defect, unrelated
+to CI. A prediction is cached under a key naming the model that made it, but that key was
+taken from the registry's current entry *before* ingest substituted the 17-feature model for
+a missing SAM — so the 17-only output was filed under the ensemble's key. Measured end to
+end: a run with SAM disabled wrote a 54.80%-crack mask, a later run with SAM fully available
+reported "using cached prediction", kept 54.80%, and relabelled it `mean-probability
+ensemble`. The bad mask was permanent and credited to the model that never ran. It hit
+exactly the person the fallback exists for — whoever starts this behind a firewall. The
+fallback now has its own cache key: the same sequence re-predicts and drops to 18.80%.
+
 **What a green tick does not mean.** Four of the five jobs run without SAM, and in that mode
 the detector is the 17-feature model alone — not the shipped configuration, and not a usable
 one: it marks 55% of a real frame and 83% of a confirmed crack-free specimen as crack. CI

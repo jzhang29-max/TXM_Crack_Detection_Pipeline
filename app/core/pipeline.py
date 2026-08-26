@@ -315,6 +315,36 @@ def ingest(image_id, progress=None, force=False, predict=True):
 
     mdl = get_model()
     mkey = S.model_key(S.registry().get("current"))
+    embp = S.path(image_id, "emb.npz")
+    sam_note = None
+
+    # THE CACHE KEY HAS TO NAME THE MODEL THAT ACTUALLY PRODUCES THE PREDICTION, which is why
+    # the SAM-availability decision is made HERE rather than after the adopt below.
+    #
+    # It used to be made after. The key was taken from the registry's current entry -- the
+    # ensemble -- and then, if SAM turned out to be unavailable, `mdl` was quietly replaced
+    # with the 17-feature model and its output stored under the ENSEMBLE's key. Measured
+    # end to end on b2_336_25: ingest with TXM_NO_SAM=1 wrote a 54.80%-crack mask under key
+    # m7e7d8a57f4, which is exactly the key `model_key(current)` returns, so the image then
+    # counted as already predicted by the ensemble. Re-ingesting with SAM fully available
+    # reported "using cached prediction", kept 54.80%, and rewrote the model line to
+    # "mean-probability ensemble: 17-feature MLP + SAM+17 hybrid (273d)". The 17-only mask
+    # was permanent and attributed to the model that never ran.
+    #
+    # That is the failure model_key's own docstring describes -- "the app served the previous
+    # model's predictions while reporting the new one as current" -- arriving by a different
+    # route. It matters most to the user the fallback exists for: whoever runs this first
+    # behind a firewall gets a mask that is 55% crack and no way to notice.
+    #
+    # So the fallback gets its own key. A later run with SAM finds nothing under the
+    # ensemble's key and predicts properly, and PROB_CACHE_KEEP means both can be cached.
+    if predict and mdl.needs_sam() and (M.sam_unavailable_reason or M.sam_disabled_by_env()) \
+            and not M.emb_is_current(embp):
+        # Already known unreachable in this process: skip straight to the 17-feature model
+        # rather than attempting a 2.4 GB download once per image.
+        sam_note = M.sam_unavailable_reason or "disabled by TXM_NO_SAM=1"
+        mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
+        mkey = S.model_key(_FALLBACK_17_ENTRY)
 
     # A prediction is a pure function of (image, model), so if this model has already
     # been run on this image the answer is on disk. Adopting it turns switching
@@ -325,7 +355,12 @@ def ingest(image_id, progress=None, force=False, predict=True):
         if S.load_npy(image_id, "correction.npy", mmap=True) is None:
             S.save_npy(image_id, "correction.npy", np.zeros(img01.shape, np.uint8))
         cached = S.load_npy(image_id, "prob.npy", mmap=True)
-        S.write_meta(image_id, dict(status="ready", model=mdl.describe(),
+        S.write_meta(image_id, dict(status="ready",
+                                    # ...and say SAM was missing here too. Adopting a
+                                    # 17-feature prediction and describing it as the
+                                    # ensemble is the same lie by a shorter path.
+                                    model=mdl.describe() + (
+                                        f"  [SAM unavailable: {sam_note}]" if sam_note else ""),
                                     predicted_area=float(prune_specks(
                                         np.asarray(cached) > DEFAULT_THRESHOLD).mean()),
                                     ingested=time.time()))
@@ -340,14 +375,6 @@ def ingest(image_id, progress=None, force=False, predict=True):
                                     annotation_only=True, predicted_area=0.0,
                                     ingested=time.time()))
         return
-    embp = S.path(image_id, "emb.npz")
-    sam_note = None
-    if mdl.needs_sam() and (M.sam_unavailable_reason or M.sam_disabled_by_env()) \
-            and not M.emb_is_current(embp):
-        # Already known unreachable in this process: skip straight to the 17-feature model
-        # rather than attempting a 2.4 GB download once per image.
-        sam_note = M.sam_unavailable_reason or "disabled by TXM_NO_SAM=1"
-        mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
     if mdl.needs_sam() and (force or not M.emb_is_current(embp)):
         rep("SAM embedding")
         try:
@@ -360,6 +387,10 @@ def ingest(image_id, progress=None, force=False, predict=True):
             sam_note = str(e)
             rep(f"SAM unavailable ({sam_note}) -- using the 17-feature model")
             mdl = M.CrackModel(path_17=M.DEFAULT_17, path_hybrid="", ensemble=False)
+            # Same reason as above: this prediction is the 17-feature model's, so it must
+            # not be filed under the ensemble's key. This is the path taken when SAM looked
+            # available and then failed mid-download, which is the likelier one in the field.
+            mkey = S.model_key(_FALLBACK_17_ENTRY)
             coords = emb = None
         if coords is not None:
             M.write_emb(embp, coords, emb)
@@ -487,6 +518,12 @@ CORRECTION_FLOOR = 0.20
 # hole AREA, while two holes of 59,194 and 65,505 px make up most of it. Those two are
 # islands of intact material surrounded by crack, and filling them would be a lie about
 # the specimen. So the cutoff keeps the noise and keeps the islands.
+# The registry entry the 17-feature-only fallback is cached under, when SAM is unavailable.
+# It exists so that prediction has its OWN cache key instead of borrowing the ensemble's --
+# see the long note in ingest(). `kind` is spelled out rather than left off so the key cannot
+# collide with a hand-configured single-model entry that happens to point at the same file.
+_FALLBACK_17_ENTRY = dict(path_17=M.DEFAULT_17, path_hybrid="", kind="path_17_only_fallback")
+
 FILL_HOLES_MAX_PX = 1024
 #
 # Applied TWICE: once here on the corridor, and again after tighten_to_image narrows it,
