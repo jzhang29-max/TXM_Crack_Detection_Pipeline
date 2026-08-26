@@ -1,0 +1,528 @@
+# What this exists to prove, and what it cannot.
+#
+# Every claim in this repo about Linux was, until this file, an inference: the project was
+# written, measured and documented entirely on one arm64 Mac. These jobs execute the claims.
+# Each one targets something that was previously only reasoned about:
+#
+#   suite         -- the documented install works on Linux and the self test passes there, on a
+#                    case-sensitive filesystem, against a real socket. Also pins the regression
+#                    that writing this file found: without `imagecodecs`, tifffile refuses every
+#                    one of the 71 shipped images, because they are float32 with the
+#                    floating-point predictor. Nothing pulls that package in transitively, it was
+#                    absent from requirements.txt, and every development machine had it installed
+#                    by hand -- so a clone that followed the README could not read its own data.
+#                    That step is a NEGATIVE test: it fails if the dependency goes missing again.
+#
+#   no-torch      -- run_app.sh promises that without PyTorch the app "runs on the 17-feature
+#                    model alone". An earlier version of that message promised a fallback that
+#                    did not exist and a machine behind a firewall got a red error on every
+#                    image. This job installs requirements WITHOUT torch or transformers and
+#                    checks the promise is kept: the image still ingests, still predicts, and the
+#                    model line says SAM was unavailable rather than pretending otherwise.
+#
+#   floor-deps    -- requirements.txt allows scikit-image >= 0.20, and 0.26 renamed the size
+#                    argument of remove_small_holes AND changed its comparison, so pipeline.py
+#                    carries a shim (_skimage_size_kw, _binary_morph) with two branches. The
+#                    development machine only ever runs the new one. This job runs the old one.
+#
+#   sam-on-linux  -- torch, transformers and the SAM ViT-H encoder actually load and produce
+#                    finite embeddings on Linux CPU. This is the largest gap between what the
+#                    README asserts and what has been executed: the device order and the whole
+#                    encoder path had never run anywhere but Metal.
+#
+#   run-app       -- ./run_app.sh, the one command a user is told to type, works from a bare
+#                    checkout on a plain Debian with the distro python, not just under a
+#                    pre-built venv on a Mac.
+#
+# WHAT THESE JOBS DO NOT COVER, so nobody reads a green tick as more than it is:
+#
+#   - THE MODEL. This is the big one. Four of the five jobs set TXM_NO_SAM=1 or omit torch, and
+#     in that mode the detector is the 17-feature model alone, which is NOT the shipped
+#     configuration and is not a usable detector: measured on owner-confirmed crack-free
+#     specimens it marks 83.08% and 30.36% of the frame as crack, against 0.01% and 0.02% for
+#     the deployed ensemble. Every check can pass while the prediction is garbage. These jobs
+#     test plumbing, portability and invariants -- not detection quality.
+#   - THE CORPUS. app_data/ is gitignored, so a runner has no ingested images, no SAM embeddings
+#     and no predictions. The statistical checks (held-out IoU, the retrain gate, crack-free
+#     false positives over 6 specimens) need the whole 71-frame corpus with embeddings, which is
+#     hours of compute and a 2.4 GB download. They are exercised on the development machine and
+#     recorded in docs/, not here. The suite job checks out ONE frame, so corpus-wide checks
+#     report "1 frame" and the ones that need two or more skip.
+#   - RETRAIN. Never run here. `--retrain` is omitted, and under TXM_NO_SAM it is structurally
+#     impossible anyway (every image is skipped for want of embeddings).
+#   - MEMORY. A full 71-frame re-render peaks well above a standard runner's ~16 GB. Not
+#     exercised.
+#   - CUDA. No GPU on standard runners, so the cuda -> mps -> cpu order stays partly unverified;
+#     sam-on-linux exercises the cpu branch only.
+#   - THE BROWSER. There is no UI test here at all. The self test drives the server over HTTP,
+#     which is not the same as driving the page -- a defect in which image id the client sends
+#     would pass every check below.
+#   - OLD glibc. ubuntu-24.04 and debian:12 are both modern.
+
+name: linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The smallest tracked frame, 7.4 MB of the 2.16 GB in images/. The self test builds its
+  # fixture by cropping the smallest committed TIFF, so this one file is what makes a
+  # sparse checkout viable -- see the checkout step's comment.
+  FRAME: images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+  PORT: '8899'
+
+jobs:
+  suite:
+    name: install and self test (ubuntu 24.04, python 3.12)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      # SPARSE ON PURPOSE, and it is not a shortcut. images/ is 2,156 MB of the 2,171 MB
+      # tracked here -- 99.3% -- and the whole rest of the repo is 15 MB. A full checkout
+      # would spend ten minutes fetching 71 frames to use one. But it cannot be dropped
+      # entirely: measured, a checkout with no images/ at all aborts the self test after 7
+      # checks with "could not build a test image (images/ missing or empty)", because the
+      # fixture is a crop of a real frame. One frame is the whole difference between 7
+      # checks and 59.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # torch pulls ~2.2 GB of CUDA wheels on Linux that macOS never sees. Cache it or every
+      # run re-downloads them. Installed even though this job sets TXM_NO_SAM=1, because the
+      # claim under test is that the DOCUMENTED requirements.txt installs on Linux.
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py312-${{ hashFiles('requirements.txt') }}
+
+      # Informational only -- never fail the job because a probe tool is missing.
+      - name: Show the environment the claims are about
+        run: |
+          python3 -VV || true
+          ldd --version | head -1 || true
+          df -h . | tail -1 || true
+          free -g | head -2 || true
+          echo "checkout size: $(du -sh . | cut -f1), images/: $(ls images | wc -l) file(s)"
+
+      - name: Install requirements.txt as written
+        run: |
+          python3 -m venv .venv
+          ./.venv/bin/python3 -m pip install -q --upgrade pip
+          ./.venv/bin/python3 -m pip install -q -r requirements.txt
+
+      # THE REGRESSION TEST. This is the defect that writing this workflow found. tifffile
+      # treats imagecodecs as an optional extra and nothing in the dependency graph requires
+      # it, so it was absent from requirements.txt while every dev machine had it by hand.
+      # Without it this read raises
+      #   ValueError: <PREDICTOR.FLOATINGPOINT: 3> requires the 'imagecodecs' package
+      # and the app cannot open a single one of its own images. Asserted here, not assumed.
+      - name: A shipped predictor-3 float32 TIFF actually reads
+        run: |
+          ./.venv/bin/python3 -m pip show imagecodecs > /dev/null || {
+            echo "::error::imagecodecs is not installed -- requirements.txt has regressed"; exit 1; }
+          ./.venv/bin/python3 -c "
+          import tifffile, numpy as np, os
+          f = os.environ['FRAME']
+          p = tifffile.TiffFile(f).pages[0]
+          print('predictor', p.predictor, 'dtype', p.dtype, 'compression', p.compression)
+          assert int(p.predictor) == 3, f'expected the floating-point predictor, got {p.predictor}'
+          a = tifffile.imread(f)
+          assert a.dtype == np.float32 and a.ndim == 2, (a.dtype, a.shape)
+          assert np.isfinite(a).all(), 'the decoded frame contains non-finite values'
+          print('read ok', a.shape, a.dtype, 'range', float(a.min()), float(a.max()))"
+
+      # 3 MB archive -> ~810 MB of .npy. Measured at 1.2 s. Idempotent.
+      - name: Expand the shipped correction masks
+        run: |
+          mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
+          ./.venv/bin/python3 code/unpack_package.py
+          echo "corrections: $(ls paint/corrections | wc -l) file(s)"
+
+      # TXM_NO_SAM=1 on the SERVER process, which is what ingest reads. No 2.4 GB download,
+      # no network. See the header for what this costs in coverage.
+      - name: Start the server
+        env:
+          TXM_NO_SAM: '1'
+        run: |
+          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
+          echo $! > server.pid
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat server.pid)" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat server.log; exit 1; }
+            sleep 1
+          done
+          curl -sf -o /dev/null -w 'GET / -> HTTP %{http_code}\n' "http://127.0.0.1:${PORT}/"
+
+      # Without a real frame ingested, three data-dependent checks have nothing to run on.
+      # Uploading the one checked-out frame takes them from "0 frames" to "1 frame" -- which
+      # is what makes the tight-boundary and filled-centres invariants actually execute on
+      # Linux rather than reporting an empty pass.
+      - name: Ingest the one real frame
+        run: |
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" | tee upload.json
+          echo
+          for i in $(seq 1 150); do
+            ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
+          print(r[0].get('status', '?') if r else 'none')")
+            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed"; cat server.log; exit 1;; esac
+            sleep 2
+          done
+          test "$ST" = ready || { echo "::error::ingest never reached ready (last: $ST)"; cat server.log; exit 1; }
+          curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          for m in json.load(sys.stdin)['images']:
+              print(' ', m.get('status'), '|', m.get('filename'), '| model:', m.get('model'))"
+
+      # Exits non-zero on any failure (selftest.py: sys.exit(1 if FAIL else 0)).
+      - name: Self test
+        env:
+          TXM_NO_SAM: '1'
+        run: ./.venv/bin/python3 app/selftest.py --base "http://127.0.0.1:${PORT}"
+
+      - name: Stop the server
+        if: always()
+        run: |
+          test -f server.pid && kill "$(cat server.pid)" 2>/dev/null || true
+          tail -30 server.log || true
+
+      # Everything the run writes -- app_data/, the expanded corrections, the venv -- is
+      # gitignored. If any of it is not, that is a packaging bug worth failing on.
+      - name: Nothing tracked was modified by the run
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)" || {
+            echo "::error::the run left the tree dirty -- see the list above"; exit 1; }
+
+  no-torch:
+    name: the promised no-PyTorch fallback is real
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Deliberately NOT installing torch or transformers. That is the point: run_app.sh tells
+      # the user the app runs on the 17-feature model alone without them, and this job is what
+      # makes that a tested statement instead of a comforting one. Note TXM_NO_SAM is NOT set
+      # anywhere below -- the fallback has to trigger from the import failing, which is the
+      # path a real user without torch takes.
+      - name: Install requirements with torch and transformers removed
+        run: |
+          grep -vE '^(torch|transformers)\b' requirements.txt > req-notorch.txt
+          echo "--- removed:"; grep -E '^(torch|transformers)\b' requirements.txt
+          python3 -m venv .venv
+          ./.venv/bin/python3 -m pip install -q --upgrade pip
+          ./.venv/bin/python3 -m pip install -q -r req-notorch.txt
+          ! ./.venv/bin/python3 -c "import torch" 2>/dev/null || {
+            echo "::error::torch got installed anyway -- this job proves nothing"; exit 1; }
+          echo "torch is absent, as intended"
+
+      - name: The server import graph works with no torch
+        run: |
+          cd app && ../.venv/bin/python3 -c "
+          import sys; sys.path[:0] = ['core', '.']
+          import store, model, pipeline, server
+          print('server module graph imports with no torch installed')"
+
+      - name: Expand corrections and start the server
+        run: |
+          mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
+          ./.venv/bin/python3 code/unpack_package.py
+          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
+          echo $! > server.pid
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat server.pid)" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat server.log; exit 1; }
+            sleep 1
+          done
+
+      - name: An image still ingests, still predicts, and SAYS SAM was unavailable
+        run: |
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
+          for i in $(seq 1 150); do
+            ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          r = json.load(sys.stdin)['images']
+          print(r[0].get('status', '?') if r else 'none')")
+            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed with no torch"; cat server.log; exit 1;; esac
+            sleep 2
+          done
+          curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          m = json.load(sys.stdin)['images'][0]
+          desc = m.get('model') or ''
+          print('status:', m.get('status'))
+          print('model :', desc)
+          print('area  :', m.get('predicted_area'))
+          assert m.get('status') == 'ready', m.get('status')
+          # The promise has two halves: it still works, AND it admits what it did.
+          assert '17-feature' in desc, f'no 17-feature fallback in the model line: {desc!r}'
+          assert 'SAM unavailable' in desc, f'the fallback was silent: {desc!r}'
+          print('the documented fallback happened and was reported')"
+
+      - name: Stop the server
+        if: always()
+        run: |
+          test -f server.pid && kill "$(cat server.pid)" 2>/dev/null || true
+          tail -30 server.log || true
+
+  floor-deps:
+    name: the pre-0.26 scikit-image branch of the shim
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # scikit-image 0.26 renamed min_size/area_threshold to max_size and CHANGED the
+      # comparison from "strictly smaller" to "smaller or equal", which is why
+      # pipeline._skimage_size_kw passes n-1 through the new spelling and n through the old.
+      # The dev machine is on 0.26 and only ever exercises the new branch. Pinning below 0.26
+      # runs the old one. 0.25.2 is the newest release with the old signature and cp312 wheels.
+      - name: Install with scikit-image pinned below the rename
+        run: |
+          grep -vE '^(torch|transformers|scikit-image)\b' requirements.txt > req-floor.txt
+          echo 'scikit-image==0.25.2' >> req-floor.txt
+          python3 -m venv .venv
+          ./.venv/bin/python3 -m pip install -q --upgrade pip
+          ./.venv/bin/python3 -m pip install -q -r req-floor.txt
+          ./.venv/bin/python3 -c "import skimage; print('scikit-image', skimage.__version__)"
+
+      - name: The shim takes the OLD branch, and takes it correctly
+        run: |
+          cd app && ../.venv/bin/python3 -c "
+          import sys; sys.path[:0] = ['core', '.']
+          import numpy as np, skimage
+          from skimage.morphology import remove_small_holes, remove_small_objects
+          import pipeline as P
+
+          kw = P._skimage_size_kw(remove_small_holes, P.FILL_HOLES_MAX_PX)
+          print('scikit-image', skimage.__version__, '->', kw)
+          assert 'max_size' not in kw, f'expected the pre-0.26 spelling, got {kw}'
+
+          # The shim is only correct if the FLOOR it produces is the same either way. A hole
+          # of exactly FILL_HOLES_MAX_PX px must be filled, and one px larger must not.
+          n = P.FILL_HOLES_MAX_PX
+          for size, want in ((n - 1, True), (n + 400, False)):
+              a = np.ones((200, 200), bool)
+              side = int(size ** 0.5)
+              a[20:20 + side, 20:20 + side] = False
+              got = remove_small_holes(a.copy(), **P._skimage_size_kw(remove_small_holes, n))
+              filled = bool(got[20:20 + side, 20:20 + side].all())
+              print(f'  hole of {side*side} px -> filled={filled} (want {want})')
+              assert filled == want, (size, filled, want)
+
+          # _binary_morph resolves under the old names too.
+          m = np.zeros((30, 30), bool); m[10:20, 10:20] = True
+          from skimage.morphology import disk
+          assert P._binary_morph('closing')(m, disk(2)).any()
+          assert P._binary_morph('opening')(m, disk(2)).any()
+          print('both shims resolve and agree on the floor under', skimage.__version__)"
+
+      - name: Self test on the floor versions
+        env:
+          TXM_NO_SAM: '1'
+        run: |
+          mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
+          ./.venv/bin/python3 code/unpack_package.py
+          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
+          echo $! > server.pid
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat server.pid)" 2>/dev/null || { cat server.log; exit 1; }
+            sleep 1
+          done
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
+          for i in $(seq 1 150); do
+            ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
+          print(r[0].get('status', '?') if r else 'none')")
+            case "$ST" in ready) break;; error|failed) cat server.log; exit 1;; esac
+            sleep 2
+          done
+          ./.venv/bin/python3 app/selftest.py --base "http://127.0.0.1:${PORT}"
+          kill "$(cat server.pid)" 2>/dev/null || true
+
+  sam-on-linux:
+    name: the SAM ViT-H encoder runs on Linux CPU
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py312-${{ hashFiles('requirements.txt') }}
+
+      # ~2.4 GB of weights. Cached on the model id so it is fetched once, not once per run.
+      - name: Cache the SAM weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-sam-vit-huge-v1
+
+      - name: Install requirements.txt as written
+        run: |
+          python3 -m venv .venv
+          ./.venv/bin/python3 -m pip install -q --upgrade pip
+          ./.venv/bin/python3 -m pip install -q -r requirements.txt
+          ./.venv/bin/python3 -c "
+          import torch
+          print('torch', torch.__version__, 'cuda', torch.cuda.is_available())
+          print('threads', torch.get_num_threads())"
+
+      # The encoder path had never run outside Metal. One 1024 px tile is the cheapest real
+      # forward pass that exercises it: the processor, the ViT-H weights, the 64x64x256 grid,
+      # and the cache tagging that decides whether a stored embedding is still valid.
+      - name: One real tile through the encoder, and the cache round-trips
+        run: |
+          cd app && ../.venv/bin/python3 -c "
+          import sys, time; sys.path[:0] = ['core', '.']
+          import numpy as np
+          import model as M
+
+          print('TILE', M.TILE, 'TILE_STRIDE', M.TILE_STRIDE, 'EMB_STRIDE', M.EMB_STRIDE)
+          assert not M.sam_disabled_by_env(), 'TXM_NO_SAM must not be set in this job'
+
+          rng = np.random.default_rng(0)
+          img = rng.random((M.TILE, M.TILE), dtype=np.float32) * 0.2 + 0.4
+          img[400:420, :] = 0.05                      # something crack-like to encode
+
+          t = time.time()
+          coords, embs = M.embed_image(img)
+          print(f'embedded {len(coords)} tile(s) in {time.time()-t:.1f}s on CPU')
+          assert len(coords) == 1, coords
+          e = np.asarray(embs[0])
+          print('embedding', e.shape, e.dtype, 'finite', bool(np.isfinite(e).all()))
+          # CHANNELS FIRST: embed_image documents (n, C, 64, 64), not (n, 64, 64, C).
+          assert e.ndim == 3 and e.shape == (256, 64, 64), e.shape
+          assert np.isfinite(e).all(), 'the encoder produced non-finite embeddings'
+          assert float(e.std()) > 0, 'the encoder produced a constant embedding'
+
+          import tempfile, os
+          with tempfile.TemporaryDirectory() as d:
+              p = os.path.join(d, 'emb.npz')
+              M.write_emb(p, coords, embs)
+              assert M.emb_is_current(p), 'a freshly written embedding is not considered current'
+              got = M.read_emb(p)
+              # read_emb collapses missing/truncated/stale-stride to None, so None here means
+              # the cache it just wrote was rejected -- a real failure, not a missing file.
+              assert got is not None, 'read_emb rejected the cache write_emb had just made'
+              c2, e2 = got
+              assert np.allclose(np.asarray(e2[0]), e, atol=0), 'the cache did not round-trip'
+              print('write_emb/read_emb round-trips and is tagged current')
+          print('the SAM encoder path works on Linux CPU')"
+
+  run-app:
+    name: ./run_app.sh works on a plain Debian
+    runs-on: ubuntu-24.04
+    container: debian:12
+    timeout-minutes: 60
+    steps:
+      # Whatever a plain distro gives us. Debian 12 is python 3.11, and requirements.txt
+      # resolves for cp311 as well as cp312 -- that is part of what this checks.
+      - name: Prerequisites only
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends \
+            git curl ca-certificates python3 python3-venv
+          python3 -VV
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+
+      # run_app.sh execs the server in the foreground, so it is backgrounded and polled.
+      # TXM_NO_SAM keeps it off the 2.4 GB download; the point of this job is the SCRIPT --
+      # venv creation, the requirements stamp, the unpack step, the port export -- not the
+      # model. It is also the only job that does not pre-build a venv, so it is the one that
+      # would catch run_app.sh drifting from what the README says to type.
+      - name: ./run_app.sh from a bare checkout
+        env:
+          TXM_NO_SAM: '1'
+        run: |
+          chmod +x run_app.sh
+          ./run_app.sh > run.log 2>&1 &
+          echo $! > run.pid
+          for i in $(seq 1 900); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat run.pid)" 2>/dev/null || {
+              echo "::error::run_app.sh exited before serving"; cat run.log; exit 1; }
+            sleep 2
+          done
+          curl -sf -o /dev/null -w 'GET / -> HTTP %{http_code}\n' "http://127.0.0.1:${PORT}/"
+          echo "--- what the script told the user:"
+          grep -E '^==>|NOTE|WARNING' run.log || true
+
+      - name: It serves the API, and reports the no-SAM fallback rather than hiding it
+        run: |
+          curl -sf "http://127.0.0.1:${PORT}/api/images" | head -c 200; echo
+          curl -sf "http://127.0.0.1:${PORT}/api/model" | head -c 300; echo
+          grep -q "TXM_NO_SAM is set" run.log || {
+            echo "::error::run_app.sh did not report that SAM was disabled"; exit 1; }
+
+      - name: Stop it
+        if: always()
+        run: |
+          test -f run.pid && kill "$(cat run.pid)" 2>/dev/null || true
+          tail -40 run.log || true

@@ -246,10 +246,44 @@ def main():
         _clean = [x for x in _Sg.list_images()
                   if any(k.lower() in (x.get("filename") or "").lower()
                          for k in _Pg.CLEAN_SPECIMENS)]
-        check("a retrain has something to validate against",
-              len(_lab) >= 2 and len(_clean) >= 1,
-              f"{len(_lab)} labelled image(s) for the grouped cross-validation, "
-              f"{len(_clean)} confirmed crack-free specimen(s) for the false-positive axis")
+        # A FRESH INSTALL IS NOT A FAILURE, and this check used to report one. On a clone
+        # with nothing painted there are no labels and no ingested crack-free specimen, so
+        # retrain is correctly unavailable -- the same situation in which the pruning and
+        # retrain-report checks below skip rather than fail. Reporting it as a failure made a
+        # clean checkout look broken, which is how a real failure gets ignored.
+        #
+        # It must still FAIL when corrections exist ON DISK but are not being reported,
+        # because that is the exact regression this check was written for: the server stopped
+        # reporting `ground_truth_available` and nothing noticed. So the disk is consulted
+        # independently of the API rather than trusting the same source the check is testing.
+        # Content, not existence: ingest creates a zero-filled correction.npy for every
+        # image, so the file being there says nothing about whether anyone has painted.
+        # Read the arrays directly rather than going through store.correction_counts(),
+        # which is memoised into the same meta.json the API reports from -- that would be
+        # asking the suspect to vouch for itself, and it writes meta as a side effect.
+        _on_disk = 0
+        import numpy as _npg
+        for _x in _Sg.list_images():
+            try:
+                _p = _Sg.path(_x["id"], "correction.npy")
+                if os.path.exists(_p) and bool(_npg.load(_p, mmap_mode="r").any()):
+                    _on_disk += 1
+                    if _on_disk >= 2:
+                        break                   # enough to know the install is populated
+            except Exception:                                   # noqa: BLE001
+                pass
+        if _on_disk == 0:
+            skip("a retrain has something to validate against",
+                 f"fresh install: nothing painted yet, so there is nothing to validate "
+                 f"against ({len(_Sg.list_images())} image(s) ingested, "
+                 f"{len(_clean)} crack-free specimen(s))")
+        else:
+            check("a retrain has something to validate against",
+                  len(_lab) >= 2 and len(_clean) >= 1,
+                  f"{'2+' if _on_disk >= 2 else _on_disk} painted correction file(s) on "
+                  f"disk, {len(_lab)} labelled image(s) "
+                  f"reported for the grouped cross-validation, {len(_clean)} confirmed "
+                  f"crack-free specimen(s) for the false-positive axis")
     except Exception as e:                                      # noqa: BLE001
         check("a retrain has something to validate against", False, str(e))
 

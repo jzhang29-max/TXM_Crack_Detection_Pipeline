@@ -1,5 +1,7 @@
 # TXM Crack Detection
 
+[![linux](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml/badge.svg)](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml)
+
 Finds cracks in transmission X-ray microscopy images. Drag images in, look at what the
 model found, fix what it got wrong, press Retrain. That is the whole loop.
 
@@ -317,6 +319,36 @@ not put it behind a lab reverse proxy or a tunnel as it is. Anyone who can reach
 can read or delete every image and start a retrain. Model files are unpickled with
 `joblib`, which executes arbitrary code by construction, so only load `.joblib` files you
 produced or trust.
+
+## Continuous integration
+
+This project was written, measured and documented on one arm64 Mac, so every claim about
+Linux was an inference until [`.github/workflows/linux.yml`](.github/workflows/linux.yml)
+started executing them. Five jobs, on every push and pull request:
+
+| job | what it proves |
+|---|---|
+| `suite` | the documented install works on ubuntu-24.04 / python 3.12, and the self test passes there against a real socket on a case-sensitive filesystem |
+| `no-torch` | the fallback this README promises is real — without PyTorch an image still ingests and predicts, and the model line says SAM was unavailable instead of pretending otherwise |
+| `floor-deps` | the pre-0.26 scikit-image branch of the `remove_small_holes` shim, which the development machine never takes |
+| `sam-on-linux` | torch, transformers and the SAM ViT-H encoder load and produce finite embeddings on Linux CPU |
+| `run-app` | `./run_app.sh` — the one command this README tells you to type — works from a bare checkout on Debian 12 with the distro python |
+
+Writing it immediately found a real defect: `imagecodecs` was missing from
+`requirements.txt`. All 71 shipped images are float32 TIFF with the floating-point predictor,
+tifffile refuses those without that package, and nothing pulls it in transitively — so a
+clone that installed exactly what was listed could not read a single one of its own images.
+Every development machine had it installed by hand, which is why it went unnoticed. The
+`suite` job now asserts a real frame decodes, so it cannot go missing again.
+
+**What a green tick does not mean.** Four of the five jobs run without SAM, and in that mode
+the detector is the 17-feature model alone — not the shipped configuration, and not a usable
+one: it marks 55% of a real frame and 83% of a confirmed crack-free specimen as crack. CI
+tests plumbing, portability and invariants, never detection quality. The statistical numbers
+in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
+development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
+frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does
+the browser. The workflow's own header spells all of this out at the top of the file.
 
 ## Layout
 

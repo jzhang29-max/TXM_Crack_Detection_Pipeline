@@ -14,6 +14,15 @@ scikit-learn>=1.9        # The shipped hybrid was pickled by 1.9.0, so 1.9 is a 
                          # day it stops being harmless is the day you want to see it.
 scikit-image>=0.20
 tifffile>=2022.5
+imagecodecs>=2022.2      # NOT optional, despite tifffile treating it as an extra. All 71
+# shipped images are float32 TIFF with the floating-point predictor (predictor 3), and
+# tifffile refuses those without this package:
+#     ValueError: <PREDICTOR.FLOATINGPOINT: 3> requires the 'imagecodecs' package
+# Nothing pulls it in transitively -- `pip show imagecodecs` reports "Required-by: (nothing)"
+# -- so a clone that installed only what this file used to list could not read a single one
+# of its own images. It was missing here for as long as the images have been in this format;
+# every development machine had it installed by hand, which is exactly why nobody noticed.
+# Caught by the Linux CI added alongside this line.
 Pillow>=9.0
 joblib>=1.2
 Flask>=2.2
