@@ -393,9 +393,19 @@ What remains is the device: the macOS runner ran the encoder on **MPS**, the Lin
 CPU. On real Apple silicon the two agree closely — embeddings differ by at most one float16
 storage quantum (4.9e-4), no pixel changes side of the threshold, and the predicted area is
 0.187972 either way — so this is a property of that
-virtualised Metal stack rather than of MPS itself. The macOS job now runs as a two-arm matrix,
-`auto` and `cpu`, on the same runner image — the `cpu` arm is asserted strictly against the
-reference, so if the device is the whole story the two arms disagree in exactly one place.
+virtualised Metal stack rather than of MPS itself.
+
+A two-arm matrix on the same runner image confirmed it — one arm forced to CPU, one left on
+auto:
+
+| | `cpu` arm | `auto` (MPS) arm |
+|---|---|---|
+| probability mean / spread | 0.381305 / 0.299955 | 0.369239 / 0.264032 |
+| raw area / components | 0.191281 / 968 | 0.169033 / 21,019 |
+| **predicted area** | **0.1880** | **0.0925** |
+
+The CPU arm reproduces this Mac and the Linux runner to six decimals, so the device is the
+whole cause. That arm is asserted strictly in CI, so the workaround cannot quietly rot.
 
 **If your masks look shattered or the area looks halved**, set `TXM_SAM_DEVICE=cpu` and
 re-ingest. It is slower and, on every machine measured here, numerically identical:

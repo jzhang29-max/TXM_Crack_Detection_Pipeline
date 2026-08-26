@@ -41,12 +41,21 @@
 #     reproduces 0.1880 using the same backend the macOS one used. 9 flipped pixels of
 #     2,857,784.
 #
-# What is left is that the macOS runner ran the encoder on MPS and the Linux runner on CPU.
-# On real Apple silicon the two agree closely: embeddings differ by at most one float16 storage
-# quantum (4.9e-4), zero pixels change side of the threshold, and the predicted area is
-# 0.187972 either way. So this is a property of this
-# virtualised Metal stack, not of MPS. The matrix below is the confirmation: same runner
-# image, same everything, one arm on cpu and one on auto.
+# What is left is the device, and the matrix below CONFIRMED it: same runner image, same
+# install, one arm forced to cpu and one left on auto (which resolves to mps here).
+#
+#                       cpu arm        auto/mps arm
+#   prob mean           0.381305        0.369239
+#   prob std            0.299955        0.264032
+#   raw area / comps    0.191281/968    0.169033/21019
+#   pruned area         0.1880          0.0925
+#
+# The cpu arm reproduces this project's Mac and the Linux runner to six decimals. So the SAM
+# device is the whole cause. Note this is NOT a property of MPS: on real Apple silicon MPS and
+# CPU agree closely -- embeddings differ by at most one float16 storage quantum (4.9e-4), zero
+# pixels change side of the threshold, and the area is 0.187972 either way. It is a property of
+# this virtualised Metal stack. TXM_SAM_DEVICE=cpu is the workaround, and the cpu arm below is
+# asserted strictly so the workaround cannot rot.
 #
 # WHAT THIS DOES NOT COVER:
 #   - REAL Apple-silicon MPS. This header originally said Metal was "generally unavailable" on
