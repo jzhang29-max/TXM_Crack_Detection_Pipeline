@@ -1,0 +1,210 @@
+# Why a macOS job exists when macOS is the development platform.
+#
+# Not to test the OS. This project is written and run on an arm64 Mac every day, so macOS is
+# the best-exercised platform there is. What has NEVER been exercised is macOS on a CLEAN
+# machine, and that is a different thing:
+#
+#   - The `imagecodecs` defect that the Linux workflow found was not a Linux defect at all.
+#     tifffile refuses the floating-point predictor without it, nothing pulls it in
+#     transitively, and it was missing from requirements.txt for as long as the images have
+#     been in that format. It was invisible here only because this machine had the package
+#     pip-installed by hand years ago. A clean macOS runner would have caught it just as fast.
+#     Every other hand-installed package on the development machine is the same latent risk.
+#
+#   - macOS is the SHIPPED configuration: SAM on Apple Silicon, the full ensemble. So this is
+#     the one job in either workflow that can run the real detector and check the answer. The
+#     Linux jobs mostly run with SAM off, where the detector marks 26.9-83.7% of a crack-free
+#     specimen as crack, and every check can pass while the prediction is that wrong. This job
+#     ingests a real frame with SAM ENABLED and asserts the predicted area lands near the
+#     recorded 18.80% rather than the 54.80% the SAM-free fallback produces. It is a smoke
+#     band, not a precision check -- but it is the difference between "the plumbing ran" and
+#     "the model that was supposed to run, ran".
+#
+# WHAT THIS DOES NOT COVER:
+#   - MPS. GitHub's macOS runners are virtualised and Metal is generally unavailable, so the
+#     device order almost certainly resolves to cpu here. The environment step prints what
+#     torch actually reports so the log says which branch ran, but the MPS path stays
+#     unverified by CI and is only ever exercised by hand on a real Mac.
+#   - THE CORPUS, RETRAIN, MEMORY, THE BROWSER. Same as the Linux workflow -- see the header
+#     of .github/workflows/linux.yml, which spells all of it out. One frame is checked out,
+#     not 71, so corpus-wide checks report "1 frame" or skip.
+#   - The runner label is NOT pinned the way ubuntu-24.04 is in the Linux workflow. macOS
+#     image labels are retired faster, and a stale pin fails the whole workflow with a
+#     "no runner matching" error that says nothing about this project. The actual OS and
+#     architecture are logged in the environment step instead.
+
+name: macos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FRAME: images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+  PORT: '8899'
+  # The area this frame's ensemble prediction is known to produce, and the band asserted
+  # around it. Measured twice on the development machine, independently: 18.7972% recorded in
+  # app_data meta.json, and 18.80% recomputed from scratch in a clean worktree with SAM run
+  # fresh. The band is wide because SAM embeddings are stored as float16 and a different BLAS
+  # or device will not reproduce the last bits -- it is not trying to pin the number down. It
+  # is trying to separate the ensemble from the 17-feature fallback, which reads 54.80% on
+  # this same frame, far outside.
+  AREA_MIN: '0.12'
+  AREA_MAX: '0.26'
+
+jobs:
+  suite:
+    name: clean-machine install and the real ensemble (macos, python 3.12)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      # Same reasoning as the Linux workflow: images/ is 2,156 MB of the 2,171 MB tracked
+      # here, and the self test builds its fixture from a real frame, so exactly one frame
+      # is fetched.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: pip-macos-py312-${{ hashFiles('requirements.txt') }}
+
+      # ~2.4 GB of SAM weights. Cached, or every run re-downloads them.
+      - name: Cache the SAM weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-sam-vit-huge-macos-v1
+
+      # Informational only. The point of printing the device availability is that it records
+      # which branch of the cuda -> mps -> cpu order actually ran, so nobody later reads this
+      # job as evidence that the Metal path works.
+      - name: Show the environment the claims are about
+        run: |
+          sw_vers || true
+          uname -m || true
+          python3 -VV || true
+          df -h . | tail -1 || true
+          echo "checkout: $(du -sh . | cut -f1), images/: $(ls images | wc -l) file(s)"
+
+      - name: Install requirements.txt as written
+        run: |
+          python3 -m venv .venv
+          ./.venv/bin/python3 -m pip install -q --upgrade pip
+          ./.venv/bin/python3 -m pip install -q -r requirements.txt
+          ./.venv/bin/python3 -c "
+          import torch
+          print('torch', torch.__version__)
+          print('cuda available:', torch.cuda.is_available())
+          print('mps  available:', torch.backends.mps.is_available())
+          print('mps  built    :', torch.backends.mps.is_built())"
+
+      # THE CLEAN-MACHINE CHECK. This is the whole reason the job exists: the development Mac
+      # has imagecodecs installed by hand, so this read succeeded there for years while
+      # requirements.txt did not ask for it.
+      - name: A shipped predictor-3 float32 TIFF actually reads
+        run: |
+          ./.venv/bin/python3 -m pip show imagecodecs > /dev/null || {
+            echo "::error::imagecodecs is not installed -- requirements.txt has regressed"; exit 1; }
+          ./.venv/bin/python3 -c "
+          import tifffile, numpy as np, os
+          f = os.environ['FRAME']
+          p = tifffile.TiffFile(f).pages[0]
+          print('predictor', p.predictor, 'dtype', p.dtype, 'compression', p.compression)
+          assert int(p.predictor) == 3, f'expected the floating-point predictor, got {p.predictor}'
+          a = tifffile.imread(f)
+          assert a.dtype == np.float32 and a.ndim == 2, (a.dtype, a.shape)
+          assert np.isfinite(a).all(), 'the decoded frame contains non-finite values'
+          print('read ok', a.shape, a.dtype)"
+
+      - name: Expand the shipped correction masks
+        run: |
+          mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
+          ./.venv/bin/python3 code/unpack_package.py
+          echo "corrections: $(ls paint/corrections | wc -l) file(s)"
+
+      # NOTE what is absent here: TXM_NO_SAM. Unlike every job in the Linux workflow except
+      # sam-on-linux, this one runs the shipped configuration.
+      - name: Start the server with SAM enabled
+        run: |
+          ./.venv/bin/python3 app/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat "$RUNNER_TEMP/server.log"; exit 1; }
+            sleep 1
+          done
+          curl -sf -o /dev/null -w 'GET / -> HTTP %{http_code}\n' "http://127.0.0.1:${PORT}/"
+
+      # The 2.4 GB fetch happens here on a cold cache, then four SAM tiles, so the poll is
+      # generous. A real frame, the real ensemble, and the answer is checked.
+      - name: Ingest a real frame and check the ensemble's answer
+        run: |
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
+          for i in $(seq 1 300); do
+            ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
+          print(r[0].get('status', '?') if r else 'none')")
+            case "$ST" in
+              ready) break;;
+              error|failed) echo "::error::ingest failed"; cat "$RUNNER_TEMP/server.log"; exit 1;;
+            esac
+            sleep 4
+          done
+          test "$ST" = ready || {
+            echo "::error::ingest never reached ready (last: $ST)"
+            cat "$RUNNER_TEMP/server.log"; exit 1; }
+          curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json, os
+          m = [x for x in json.load(sys.stdin)['images']
+               if 'SELFTEST' not in (x.get('filename') or '')][0]
+          desc, area = m.get('model') or '', m.get('predicted_area')
+          lo, hi = float(os.environ['AREA_MIN']), float(os.environ['AREA_MAX'])
+          print('model:', desc)
+          print(f'area : {area:.4f}   band [{lo}, {hi}]   recorded 0.1880')
+          # The ensemble really ran -- not the fallback wearing its name.
+          assert 'SAM unavailable' not in desc, f'SAM was not used: {desc!r}'
+          assert 'ensemble' in desc, f'not the ensemble: {desc!r}'
+          # ...and produced an answer in the right place. 0.5480 is what the 17-feature
+          # fallback gives on this frame, so this is what separates the two.
+          assert area is not None and lo <= area <= hi, (
+              f'ensemble area {area} outside [{lo}, {hi}] -- 0.548 would mean the '
+              f'17-feature fallback ran, and a much smaller number would mean it '
+              f'found almost nothing')
+          print('the shipped ensemble ran and its answer is where it should be')"
+
+      # Runs against the same SAM-enabled server, so the fixture ingest exercises the real
+      # ensemble too rather than the 17-feature fallback.
+      - name: Self test
+        run: ./.venv/bin/python3 app/selftest.py --base "http://127.0.0.1:${PORT}"
+
+      - name: Stop the server
+        if: always()
+        run: |
+          test -f "$RUNNER_TEMP/server.pid" && kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
+          tail -30 "$RUNNER_TEMP/server.log" || true
+
+      - name: Nothing tracked was modified by the run
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)" || {
+            echo "::error::the run left the tree dirty -- see the list above"; exit 1; }

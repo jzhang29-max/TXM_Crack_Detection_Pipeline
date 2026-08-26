@@ -36,13 +36,16 @@
 #
 # WHAT THESE JOBS DO NOT COVER, so nobody reads a green tick as more than it is:
 #
-#   - THE MODEL. This is the big one. Four of the five jobs set TXM_NO_SAM=1 or omit torch, and
-#     in that mode the detector is the 17-feature model alone, which is NOT the shipped
-#     configuration and is not a usable detector. Measured over all six owner-confirmed
-#     crack-free specimens, it marks 26.9% to 83.7% of the frame as crack (mean 61.3%),
-#     against 0.000% to 0.144% for the deployed ensemble on the same frames. Every check below
-#     can pass while the prediction is that wrong. These jobs test plumbing, portability and
-#     invariants -- not detection quality.
+#   - THE MODEL, in four jobs out of five. suite, no-torch, floor-deps and run-app all set
+#     TXM_NO_SAM=1 or omit torch, and in that mode the detector is the 17-feature model alone,
+#     which is NOT the shipped configuration and is not a usable detector. Measured over all
+#     six owner-confirmed crack-free specimens, it marks 26.9% to 83.7% of the frame as crack
+#     (mean 61.3%), against 0.000% to 0.144% for the deployed ensemble on the same frames.
+#     Every check in those four jobs can pass while the prediction is that wrong: they test
+#     plumbing, portability and invariants, not detection quality.
+#     sam-on-linux is the exception -- it runs the real ensemble on a real frame and asserts
+#     the answer -- and .github/workflows/macos.yml does the same on the shipped platform.
+#     Two frames' worth of detection quality between them, not a corpus.
 #   - THE CORPUS. app_data/ is gitignored, so a runner has no ingested images, no SAM embeddings
 #     and no predictions. The statistical checks (held-out IoU, the retrain gate, crack-free
 #     false positives over 6 specimens) need the whole 71-frame corpus with embeddings, which is
@@ -73,6 +76,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # The area this frame's ensemble prediction is known to produce, and the band asserted
+  # around it in sam-on-linux. Measured twice on the development machine, independently:
+  # 18.7972% recorded in app_data meta.json and 18.80% recomputed from scratch with SAM run
+  # fresh in a clean worktree. Wide on purpose -- SAM embeddings are stored as float16 and a
+  # different BLAS or device will not reproduce the last bits. It is not pinning the number
+  # down, it is separating the ensemble from the 17-feature fallback, which reads 54.80% on
+  # this same frame.
+  AREA_MIN: '0.12'
+  AREA_MAX: '0.26'
   # The smallest tracked frame, 7.4 MB of the 2.16 GB in images/. The self test builds its
   # fixture by cropping the smallest committed TIFF, so this one file is what makes a
   # sparse checkout viable -- see the checkout step's comment.
@@ -404,6 +416,7 @@ jobs:
           sparse-checkout: |
             /*
             !/images/*
+            /images/Average_mosaic_260618_b2_336_25_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif
 
       - uses: actions/setup-python@v5
         with:
@@ -473,6 +486,55 @@ jobs:
               assert np.allclose(np.asarray(e2[0]), e, atol=0), 'the cache did not round-trip'
               print('write_emb/read_emb round-trips and is tagged current')
           print('the SAM encoder path works on Linux CPU')"
+
+      # ONE TILE PROVES THE ENCODER LOADS. It does not prove the detector works. This is the
+      # only job in this workflow that runs the shipped configuration end to end -- SAM
+      # enabled, real frame, real ensemble -- and checks the ANSWER rather than just that
+      # something came back. Without it every check in this workflow can pass while the
+      # prediction is the 17-feature fallback's, which reads 54.80% on this frame against the
+      # ensemble's 18.80%.
+      - name: The shipped ensemble runs on a real frame, and its answer is sane
+        run: |
+          mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
+          ./.venv/bin/python3 code/unpack_package.py
+          ./.venv/bin/python3 app/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
+            kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat "$RUNNER_TEMP/server.log"; exit 1; }
+            sleep 1
+          done
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
+          for i in $(seq 1 300); do
+            ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json
+          r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
+          print(r[0].get('status', '?') if r else 'none')")
+            case "$ST" in
+              ready) break;;
+              error|failed) echo "::error::ingest failed"; cat "$RUNNER_TEMP/server.log"; exit 1;;
+            esac
+            sleep 4
+          done
+          test "$ST" = ready || {
+            echo "::error::ingest never reached ready (last: $ST)"
+            cat "$RUNNER_TEMP/server.log"; exit 1; }
+          curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
+          import sys, json, os
+          m = [x for x in json.load(sys.stdin)['images']
+               if 'SELFTEST' not in (x.get('filename') or '')][0]
+          desc, area = m.get('model') or '', m.get('predicted_area')
+          lo, hi = float(os.environ['AREA_MIN']), float(os.environ['AREA_MAX'])
+          print('model:', desc)
+          print(f'area : {area:.4f}   band [{lo}, {hi}]   recorded 0.1880')
+          assert 'SAM unavailable' not in desc, f'SAM was not used: {desc!r}'
+          assert 'ensemble' in desc, f'not the ensemble: {desc!r}'
+          assert area is not None and lo <= area <= hi, (
+              f'ensemble area {area} outside [{lo}, {hi}] -- 0.548 would mean the '
+              f'17-feature fallback ran')
+          print('the shipped ensemble ran on Linux and its answer is where it should be')"
+          kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
 
   run-app:
     name: ./run_app.sh works on a plain Debian

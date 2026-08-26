@@ -1,6 +1,7 @@
 # TXM Crack Detection
 
 [![linux](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml/badge.svg)](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml)
+[![macos](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/macos.yml/badge.svg)](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/macos.yml)
 
 Finds cracks in transmission X-ray microscopy images. Drag images in, look at what the
 model found, fix what it got wrong, press Retrain. That is the whole loop.
@@ -324,7 +325,7 @@ produced or trust.
 
 This project was written, measured and documented on one arm64 Mac, so every claim about
 Linux was an inference until [`.github/workflows/linux.yml`](.github/workflows/linux.yml)
-started executing them. Five jobs, on every push and pull request:
+started executing them. Six jobs across two workflows, on every push and pull request:
 
 | job | what it proves |
 |---|---|
@@ -333,6 +334,13 @@ started executing them. Five jobs, on every push and pull request:
 | `floor-deps` | the pre-0.26 scikit-image branch of the `remove_small_holes` shim, which the development machine never takes |
 | `sam-on-linux` | torch, transformers and the SAM ViT-H encoder load and produce finite embeddings on Linux CPU |
 | `run-app` | `./run_app.sh` — the one command this README tells you to type — works from a bare checkout on Debian 12 with the distro python |
+| `suite` (macos) | the same install on a **clean** Mac, plus the only end-to-end check of the shipped configuration: a real frame through the real ensemble, asserting the answer |
+
+The macOS job is not there to test the OS — macOS is the development platform and is exercised
+daily. It is there because macOS had never been tested on a *clean* machine, which is a
+different claim. The `imagecodecs` defect below was not a Linux defect at all; it was hidden
+here only because this Mac had the package installed by hand, and a clean Mac would have found
+it just as fast. Every other hand-installed package is the same latent risk.
 
 Writing it immediately found a real defect: `imagecodecs` was missing from
 `requirements.txt`. All 71 shipped images are float32 TIFF with the floating-point predictor,
@@ -354,8 +362,11 @@ fallback now has its own cache key: the same sequence re-predicts and drops to 1
 **What a green tick does not mean.** Four of the five jobs run without SAM, and in that mode
 the detector is the 17-feature model alone — not the shipped configuration, and not a usable
 one. Over all six confirmed crack-free specimens it marks 26.9% to 83.7% of the frame as
-crack (mean 61.3%), where the shipped ensemble marks 0.000% to 0.144%. CI tests plumbing,
-portability and invariants, never detection quality. The statistical numbers
+crack (mean 61.3%), where the shipped ensemble marks 0.000% to 0.144%. Those four jobs test
+plumbing, portability and invariants, not detection quality. Detection quality is covered by
+exactly two jobs on exactly one frame — `sam-on-linux` and the macOS `suite`, which run the
+real ensemble and assert the predicted area lands near the recorded 18.80% rather than the
+54.80% the fallback gives. That is a smoke band on one frame, not a corpus. The statistical numbers
 in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
 development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
 frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does
