@@ -368,17 +368,36 @@ exactly two jobs on exactly one frame — `sam-on-linux` and the macOS `suite`, 
 real ensemble and check that it, rather than the fallback, produced the answer. One frame, not
 a corpus.
 
-That pair also turned up something unresolved, which is worth stating plainly rather than
-leaving in a log. The reference frame's ensemble area is 0.1880, reproduced in four
-environments — this Mac on MPS, this Mac with SAM forced to CPU, a clean worktree recomputing
-from scratch, and an `ubuntu-24.04` x86_64 runner. The `macos-26-arm64` runner produced
-**0.0925**: half the area, with the ensemble confirmed as the producer, and not a rounding
-effect (only 0.17% of pixels sit within 0.05 of the threshold, so halving the area takes a
-materially different probability map). MPS-versus-CPU was the obvious explanation and is ruled
-out. The cause is not yet known, so both jobs now print a full prediction report — input
-checksum, probability distribution, area before and after pruning, every library version — and
-raise a warning on deviation, rather than a gate pinned to a number one supported platform
-does not reproduce. The statistical numbers
+That pair also found something worth knowing about, and it is not a CI problem. The reference
+frame's ensemble area is 0.1880, reproduced in four environments — this Mac on MPS, this Mac
+with SAM forced to CPU, a clean worktree recomputing from scratch, and an `ubuntu-24.04`
+x86_64 runner. The `macos-26-arm64` runner produced **0.0925**: half the area, with the
+ensemble confirmed as the producer.
+
+The prediction report localised it. The decoded input is bit-identical there — same shape, same
+checksum, same statistics — but the probability map is not: mean 0.369 against 0.381, spread
+0.264 against 0.300, six times as much mass within 0.05 of the decision threshold, and a mask
+shattered into 21,020 components instead of 968, so speck pruning removes 45% of it instead of
+1.7%. Four candidate causes were tested and all four refuted by measurement: a differently
+decoded image (checksums match, and a doubled denominator would give 0.0940 not 0.0925), a
+different BLAS (both link Accelerate, and the predict path is almost BLAS-free), geometry or
+tiling (all four tiles are exactly 1024², so the padding path is never entered), and the
+`SamProcessor` backend (it *does* differ between this Mac and the runners — `torchvision` was
+hand-installed here and is now pinned — but the Linux runner reproduces 0.1880 with the same
+backend the macOS one used, at 9 flipped pixels out of 2,857,784).
+
+What remains is the device: the macOS runner ran the encoder on **MPS**, the Linux runner on
+CPU. On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a property of that
+virtualised Metal stack rather than of MPS itself. The macOS job now runs as a two-arm matrix,
+`auto` and `cpu`, on the same runner image — the `cpu` arm is asserted strictly against the
+reference, so if the device is the whole story the two arms disagree in exactly one place.
+
+**If your masks look shattered or the area looks halved**, set `TXM_SAM_DEVICE=cpu` and
+re-ingest. It is slower and, on every machine measured here, numerically identical:
+
+```bash
+TXM_SAM_DEVICE=cpu ./run_app.sh
+``` The statistical numbers
 in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
 development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
 frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does

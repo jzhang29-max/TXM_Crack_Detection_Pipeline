@@ -991,6 +991,34 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the no-SAM fallback has its own prediction cache key", False, str(e))
 
+    # THE SAM DEVICE OVERRIDE HAS TO ACTUALLY OVERRIDE. It exists because one virtualised
+    # Metal stack produced a predicted area of 0.0925 on the reference frame where five other
+    # environments produce 0.1880, and forcing cpu is the documented workaround. An override
+    # that silently ignored its input would leave someone on that hardware with no way out.
+    try:
+        import torch as _tq
+        import model as _Mq
+        _prevq = os.environ.get("TXM_SAM_DEVICE")
+        try:
+            _res = {}
+            for _w in ("cpu", "auto", "nonsense-device"):
+                os.environ["TXM_SAM_DEVICE"] = _w
+                _res[_w] = _Mq.sam_device(_tq)
+            _auto = ("mps" if _tq.backends.mps.is_available()
+                     else "cuda" if _tq.cuda.is_available() else "cpu")
+            check("the SAM device override is honoured, and a bad value falls back",
+                  _res["cpu"] == "cpu" and _res["auto"] == _auto
+                  and _res["nonsense-device"] == _auto,
+                  f"cpu->{_res['cpu']}, auto->{_res['auto']} (expected {_auto}), "
+                  f"bad value->{_res['nonsense-device']}")
+        finally:
+            if _prevq is None:
+                os.environ.pop("TXM_SAM_DEVICE", None)
+            else:
+                os.environ["TXM_SAM_DEVICE"] = _prevq
+    except Exception as e:                                      # noqa: BLE001
+        check("the SAM device override is honoured, and a bad value falls back", False, str(e))
+
     # A model the gate REFUSED must still be selectable. The gate's job is to stop a
     # regression shipping by itself, not to hide it: before this, a rejected candidate was
     # written to disk, described in the scorecard, and then unreachable -- no way to see the

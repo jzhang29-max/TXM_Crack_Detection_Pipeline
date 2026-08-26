@@ -31,3 +31,12 @@ matplotlib>=3.6          # figures / diagnostics only
 # SAM. torch is the large one; CPU-only wheels are fine, a GPU just makes it faster.
 torch>=2.0
 transformers>=4.40
+torchvision>=0.15         # Not imported anywhere in this project, and still required, because
+# transformers picks its image-processor backend by what is INSTALLED, not by what you ask
+# for: with torchvision present SamProcessor returns SamImageProcessor, without it
+# SamImageProcessorPil. Both were measured on the reference frame and agree -- 9 flipped
+# pixels out of 2,857,784, predicted area 0.187970 against 0.187972 -- so this pin is not
+# fixing a bug. It is removing a silent fork in the environment. Every development machine
+# here had torchvision installed by hand while requirements.txt did not ask for it, so CI ran
+# a different preprocessing path than development did, and nobody could have known from this
+# file. Same class of problem as the imagecodecs line above, caught the same way.

@@ -20,23 +20,39 @@
 #     That is the difference between "the plumbing ran" and "the model that was supposed to
 #     run, ran".
 #
-# AN OPEN DISCREPANCY, recorded here rather than smoothed over. The first run of this job
-# produced a predicted area of 0.0925 on the reference frame, where four other environments
-# all produce 0.1880: this project's Mac on MPS, the same Mac with SAM forced to CPU, a clean
-# worktree recomputing from scratch, and an ubuntu-24.04 x86_64 runner. The model line
-# confirmed the ensemble genuinely ran, so this is not the fallback in disguise, and it is not
-# a rounding effect -- only 0.17% of pixels sit in [0.60, 0.65), so halving the area takes a
-# materially different probability map. MPS-vs-CPU was the obvious suspect and is ruled out.
-# The cause is not yet known. Until it is, the gate asserts what IS established and the
-# prediction-report step prints the intermediates -- input checksum, probability
-# distribution, area before and after pruning, every library version -- so the next run can
-# be compared line by line against the Linux job's matching report.
+# THE DIVERGENCE THIS JOB FOUND, and what it turned out to be. The first run produced a
+# predicted area of 0.0925 on the reference frame where four other environments all produce
+# 0.1880 (this project's Mac on MPS, the same Mac with SAM forced to CPU, a clean worktree
+# recomputing from scratch, and an ubuntu-24.04 x86_64 runner). The prediction report
+# localised it: the decoded input is bit-identical (same shape, same sha1, same statistics),
+# but the probability map is not -- mean 0.369 against 0.381, std 0.264 against 0.300, six
+# times as much mass within 0.05 of the threshold, and a mask shattered into 21,020
+# components instead of 968, so speck pruning removes 45.3% of it instead of 1.7%.
+#
+# Four candidate causes were tested and all four are refuted, by measurement:
+#   - a differently decoded image: input checksums match, and a doubled denominator would
+#     print 0.0940, not 0.0925
+#   - a different BLAS: the stock PyPI arm64 wheels link Accelerate in both places, and the
+#     predict path is two small GEMM stacks and otherwise BLAS-free
+#   - geometry or tiling: all four tiles are exactly 1024x1024, so the reflect-pad path is
+#     never entered, and the Hann blend is a weighted mean that coverage cannot bias
+#   - the SamProcessor backend: it DOES differ between this project's Mac and the runners
+#     (torchvision was hand-installed here and unpinned -- now pinned), but the Linux runner
+#     reproduces 0.1880 using the same backend the macOS one used. 9 flipped pixels of
+#     2,857,784.
+#
+# What is left is that the macOS runner ran the encoder on MPS and the Linux runner on CPU.
+# On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a property of this
+# virtualised Metal stack, not of MPS. The matrix below is the confirmation: same runner
+# image, same everything, one arm on cpu and one on auto.
 #
 # WHAT THIS DOES NOT COVER:
-#   - MPS. GitHub's macOS runners are virtualised and Metal is generally unavailable, so the
-#     device order almost certainly resolves to cpu here. The environment step prints what
-#     torch actually reports so the log says which branch ran, but the MPS path stays
-#     unverified by CI and is only ever exercised by hand on a real Mac.
+#   - REAL Apple-silicon MPS. This header originally said Metal was "generally unavailable" on
+#     these virtualised runners, so the device order would resolve to cpu. That was WRONG, and
+#     the prediction report said so: torch reports mps available here and the encoder ran on
+#     it. What is NOT covered is MPS on real hardware -- the runner's Metal stack is
+#     virtualised and demonstrably does not agree with a physical M-series GPU, which is the
+#     divergence recorded below. Real-hardware MPS is exercised only by hand.
 #   - THE CORPUS, RETRAIN, MEMORY, THE BROWSER. Same as the Linux workflow -- see the header
 #     of .github/workflows/linux.yml, which spells all of it out. One frame is checked out,
 #     not 71, so corpus-wide checks report "1 frame" or skip.
@@ -84,9 +100,19 @@ env:
 
 jobs:
   suite:
-    name: clean-machine install and the real ensemble (macos, python 3.12)
+    name: real ensemble on macos, SAM on ${{ matrix.device }}
     runs-on: macos-latest
     timeout-minutes: 90
+    strategy:
+      # THE DIAGNOSIS, AS A TEST. The two arms differ in one thing: which device the SAM
+      # encoder runs on. If cpu reproduces the reference 0.1880 on the same runner image where
+      # auto (which resolves to mps here) gives 0.0925, then the device is the cause and
+      # nothing else is. fail-fast is off because the whole point is to see BOTH numbers.
+      fail-fast: false
+      matrix:
+        device: [auto, cpu]
+    env:
+      TXM_SAM_DEVICE: ${{ matrix.device }}
     steps:
       # Same reasoning as the Linux workflow: images/ is 2,156 MB of the 2,171 MB tracked
       # here, and the self test builds its fixture from a real frame, so exactly one frame
@@ -214,13 +240,25 @@ jobs:
               f'ensemble area {area} outside [{lo}, {hi}] -- 0.548 would mean the '
               f'17-feature fallback ran, and a much smaller number would mean it '
               f'found almost nothing')
-          ref = float(os.environ['AREA_REF'])
-          if abs(area - ref) > 0.03:
-              # Not a failure: four environments agree on ref and this one does not, which is
-              # a real open question rather than a broken build. Surfaced, with the report
-              # step below carrying the detail needed to localise it.
-              print(f'::warning::ensemble area {area:.4f} deviates from the reference '
-                    f'{ref:.4f} by {abs(area-ref):.4f} -- see the prediction report below')
+          ref, dev = float(os.environ['AREA_REF']), os.environ.get('TXM_SAM_DEVICE', 'auto')
+          off = abs(area - ref)
+          if dev == 'cpu':
+              # STRICT on cpu. Five environments produce the reference on cpu or on real
+              # Apple silicon, so a cpu run that does not is a genuine regression. This is
+              # also the arm that confirms the diagnosis: if it passes while the auto arm
+              # warns, the device is the whole story.
+              assert off <= 0.03, (
+                  f'cpu run gave {area:.4f}, {off:.4f} away from the reference {ref:.4f} -- '
+                  f'cpu is expected to reproduce it')
+              print(f'cpu reproduces the reference ({area:.4f} vs {ref:.4f})')
+          elif off > 0.03:
+              # Not a failure. This is the known, documented divergence of this runner's
+              # virtualised Metal stack, kept visible rather than either hidden or fatal.
+              print(f'::warning::SAM on {dev} gave {area:.4f}, {off:.4f} from the reference '
+                    f'{ref:.4f}. Known: this runner image diverges on MPS. Compare the two '
+                    f'matrix arms and the prediction reports below.')
+          else:
+              print(f'SAM on {dev} reproduces the reference ({area:.4f} vs {ref:.4f})')
           print('the shipped ensemble ran and its answer is inside the gate')"
 
 
