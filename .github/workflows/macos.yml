@@ -94,17 +94,16 @@ env:
   # in a clean worktree, 18.7972% again with SAM forced onto CPU rather than MPS, and 0.1880
   # on an ubuntu-24.04 x86_64 runner. Four environments, one number.
   #
-  # The macos-26-arm64 runner is the exception: it produced 0.0925, half the area, with the
-  # model line confirming the ensemble really ran. That is NOT a float16 or last-bit effect --
-  # only 0.17% of pixels sit in [0.60, 0.65), so the mask is not threshold-sensitive and a 2x
-  # area change needs a materially different probability map. The cause is not yet known, and
-  # it is not being hidden: the prediction-report step below prints the intermediates on every
-  # run so the next one localises it, and a deviation from AREA_REF raises a warning.
+  # This runner's auto arm produces 0.0925 instead, and the header above records why: the SAM
+  # encoder runs on its virtualised Metal stack. Not a float16 or last-bit effect -- only 0.17%
+  # of pixels sit in [0.60, 0.65), so halving the area takes a materially different probability
+  # map, and the cpu arm of this very matrix reproduces 0.1880 on the same image.
   #
-  # So the GATE asserts only what is actually established -- that the ensemble ran rather than
-  # the 17-feature fallback, which reads 0.5480 on this frame, and that it did not come back
-  # empty. Pinning the gate to a number one supported platform does not reproduce would be
-  # asserting something untrue.
+  # So the GATE is the outer sanity bound, asserting what holds on BOTH arms: that the ensemble
+  # ran rather than the 17-feature fallback, which reads 0.5480 on this frame, and that it did
+  # not come back empty. The strict comparison against AREA_REF lives in the step and applies
+  # to the cpu arm only; the auto arm warns. A single gate pinned to AREA_REF would fail this
+  # runner's mps arm for a reason that is understood and documented, not a regression.
   AREA_MIN: '0.02'
   AREA_MAX: '0.35'
   AREA_REF: '0.1880'
