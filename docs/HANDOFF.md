@@ -4,7 +4,7 @@
 > `pixel_flatfield_hgb.joblib` and `pixel_sam_hybrid.joblib` are development history and none
 > of them ships any more; where this file says "current best model", it means current as of
 > when it was written. The repo carries only what the deployed ensemble uses:
-> `models/f17_v4_20260823.joblib` and `models/hybrid_v4_20260823.joblib`. All the removed
+> `models/f17_v5_20260824.joblib` and `models/hybrid_v5_20260824.joblib`. All the removed
 > files remain in git history. See the README for what actually ships.
 
 

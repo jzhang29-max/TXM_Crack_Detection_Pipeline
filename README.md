@@ -21,8 +21,27 @@ git clone https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline.git && cd
 Then open **http://127.0.0.1:8800**. The script makes its own virtualenv, installs
 everything and serves the app; re-running it just starts the app.
 
-**The clone is ~4.5 GB** because all 71 real TXM frames ship with it, so the app has
-something to show on first run. `--depth 1` only brings that to ~4.3 GB — measured, not
+**Budget ~40 GB of disk, not the 4.5 GB of the clone.** The clone is ~4.5 GB because all 71
+real TXM frames ship with it, so the app has something to show on first run — but working on
+them costs far more, and nothing in the app checks free space before it starts, so running out
+shows up as a failure partway through a batch. Measured on the development machine after
+ingesting all 71 and a few retrains:
+
+| | size |
+|---|---|
+| the checkout | 2.2 GB tracked (~4.5 GB with history) |
+| `app_data/` — per-image image, display, probability, embedding and correction arrays | **32 GB** |
+| `paint/corrections/` expanded from the 3 MB archive on first run | 1.0 GB |
+| SAM ViT-H weights in `~/.cache/huggingface` | 2.4 GB |
+| the virtualenv | 1.3 GB |
+
+`app_data/` dominates and scales with how many images you load: roughly 330 MB per 23-megapixel
+frame for one model's prediction, rising toward 550 MB as the per-image cache fills — it keeps
+up to six models' predictions so switching between them is instant instead of minutes. Delete
+an image in the app to reclaim its share. A first pass over all 71 with a single model is
+about 24 GB; the 32 GB above is what several retrains leave behind.
+
+`--depth 1` only brings the clone to ~4.3 GB — measured, not
 guessed: the frames are 2.1 GB of the *current* tree, so skipping history barely helps.
 Budget the full download.
 
@@ -412,9 +431,10 @@ re-ingest. It is slower and, on every machine measured here, numerically identic
 
 ```bash
 TXM_SAM_DEVICE=cpu ./run_app.sh
-``` The statistical numbers
-in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
-development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
+```
+
+The statistical numbers in [How well it does](#how-well-it-does) come from the full 71-frame
+corpus on the development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
 frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does
 the browser. The workflow's own header spells all of this out at the top of the file.
 
