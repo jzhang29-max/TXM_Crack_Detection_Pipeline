@@ -11,24 +11,29 @@ WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Cross-validation grouped by who
 over all 71 labelled images -- train and test never share a frame -- which is the only split
 this data supports honestly:
 
-  approach                      mean IoU   per fold
-  17 hand-crafted features        0.651     0.685 0.664 0.672 0.591 0.645
-  SAM 256 + 17 (the hybrid)       0.778     0.773 0.716 0.803 0.787 0.810
-  mean probability of the two     0.792     0.790 0.738 0.817 0.799 0.816
+  approach                      mean IoU
+  17 hand-crafted features        0.726
+  SAM 256 + 17 (the hybrid)       0.786
+  mean probability of the two     0.811
 
-Averaging wins in EVERY fold, not on average -- which is the property worth having, because a
-mean can be carried by one fold. It costs about 25% more inference time than the hybrid alone.
-The 17-feature member is much weaker on its own here than the number this docstring used to
-quote (0.651 against 0.744), and that is the point of the change of basis rather than a
-regression: the old figure came from leave-one-image-out over 4 externally-labelled frames
-(17 alone 0.744, hybrid 0.795, ensemble 0.821, crack-free FP 7.43% / 0.14% / 0.11%). Those
-labels came from another tool and are used nowhere in this project now, so that table is why
-the ensemble was originally chosen and this one is why it stays. crossval_on_rows records the
-per-member split on every retrain, so this cannot go stale again.
+The averaged pair beats either member. It costs about 25% more inference time than the hybrid
+alone. Read off the gate record of the deployed model (recipe thincore_v5, stamp
+20260824_225236): grouped-by-image 5-fold, 71 labelled images, mean IoU 0.8113, sd 0.0229,
+worst fold 0.7777, precision 0.9355, recall 0.8597.
 
-The deployed ensemble holds IoU 0.789 +-0.039 with 0.209% predicted area on the 6
-owner-confirmed crack-free specimens. That 0.789 and the 0.792 above differ because the two
-runs resampled different rows; the deployed figure is the one the gate recorded.
+These numbers are NOT comparable to the ones this docstring used to carry (0.651 / 0.778 /
+0.792), because v5 changed the target: each crack label is narrowed to its dark core before
+sampling, so the IoU is measured against a thinner mask. That is why the recipe carries its own
+RECIPE tag and was gated against an absolute floor rather than against its predecessor. Nor are
+they comparable to the pre-v4 figures from leave-one-image-out over 4 externally-labelled
+frames (17 alone 0.744, hybrid 0.795, ensemble 0.821); those labels came from another tool and
+are used nowhere in this project.
+
+This docstring previously ended "so this cannot go stale again". It went stale anyway, twice --
+it was still publishing v4's table after v5 deployed, and the block above DEFAULT_17 was still
+publishing v3's. crossval_on_rows recording the split on every retrain does not update prose.
+The gate record in app_data/models/retrain_history.json is the source of truth; treat any
+number written by hand here, including these, as a snapshot that has to be re-read from it.
 
 A third member (SAM-only) was tested and adds +0.009 IoU, which is below the
 measured 0.0070 retrain-noise floor, so it is not included -- it would cost a
@@ -73,10 +78,15 @@ TILE_STRIDE = 896
 # owner did not draw. Both halves are now trained together, from the owner's own labelling of
 # all 71 images, and no external label is used anywhere -- not in training, not in the gate.
 #
-# Measured under grouped-by-image cross-validation (train and test never share an image):
-# IoU 0.776, sd 0.029, worst fold 0.733, precision 0.929, recall 0.824. On the six specimens
-# confirmed to contain no crack: 0.188% of area predicted crack, 2.83 false indications per
-# frame -- both better than the model it replaced (0.250%, 4.0).
+# Measured under grouped-by-image cross-validation (train and test never share an image), from
+# the gate record of the model these paths actually point at -- recipe thincore_v5, stamp
+# 20260824_225236: IoU 0.8113, sd 0.0229, worst fold 0.7777, precision 0.9355, recall 0.8597.
+# On the six specimens confirmed to contain no crack: 0.174% of area predicted crack against
+# the previous model's 0.209%, and 2.0 false indications per frame.
+#
+# This comment used to quote 0.776 / 0.929 / 0.824 / 0.188% / 2.83 -- the v3 model's scores,
+# two generations stale, sitting directly above a path that reads f17_v5. A deploy updated the
+# README's scorecard and left every in-code copy behind.
 DEFAULT_17 = os.path.join(_PROJECT, "models", "f17_v5_20260824.joblib")
 DEFAULT_HYBRID = os.path.join(_PROJECT, "models", "hybrid_v5_20260824.joblib")
 SAM_MODEL_ID = "facebook/sam-vit-huge"

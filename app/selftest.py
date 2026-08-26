@@ -1035,6 +1035,30 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("the SAM device override is honoured, and a bad value falls back", False, str(e))
 
+    # THE PAGE MUST SHOW WHEN SAM DID NOT RUN. ingest() records "[SAM unavailable: ...]" in
+    # each image's model line, and for a long time nothing in the frontend read that field:
+    # the model card rendered "SAM + 17-feature ensemble" from the registry's `kind` no matter
+    # what produced the masks, so someone behind a firewall saw an ordinary-looking app over
+    # predictions that mark 26.9-83.7% of a crack-free specimen as crack. The CI check for
+    # this asserted on /api/images and passed the whole time.
+    #
+    # A source check, because the alternative is a browser in the loop. It is deliberately
+    # about the DATA FLOW -- that the rendering reads the per-image model field and keys on
+    # the fallback marker -- not about wording.
+    try:
+        _idx = os.path.join(PROJECT, "app", "static", "index.html")
+        with open(_idx, encoding="utf-8") as _fh:
+            _html = _fh.read()
+        _reads_field = "im.model" in _html
+        _keys_on_marker = "SAM unavailable" in _html
+        _repaints = "paintModelCard" in _html
+        check("the page reads each image's model line and flags a missing SAM",
+              _reads_field and _keys_on_marker and _repaints,
+              f"reads im.model={_reads_field}, keys on the marker={_keys_on_marker}, "
+              f"card repainted after the list loads={_repaints}")
+    except Exception as e:                                      # noqa: BLE001
+        check("the page reads each image's model line and flags a missing SAM", False, str(e))
+
     # A model the gate REFUSED must still be selectable. The gate's job is to stop a
     # regression shipping by itself, not to hide it: before this, a rejected candidate was
     # written to disk, described in the scorecard, and then unreachable -- no way to see the

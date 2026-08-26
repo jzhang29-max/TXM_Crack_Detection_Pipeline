@@ -301,7 +301,13 @@ jobs:
             sleep 1
           done
 
-      - name: An image still ingests, still predicts, and SAYS SAM was unavailable
+      # SCOPE: this checks the API. It does NOT check that the page shows it, and for a while
+      # nothing did -- app/static/index.html never read the per-image `model` field, so a
+      # firewalled user saw rows that looked ordinary and a card reading "SAM + 17-feature
+      # ensemble" over masks from the 17-feature model alone. This job was green throughout.
+      # The rendering is now guarded by app/selftest.py and was verified by measuring the DOM;
+      # a green tick here still means only that the JSON carries the note.
+      - name: An image still ingests, still predicts, and SAYS SAM was unavailable (in the API)
         run: |
           curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
           for i in $(seq 1 150); do
@@ -323,7 +329,7 @@ jobs:
           # The promise has two halves: it still works, AND it admits what it did.
           assert '17-feature' in desc, f'no 17-feature fallback in the model line: {desc!r}'
           assert 'SAM unavailable' in desc, f'the fallback was silent: {desc!r}'
-          print('the documented fallback happened and was reported')"
+          print('the fallback happened and the API reports it')"
 
       - name: Stop the server
         if: always()

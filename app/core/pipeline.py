@@ -922,8 +922,9 @@ CV_ROWS_PER_IMAGE = 60000
 #
 # This is not cosmetic. Training is ~3.5 M rows over 5 grouped folds, so a fold's train side
 # is ~2.8 M and the cap is ALWAYS active: it decides how much data each fold actually fits
-# on. Every held-out IoU this project has published -- 0.789 in the README, in
-# docs/START_HERE.md and on the app's scorecard -- was fitted on 90 k rows per fold.
+# on. Every held-out IoU this project has published was fitted on 90 k rows per fold: 0.789
+# for corrections_only_v4_overlap, and 0.811 for the thincore_v5 that ships now -- in the
+# README, in docs/START_HERE.md and on the app's scorecard.
 #
 # The value is left at 90 k, and NOT "restored" to the intended 400 k, because 400 k was
 # measured and is worse. Same rows, same folds, same seeds:

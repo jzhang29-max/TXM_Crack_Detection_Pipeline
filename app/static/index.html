@@ -323,10 +323,28 @@ const q=()=>`?threshold=${($("#thr").value/100).toFixed(2)}&postprocess=${ck("#p
   `${ck("#tight")?"&tight=1":""}`;
 
 /* ---------- model + scope ---------- */
+let MODEL_KIND=null;
+// The card names the SELECTED model, which is not the same as what produced the masks on
+// screen. If SAM was unavailable at ingest, every mask came from the 17-feature member while
+// this line read "SAM + 17-feature ensemble" -- so it is repainted whenever either the model
+// or the image list changes, because loadModel() runs BEFORE loadList() fills IMAGES and a
+// one-shot computation here silently rendered nothing. Measured in the DOM, not assumed:
+// the first version of this printed no warning at all for exactly that reason.
+function paintModelCard(){
+  const el=$("#mdesc");
+  if(!el||!MODEL_KIND)return;
+  const bad=IMAGES.filter(im=>(im.model||"").includes("SAM unavailable")).length;
+  el.innerHTML=`<b>${MODEL_KIND==="ensemble"?"SAM + 17-feature ensemble":"single model"}</b>`+
+    (bad?`<br><span style="color:var(--warn)">${bad} image${bad===1?"":"s"} predicted `
+      +`WITHOUT SAM \u2014 the 17-feature model alone, which marks far more clean material as `
+      +`crack. Re-ingest with SAM reachable; if masks look shattered, set `
+      +`<code>TXM_SAM_DEVICE=cpu</code>.</span>`:"");
+}
 async function loadModel(){
   const m=await j("/api/model");
-  $("#mdesc").innerHTML=`<b>${m.current.kind==="ensemble"?"SAM + 17-feature ensemble":"single model"}</b>`+
-    "";   // there is no external ground truth to be missing any more: the gate validates
+  MODEL_KIND=m.current.kind;
+  paintModelCard();
+          // there is no external ground truth to be missing any more: the gate validates
           // on cross-validation over your own corrections plus the crack-free specimens
   await loadModelList();
   await loadRetrainReport();
@@ -546,6 +564,7 @@ async function loadList(keep){
   if(eh)eh.textContent="Exports what you see now, with your corrections applied."+
     (IMAGES.length>8?` The .zip covers ${IMAGES.length} images and takes a few minutes.`:"");
   buildShortNames(IMAGES);
+  paintModelCard();          // IMAGES is only now populated -- see the note on that function
   const L=$("#list");L.innerHTML="";
   for(const im of IMAGES){
     const el=document.createElement("div");
@@ -563,14 +582,25 @@ async function loadList(keep){
     // Say when a row's mask came from a model other than the current one, instead of
     // showing it as plain "ready" and letting the picker imply otherwise.
     const old=im.stale?` · <span style="color:var(--warn)">older model</span>`:"";
+    // A mask produced WITHOUT SAM has to say so on the row. ingest() records
+    // "[SAM unavailable: ...]" in this image's model line, and until now nothing in this
+    // page ever read that field: a researcher behind a firewall saw ordinary-looking rows
+    // and a card reading "SAM + 17-feature ensemble" over masks from the 17-feature model
+    // alone, which marks 26.9-83.7% of a crack-free specimen as crack against the
+    // ensemble's 0.000-0.144%. The only visible hint was "older model", which points at
+    // the wrong cause. The CI check for this asserted on the API response, so it passed
+    // while the user-facing half was missing entirely.
+    const nosam=(im.model||"").includes("SAM unavailable")
+      ? ` · <span style="color:var(--bad,var(--warn))">no SAM — 17-feature only</span>` : "";
     el.innerHTML=`<span class="dot${ready?"":" busy"}"></span>`+
       (ready?`<img class="th" src="/api/image/${im.id}/thumb.png?w=128" loading="lazy">`:`<span class="th"></span>`)+
       `<span class="tx"><span class="nm" title="${esc(im.filename||im.id)}">`+
         `${esc(SHORT.get(im.id)||im.filename||im.id)}</span>`+
-        `<span class="sub">${pct}${cor}${old}</span></span>`+
+        `<span class="sub">${pct}${cor}${old}${nosam}</span></span>`+
       `<button class="x" title="Remove ${esc(im.filename||im.id)} from the app (your original file is untouched)">\u00d7</button>`;
     el.setAttribute("aria-label",
-      `${im.filename||im.id}, ${pct}${cor?", edited":""}${im.stale?", older model":""}`);
+      `${im.filename||im.id}, ${pct}${cor?", edited":""}${im.stale?", older model":""}`+
+      `${nosam?", predicted without SAM, 17-feature model only":""}`);
     el.onclick=()=>show(im.id);
     el.onkeydown=e=>{
       if(e.key==="Enter"||e.key===" "){e.preventDefault();show(im.id);return;}
