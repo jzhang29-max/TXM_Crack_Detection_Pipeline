@@ -73,8 +73,20 @@ if [ ! -f models/hybrid_v3_20260822.joblib ] && [ ! -f models/f17_v3_20260822.jo
   echo "    The app will start but cannot predict until one is present."
 fi
 
-# KMP_DUPLICATE_LIB_OK: scikit-learn and torch each vendor an OpenMP runtime, and
-# loading both in one process aborts on macOS without this.
+# KMP_DUPLICATE_LIB_OK: scikit-learn and torch each vendor their own OpenMP runtime, and on
+# macOS both are LLVM libomp, which refuses to initialise twice in one process.
+#
+# This used to claim that loading both "aborts on macOS without this". That does not
+# reproduce with the pinned wheels (torch 2.13.0, scikit-learn 1.9.0): checked in both import
+# orders, with the variable unset and with it explicitly FALSE, driving real OpenMP work
+# through both runtimes -- no OMP Error #15, exit 0 every time. It is also redundant, because
+# sklearn sets it itself at sklearn/__init__.py:56 with an unconditional setdefault, on every
+# platform, before it loads its OpenMP-linked extensions.
+#
+# Kept anyway, as insurance rather than as a known fix: it costs nothing, and the failure it
+# guards against is real for other wheel combinations even if this one no longer trips it.
+# On Linux it is inert -- both wheels vendor GNU libgomp there, which has no duplicate-library
+# check and ignores KMP_*.
 export KMP_DUPLICATE_LIB_OK=TRUE
 # Let the SAM pass use all of unified memory rather than a fraction of it.
 export PYTORCH_MPS_HIGH_WATERMARK_RATIO="${PYTORCH_MPS_HIGH_WATERMARK_RATIO:-0.0}"
