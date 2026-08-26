@@ -162,12 +162,12 @@ jobs:
         env:
           TXM_NO_SAM: '1'
         run: |
-          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
-          echo $! > server.pid
+          ./.venv/bin/python3 app/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 120); do
             curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
-            kill -0 "$(cat server.pid)" 2>/dev/null || {
-              echo "::error::the server exited before serving"; cat server.log; exit 1; }
+            kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat "$RUNNER_TEMP/server.log"; exit 1; }
             sleep 1
           done
           curl -sf -o /dev/null -w 'GET / -> HTTP %{http_code}\n' "http://127.0.0.1:${PORT}/"
@@ -178,17 +178,17 @@ jobs:
       # Linux rather than reporting an empty pass.
       - name: Ingest the one real frame
         run: |
-          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" | tee upload.json
+          curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" | tee "$RUNNER_TEMP/upload.json"
           echo
           for i in $(seq 1 150); do
             ST=$(curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
           import sys, json
           r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
           print(r[0].get('status', '?') if r else 'none')")
-            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed"; cat server.log; exit 1;; esac
+            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed"; cat "$RUNNER_TEMP/server.log"; exit 1;; esac
             sleep 2
           done
-          test "$ST" = ready || { echo "::error::ingest never reached ready (last: $ST)"; cat server.log; exit 1; }
+          test "$ST" = ready || { echo "::error::ingest never reached ready (last: $ST)"; cat "$RUNNER_TEMP/server.log"; exit 1; }
           curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
           import sys, json
           for m in json.load(sys.stdin)['images']:
@@ -203,11 +203,16 @@ jobs:
       - name: Stop the server
         if: always()
         run: |
-          test -f server.pid && kill "$(cat server.pid)" 2>/dev/null || true
-          tail -30 server.log || true
+          test -f "$RUNNER_TEMP/server.pid" && kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
+          tail -30 "$RUNNER_TEMP/server.log" || true
 
       # Everything the run writes -- app_data/, the expanded corrections, the venv -- is
       # gitignored. If any of it is not, that is a packaging bug worth failing on.
+      # STRICT, including untracked files -- so this job's own scratch output goes to
+      # $RUNNER_TEMP rather than the working tree. The first run of this workflow failed
+      # here on `?? server.log`, `?? server.pid`, `?? upload.json`: harness litter, not a
+      # repo defect. Loosening the check to -uno would have hidden the real thing it is
+      # for, which is the app writing something untracked into the checkout.
       - name: Nothing tracked was modified by the run
         run: |
           git status --porcelain
@@ -239,11 +244,11 @@ jobs:
       # path a real user without torch takes.
       - name: Install requirements with torch and transformers removed
         run: |
-          grep -vE '^(torch|transformers)\b' requirements.txt > req-notorch.txt
+          grep -vE '^(torch|transformers)\b' requirements.txt > "$RUNNER_TEMP/req-notorch.txt"
           echo "--- removed:"; grep -E '^(torch|transformers)\b' requirements.txt
           python3 -m venv .venv
           ./.venv/bin/python3 -m pip install -q --upgrade pip
-          ./.venv/bin/python3 -m pip install -q -r req-notorch.txt
+          ./.venv/bin/python3 -m pip install -q -r "$RUNNER_TEMP/req-notorch.txt"
           ! ./.venv/bin/python3 -c "import torch" 2>/dev/null || {
             echo "::error::torch got installed anyway -- this job proves nothing"; exit 1; }
           echo "torch is absent, as intended"
@@ -259,12 +264,12 @@ jobs:
         run: |
           mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
           ./.venv/bin/python3 code/unpack_package.py
-          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
-          echo $! > server.pid
+          ./.venv/bin/python3 app/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 120); do
             curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
-            kill -0 "$(cat server.pid)" 2>/dev/null || {
-              echo "::error::the server exited before serving"; cat server.log; exit 1; }
+            kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || {
+              echo "::error::the server exited before serving"; cat "$RUNNER_TEMP/server.log"; exit 1; }
             sleep 1
           done
 
@@ -276,7 +281,7 @@ jobs:
           import sys, json
           r = json.load(sys.stdin)['images']
           print(r[0].get('status', '?') if r else 'none')")
-            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed with no torch"; cat server.log; exit 1;; esac
+            case "$ST" in ready) break;; error|failed) echo "::error::ingest failed with no torch"; cat "$RUNNER_TEMP/server.log"; exit 1;; esac
             sleep 2
           done
           curl -sf "http://127.0.0.1:${PORT}/api/images" | ./.venv/bin/python3 -c "
@@ -295,8 +300,8 @@ jobs:
       - name: Stop the server
         if: always()
         run: |
-          test -f server.pid && kill "$(cat server.pid)" 2>/dev/null || true
-          tail -30 server.log || true
+          test -f "$RUNNER_TEMP/server.pid" && kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
+          tail -30 "$RUNNER_TEMP/server.log" || true
 
   floor-deps:
     name: the pre-0.26 scikit-image branch of the shim
@@ -323,11 +328,11 @@ jobs:
       # runs the old one. 0.25.2 is the newest release with the old signature and cp312 wheels.
       - name: Install with scikit-image pinned below the rename
         run: |
-          grep -vE '^(torch|transformers|scikit-image)\b' requirements.txt > req-floor.txt
-          echo 'scikit-image==0.25.2' >> req-floor.txt
+          grep -vE '^(torch|transformers|scikit-image)\b' requirements.txt > "$RUNNER_TEMP/req-floor.txt"
+          echo 'scikit-image==0.25.2' >> "$RUNNER_TEMP/req-floor.txt"
           python3 -m venv .venv
           ./.venv/bin/python3 -m pip install -q --upgrade pip
-          ./.venv/bin/python3 -m pip install -q -r req-floor.txt
+          ./.venv/bin/python3 -m pip install -q -r "$RUNNER_TEMP/req-floor.txt"
           ./.venv/bin/python3 -c "import skimage; print('scikit-image', skimage.__version__)"
 
       - name: The shim takes the OLD branch, and takes it correctly
@@ -367,11 +372,11 @@ jobs:
         run: |
           mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
           ./.venv/bin/python3 code/unpack_package.py
-          ./.venv/bin/python3 app/server.py > server.log 2>&1 &
-          echo $! > server.pid
+          ./.venv/bin/python3 app/server.py > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 120); do
             curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
-            kill -0 "$(cat server.pid)" 2>/dev/null || { cat server.log; exit 1; }
+            kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || { cat "$RUNNER_TEMP/server.log"; exit 1; }
             sleep 1
           done
           curl -sf -X POST -F "files=@${FRAME}" "http://127.0.0.1:${PORT}/api/upload" > /dev/null
@@ -380,11 +385,11 @@ jobs:
           import sys, json
           r = [m for m in json.load(sys.stdin)['images'] if 'SELFTEST' not in (m.get('filename') or '')]
           print(r[0].get('status', '?') if r else 'none')")
-            case "$ST" in ready) break;; error|failed) cat server.log; exit 1;; esac
+            case "$ST" in ready) break;; error|failed) cat "$RUNNER_TEMP/server.log"; exit 1;; esac
             sleep 2
           done
           ./.venv/bin/python3 app/selftest.py --base "http://127.0.0.1:${PORT}"
-          kill "$(cat server.pid)" 2>/dev/null || true
+          kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
 
   sam-on-linux:
     name: the SAM ViT-H encoder runs on Linux CPU
@@ -502,27 +507,27 @@ jobs:
           TXM_NO_SAM: '1'
         run: |
           chmod +x run_app.sh
-          ./run_app.sh > run.log 2>&1 &
-          echo $! > run.pid
+          ./run_app.sh > "$RUNNER_TEMP/run.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/run.pid"
           for i in $(seq 1 900); do
             curl -sf -o /dev/null "http://127.0.0.1:${PORT}/" && break
-            kill -0 "$(cat run.pid)" 2>/dev/null || {
-              echo "::error::run_app.sh exited before serving"; cat run.log; exit 1; }
+            kill -0 "$(cat "$RUNNER_TEMP/run.pid")" 2>/dev/null || {
+              echo "::error::run_app.sh exited before serving"; cat "$RUNNER_TEMP/run.log"; exit 1; }
             sleep 2
           done
           curl -sf -o /dev/null -w 'GET / -> HTTP %{http_code}\n' "http://127.0.0.1:${PORT}/"
           echo "--- what the script told the user:"
-          grep -E '^==>|NOTE|WARNING' run.log || true
+          grep -E '^==>|NOTE|WARNING' "$RUNNER_TEMP/run.log" || true
 
       - name: It serves the API, and reports the no-SAM fallback rather than hiding it
         run: |
           curl -sf "http://127.0.0.1:${PORT}/api/images" | head -c 200; echo
           curl -sf "http://127.0.0.1:${PORT}/api/model" | head -c 300; echo
-          grep -q "TXM_NO_SAM is set" run.log || {
+          grep -q "TXM_NO_SAM is set" "$RUNNER_TEMP/run.log" || {
             echo "::error::run_app.sh did not report that SAM was disabled"; exit 1; }
 
       - name: Stop it
         if: always()
         run: |
-          test -f run.pid && kill "$(cat run.pid)" 2>/dev/null || true
-          tail -40 run.log || true
+          test -f "$RUNNER_TEMP/run.pid" && kill "$(cat "$RUNNER_TEMP/run.pid")" 2>/dev/null || true
+          tail -40 "$RUNNER_TEMP/run.log" || true
