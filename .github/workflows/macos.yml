@@ -42,7 +42,9 @@
 #     2,857,784.
 #
 # What is left is that the macOS runner ran the encoder on MPS and the Linux runner on CPU.
-# On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a property of this
+# On real Apple silicon the two agree closely: embeddings differ by at most one float16 storage
+# quantum (4.9e-4), zero pixels change side of the threshold, and the predicted area is
+# 0.187972 either way. So this is a property of this
 # virtualised Metal stack, not of MPS. The matrix below is the confirmation: same runner
 # image, same everything, one arm on cpu and one on auto.
 #

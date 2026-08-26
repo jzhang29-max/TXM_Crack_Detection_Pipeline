@@ -266,8 +266,14 @@ jobs:
       # path a real user without torch takes.
       - name: Install requirements with torch and transformers removed
         run: |
-          grep -vE '^(torch|transformers)\b' requirements.txt > "$RUNNER_TEMP/req-notorch.txt"
-          echo "--- removed:"; grep -E '^(torch|transformers)\b' requirements.txt
+          # torchvision MUST be in this list. It is pinned in requirements.txt (it silently
+          # selects the transformers image-processor backend), it starts with "torch", and
+          # '^(torch|transformers)\b' does NOT exclude it -- \b needs a non-word character
+          # after "torch" and "v" is a word character. Left out, torchvision installs and
+          # drags torch in as its own dependency, and this job silently stops testing the
+          # no-torch path. The assertion below caught exactly that.
+          grep -vE '^(torch|torchvision|transformers)\b' requirements.txt > "$RUNNER_TEMP/req-notorch.txt"
+          echo "--- removed:"; grep -E '^(torch|torchvision|transformers)\b' requirements.txt
           python3 -m venv .venv
           ./.venv/bin/python3 -m pip install -q --upgrade pip
           ./.venv/bin/python3 -m pip install -q -r "$RUNNER_TEMP/req-notorch.txt"
@@ -350,7 +356,7 @@ jobs:
       # runs the old one. 0.25.2 is the newest release with the old signature and cp312 wheels.
       - name: Install with scikit-image pinned below the rename
         run: |
-          grep -vE '^(torch|transformers|scikit-image)\b' requirements.txt > "$RUNNER_TEMP/req-floor.txt"
+          grep -vE '^(torch|torchvision|transformers|scikit-image)\b' requirements.txt > "$RUNNER_TEMP/req-floor.txt"
           echo 'scikit-image==0.25.2' >> "$RUNNER_TEMP/req-floor.txt"
           python3 -m venv .venv
           ./.venv/bin/python3 -m pip install -q --upgrade pip
