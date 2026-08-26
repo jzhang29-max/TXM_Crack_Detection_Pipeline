@@ -943,6 +943,54 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("thin-core training labels are sampled without the hole fill", False, str(e))
 
+    # A PREDICTION MUST BE CACHED UNDER THE MODEL THAT MADE IT. When SAM is unavailable,
+    # ingest() swaps in the 17-feature model -- and the cache key used to be taken from the
+    # registry's current entry before that swap, so the 17-only output was filed under the
+    # ENSEMBLE's key. Measured end to end: a TXM_NO_SAM ingest of b2_336_25 wrote a
+    # 54.80%-crack mask under the current model's key, and a later run with SAM said "using
+    # cached prediction", kept 54.80%, and relabelled it "mean-probability ensemble".
+    #
+    # Two guards, because neither alone catches the regression. The keys must differ, and the
+    # invariant that produced that difference -- swap the model, re-key the cache -- must
+    # still hold in the source. An AST check rather than a behavioural one so it costs
+    # nothing and cannot perturb the fixture the rest of this suite depends on.
+    try:
+        import ast as _astF, inspect as _insF
+        import pipeline as _PF, store as _SF
+        _curF = _SF.model_key(_SF.registry().get("current"))
+        _fbF = _SF.model_key(_PF._FALLBACK_17_ENTRY)
+        check("the no-SAM fallback has its own prediction cache key",
+              bool(_fbF) and _fbF != _curF, f"fallback={_fbF} current={_curF}")
+
+        _srcF = _insF.getsource(_PF.ingest)
+        _treeF = _astF.parse(_astF.unparse(_astF.parse(_srcF)))   # normalise indentation
+        _fnF = next(n for n in _astF.walk(_treeF) if isinstance(n, _astF.FunctionDef))
+        _swaps = _rekeyed = 0
+        for _node in _astF.walk(_fnF):
+            _body = getattr(_node, "body", None)
+            if not isinstance(_body, list):
+                continue
+            for _i, _st in enumerate(_body):
+                _is_swap = (isinstance(_st, _astF.Assign)
+                            and any(isinstance(t, _astF.Name) and t.id == "mdl"
+                                    for t in _st.targets)
+                            and isinstance(_st.value, _astF.Call)
+                            and "CrackModel" in _astF.unparse(_st.value.func))
+                if not _is_swap:
+                    continue
+                _swaps += 1
+                # an mkey assignment must follow, in the same block
+                if any(isinstance(_s2, _astF.Assign)
+                       and any(isinstance(t, _astF.Name) and t.id == "mkey"
+                               for t in _s2.targets)
+                       for _s2 in _body[_i + 1:]):
+                    _rekeyed += 1
+        check("every model swap in ingest re-keys the prediction cache",
+              _swaps > 0 and _rekeyed == _swaps,
+              f"{_swaps} swap(s) to the 17-feature model, {_rekeyed} followed by a new cache key")
+    except Exception as e:                                      # noqa: BLE001
+        check("the no-SAM fallback has its own prediction cache key", False, str(e))
+
     # A model the gate REFUSED must still be selectable. The gate's job is to stop a
     # regression shipping by itself, not to hide it: before this, a rejected candidate was
     # written to disk, described in the scorecard, and then unreachable -- no way to see the
