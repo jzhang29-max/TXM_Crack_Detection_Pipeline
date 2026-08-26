@@ -83,17 +83,14 @@ env:
   # in a clean worktree, 18.7972% again with SAM forced onto CPU rather than MPS, and 0.1880
   # on this very ubuntu-24.04 x86_64 runner. Four environments, one number.
   #
-  # The macos-26-arm64 runner is the exception: it produced 0.0925, half the area, with the
-  # model line confirming the ensemble really ran. That is NOT a float16 or last-bit effect --
-  # only 0.17% of pixels sit in [0.60, 0.65), so the mask is not threshold-sensitive and a 2x
-  # area change needs a materially different probability map. The cause is not yet known and
-  # is not being hidden: the prediction-report step prints the intermediates on every run so
-  # the next one localises it, and any deviation from AREA_REF raises a warning.
-  #
-  # So the GATE asserts only what is established -- that the ensemble ran rather than the
-  # 17-feature fallback, which reads 0.5480 on this frame, and that it did not come back
-  # empty. Pinning the gate to a number one supported platform does not reproduce would be
-  # asserting something untrue.
+  # The macos-26-arm64 runner produced 0.0925 instead, and that is now traced: it ran the SAM
+  # encoder on its virtualised Metal stack, and the resulting probability map is materially
+  # less confident (mean 0.369 against 0.381) with the mask shattered into 21,020 components
+  # instead of 968. A differently decoded input, a different BLAS, geometry, and the
+  # SamProcessor backend were each tested and refuted -- see the header of
+  # .github/workflows/macos.yml. This job runs on CPU, which is one of the configurations that
+  # DOES reproduce the reference, so it is asserted strictly against it. The loose gate below
+  # is the outer sanity bound; the strict check lives in the step.
   AREA_MIN: '0.02'
   AREA_MAX: '0.35'
   AREA_REF: '0.1880'
@@ -545,11 +542,15 @@ jobs:
           assert area is not None and lo <= area <= hi, (
               f'ensemble area {area} outside [{lo}, {hi}] -- 0.548 would mean the '
               f'17-feature fallback ran')
+          # STRICT here. This job runs the encoder on CPU, and CPU reproduces the reference
+          # in every environment measured -- this Mac forced to CPU, a clean worktree, and
+          # this runner. A drift here is a real regression, not a platform quirk.
           ref = float(os.environ['AREA_REF'])
-          if abs(area - ref) > 0.03:
-              print(f'::warning::ensemble area {area:.4f} deviates from the reference '
-                    f'{ref:.4f} by {abs(area-ref):.4f} -- see the prediction report below')
-          print('the shipped ensemble ran on Linux and its answer is inside the gate')"
+          off = abs(area - ref)
+          assert off <= 0.03, (
+              f'cpu run gave {area:.4f}, {off:.4f} away from the reference {ref:.4f}')
+          print(f'the ensemble ran on Linux and reproduces the reference '
+                f'({area:.4f} vs {ref:.4f})')"
           kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
 
       # The matched half of the macOS job's report -- this pair is what localises the
