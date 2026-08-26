@@ -365,8 +365,20 @@ one. Over all six confirmed crack-free specimens it marks 26.9% to 83.7% of the 
 crack (mean 61.3%), where the shipped ensemble marks 0.000% to 0.144%. Those four jobs test
 plumbing, portability and invariants, not detection quality. Detection quality is covered by
 exactly two jobs on exactly one frame — `sam-on-linux` and the macOS `suite`, which run the
-real ensemble and assert the predicted area lands near the recorded 18.80% rather than the
-54.80% the fallback gives. That is a smoke band on one frame, not a corpus. The statistical numbers
+real ensemble and check that it, rather than the fallback, produced the answer. One frame, not
+a corpus.
+
+That pair also turned up something unresolved, which is worth stating plainly rather than
+leaving in a log. The reference frame's ensemble area is 0.1880, reproduced in four
+environments — this Mac on MPS, this Mac with SAM forced to CPU, a clean worktree recomputing
+from scratch, and an `ubuntu-24.04` x86_64 runner. The `macos-26-arm64` runner produced
+**0.0925**: half the area, with the ensemble confirmed as the producer, and not a rounding
+effect (only 0.17% of pixels sit within 0.05 of the threshold, so halving the area takes a
+materially different probability map). MPS-versus-CPU was the obvious explanation and is ruled
+out. The cause is not yet known, so both jobs now print a full prediction report — input
+checksum, probability distribution, area before and after pruning, every library version — and
+raise a warning on deviation, rather than a gate pinned to a number one supported platform
+does not reproduce. The statistical numbers
 in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
 development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
 frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does
