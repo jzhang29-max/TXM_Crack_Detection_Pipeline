@@ -100,6 +100,56 @@ class SamUnavailable(RuntimeError):
 sam_unavailable_reason = None
 
 
+def sam_device(torch):
+    """Which device to run the SAM encoder on: cuda -> mps -> cpu, unless overridden.
+
+    TXM_SAM_DEVICE exists because the MPS path is not always trustworthy, and that is
+    measured rather than defensive. On a GitHub macos-26-arm64 runner -- where Metal IS
+    available, contrary to what the CI header first claimed -- the shipped ensemble produced a
+    predicted area of 0.0925 on the reference frame against 0.1880 everywhere else, with a
+    probability map of visibly lower confidence (mean 0.369 against 0.381, std 0.264 against
+    0.300, six times as much mass within 0.05 of the decision threshold) and a mask shattered
+    into 21,020 components instead of 968.
+
+    Everything else was ruled out first, by measurement, not by elimination-by-assumption:
+      - the decoded input is bit-identical there (same shape, same sha1, same statistics)
+      - a doubled denominator would print 0.0940, not 0.0925
+      - the BLAS is the same -- the stock PyPI arm64 wheels link Accelerate on both, and the
+        predict path is two small GEMM stacks and otherwise BLAS-free
+      - the tile layout is four exact 1024x1024 crops, so the reflect-pad path is never
+        entered and the Hann blend is a weighted mean that coverage cannot bias
+      - the SamProcessor backend differs between this project's Mac and BOTH runners, and the
+        Linux runner reproduces 0.1880 with the same backend the macOS one used, so it cannot
+        be the distinguishing variable. Measured directly: 9 flipped pixels out of 2,857,784.
+    The one remaining difference is that the macOS runner ran the encoder on MPS and the Linux
+    runner on CPU. On real Apple silicon MPS agrees with CPU bit-exactly here, so this is a
+    property of some GPU/driver stacks and not of MPS as such -- which is exactly why it needs
+    an override rather than a blanket ban.
+
+    Values: "auto" (default), "cpu", "mps", "cuda". An explicit device that is unavailable
+    falls back with a warning rather than failing the image -- a wrong device name should not
+    cost someone their ingest.
+    """
+    # MPS BEFORE CUDA, preserving the order this had before the override existed. Docs
+    # elsewhere describe it as "cuda -> mps -> cpu"; the code has always checked mps first.
+    # No machine has both, so the difference is unreachable in practice -- but flipping it
+    # while adding an override would be an unreviewed behaviour change smuggled in beside a
+    # documented one.
+    want = os.environ.get("TXM_SAM_DEVICE", "auto").strip().lower()
+    have = {"cuda": torch.cuda.is_available(), "mps": torch.backends.mps.is_available(),
+            "cpu": True}
+    auto = "mps" if have["mps"] else "cuda" if have["cuda"] else "cpu"
+    if want in ("", "auto"):
+        return auto
+    if want not in have:
+        print(f"  TXM_SAM_DEVICE={want!r} is not a device name; using auto", flush=True)
+        return auto
+    if not have[want]:
+        print(f"  TXM_SAM_DEVICE={want} requested but unavailable; using cpu", flush=True)
+        return "cpu"
+    return want
+
+
 def sam_disabled_by_env():
     return os.environ.get("TXM_NO_SAM", "").strip().lower() in ("1", "true", "yes")
 
@@ -128,8 +178,7 @@ def _get_sam():
             sam_unavailable_reason = f"{type(e).__name__}: {e}".split("\n")[0][:180]
             raise SamUnavailable(sam_unavailable_reason) from e
         try:
-            dev = ("mps" if torch.backends.mps.is_available()
-                   else "cuda" if torch.cuda.is_available() else "cpu")
+            dev = sam_device(torch)
             proc = SamProcessor.from_pretrained(SAM_MODEL_ID)
             model = SamModel.from_pretrained(SAM_MODEL_ID).to(dev).eval()
         except Exception as e:                                  # noqa: BLE001
