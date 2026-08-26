@@ -337,8 +337,13 @@ function paintModelCard(){
   el.innerHTML=`<b>${MODEL_KIND==="ensemble"?"SAM + 17-feature ensemble":"single model"}</b>`+
     (bad?`<br><span style="color:var(--warn)">${bad} image${bad===1?"":"s"} predicted `
       +`WITHOUT SAM \u2014 the 17-feature model alone, which marks far more clean material as `
-      +`crack. Re-ingest with SAM reachable; if masks look shattered, set `
+      +`crack. RESTART the app with SAM reachable, then press \u201cRe-apply model\u201d. `
+      +`If the masks then look shattered, restart with `
       +`<code>TXM_SAM_DEVICE=cpu</code>.</span>`:"");
+  // "Restart", not "re-ingest": model.sam_unavailable_reason is a module global and _get_sam
+  // raises on it before retrying, so once SAM has failed in a process it stays failed for the
+  // life of that process. Telling someone to re-ingest would send them round a loop that
+  // cannot succeed. The first version of this message said exactly that.
 }
 async function loadModel(){
   const m=await j("/api/model");
@@ -577,7 +582,10 @@ async function loadList(keep){
     el.tabIndex = -1;                       // one tab stop for the list; arrows move within
     el.setAttribute("aria-selected", CUR === im.id ? "true" : "false");
     const ready=im.status==="ready";
-    const pct=im.predicted_area!=null?(im.predicted_area*100).toFixed(1)+"% crack":im.status;
+    // esc() on the status: rep() writes the current stage into meta.status, and one of those
+    // stages interpolates a raw exception message (pipeline.py's "SAM unavailable (...)"),
+    // so this is not always a fixed vocabulary the way it looks.
+    const pct=im.predicted_area!=null?(im.predicted_area*100).toFixed(1)+"% crack":esc(im.status||"");
     const cor=im.corrected_crack_px||im.corrected_not_px?" · edited":"";
     // Say when a row's mask came from a model other than the current one, instead of
     // showing it as plain "ready" and letting the picker imply otherwise.

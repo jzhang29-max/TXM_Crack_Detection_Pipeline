@@ -1049,13 +1049,18 @@ def main():
         _idx = os.path.join(PROJECT, "app", "static", "index.html")
         with open(_idx, encoding="utf-8") as _fh:
             _html = _fh.read()
-        _reads_field = "im.model" in _html
-        _keys_on_marker = "SAM unavailable" in _html
-        _repaints = "paintModelCard" in _html
-        check("the page reads each image's model line and flags a missing SAM",
-              _reads_field and _keys_on_marker and _repaints,
-              f"reads im.model={_reads_field}, keys on the marker={_keys_on_marker}, "
-              f"card repainted after the list loads={_repaints}")
+        # Two SEPARATE surfaces carry this, and the first version of this check could not
+        # tell them apart: every marker it looked for lives inside paintModelCard(), so
+        # deleting the per-row tag would have left it green.
+        _card = ("paintModelCard" in _html
+                 and _html.count("SAM unavailable") >= 1
+                 and "IMAGES.filter" in _html)
+        _row = "const nosam=" in _html and "${nosam}" in _html
+        _repaint_on_list = _html.count("paintModelCard()") >= 2
+        check("the page flags a missing SAM, on the row and on the model card",
+              _card and _row and _repaint_on_list,
+              f"card={_card}, per-row tag={_row}, "
+              f"repainted from both loaders={_repaint_on_list}")
     except Exception as e:                                      # noqa: BLE001
         check("the page reads each image's model line and flags a missing SAM", False, str(e))
 
