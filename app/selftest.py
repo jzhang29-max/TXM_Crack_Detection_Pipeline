@@ -32,6 +32,10 @@ PROJECT = os.path.abspath(os.path.join(HERE, ".."))
 PASS, FAIL, SKIP = [], [], []
 
 
+class _SkipDeviceCheck(Exception):
+    """Internal: leave a check's try-block after skip() without tripping its except."""
+
+
 def check(name, ok, detail=""):
     (PASS if ok else FAIL).append(name)
     print(f"  {'PASS' if ok else 'FAIL'}  {name}" + (f"  -- {detail}" if detail else ""), flush=True)
@@ -996,8 +1000,18 @@ def main():
     # environments produce 0.1880, and forcing cpu is the documented workaround. An override
     # that silently ignored its input would leave someone on that hardware with no way out.
     try:
-        import torch as _tq
         import model as _Mq
+        try:
+            import torch as _tq
+        except ImportError:
+            # No torch, no devices to choose between. SAM is optional by design and the
+            # floor-deps CI job installs without it, so this is an absent precondition rather
+            # than a failure -- the same convention the pruning and retrain checks use.
+            _tq = None
+        if _tq is None:
+            skip("the SAM device override is honoured, and a bad value falls back",
+                 "torch is not installed, so there is no device to select")
+            raise _SkipDeviceCheck
         _prevq = os.environ.get("TXM_SAM_DEVICE")
         try:
             _res = {}
@@ -1016,6 +1030,8 @@ def main():
                 os.environ.pop("TXM_SAM_DEVICE", None)
             else:
                 os.environ["TXM_SAM_DEVICE"] = _prevq
+    except _SkipDeviceCheck:
+        pass
     except Exception as e:                                      # noqa: BLE001
         check("the SAM device override is honoured, and a bad value falls back", False, str(e))
 

@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """Report exactly what the model did to one ingested image, and in what environment.
 
-WHY THIS EXISTS. CI ingested one real frame with the full ensemble on a macos-26-arm64
-runner and recorded a predicted area of 9.25%, where this project's development machine
-records 18.80% for the same frame, the same model files and the same torch version. Same
-code, same input, twice the area. MPS versus CPU was ruled out first -- forcing CPU locally
-reproduces 18.7972% exactly, with zero pixels flipping across the 0.60 threshold -- so the
-cause is elsewhere and was not diagnosable from the workflow log, which printed a single
-number.
+WHY THIS EXISTS, and what it found. CI ingested one real frame with the full ensemble on a
+macos-26-arm64 runner and recorded a predicted area of 9.25%, where this project's Mac and an
+ubuntu-24.04 runner both record 18.80% for the same frame and the same model files. The
+workflow log printed one number, which is not enough to diagnose anything, so this prints the
+intermediate quantities instead of the conclusion.
 
-So this prints the intermediate quantities instead of the conclusion: image shape and
-checksum, the raw probability distribution, the area before and after speck pruning, and the
-component count. Whichever of those first disagrees between two machines is where the
-divergence lives. A difference in the checksum means the input differs; in the probability
-mean means the model or its features differ; only in the pruned area means the mask is
-fragmenting differently.
+That worked. It showed the decoded input was bit-identical (same shape, same checksum, same
+statistics) while the probability map was not (mean 0.369 against 0.381, and the mask
+shattered into 21,020 components instead of 968), which ruled out the input and pointed at the
+model side. A device matrix on the same runner image then settled it: forced to CPU that runner
+produces 0.1880 and 968 components, on MPS 0.0925 and 21,019 -- the SAM device, and nothing
+else. Not a property of MPS as such; on real Apple silicon MPS and CPU agree to within one
+float16 quantum with zero pixels changing side of the threshold.
+
+Read it as a bisection. A difference in the checksum means the input differs; in the
+probability mean, the model or its features; only in the pruned area, the mask is fragmenting
+differently. The SAM device line is the first thing to compare.
 
 Also useful outside CI: run it when someone reports a mask that looks wrong, and compare.
 
@@ -49,14 +52,21 @@ def environment():
             print(f"  {mod:<16} absent ({type(e).__name__})")
     try:
         import torch
-        dev = ("mps" if torch.backends.mps.is_available()
-               else "cuda" if torch.cuda.is_available() else "cpu")
-        print(f"  SAM would use    {dev}")
-    except Exception:                                            # noqa: BLE001
-        print("  SAM would use    n/a (no torch)")
+
+        import model as _M
+        # Ask the real selector, do not re-derive it. An earlier version of this line
+        # duplicated the cuda/mps/cpu check and so reported "mps" on a run that
+        # TXM_SAM_DEVICE=cpu had forced onto the CPU -- a diagnostic that lies about the one
+        # variable it exists to report is worse than no diagnostic.
+        print(f"  SAM device       {_M.sam_device(torch)}   "
+              f"(mps available: {torch.backends.mps.is_available()}, "
+              f"cuda: {torch.cuda.is_available()})")
+    except Exception as e:                                       # noqa: BLE001
+        print(f"  SAM device       n/a ({type(e).__name__})")
     print(f"  threads          OMP={os.environ.get('OMP_NUM_THREADS', 'unset')} "
           f"MKL={os.environ.get('MKL_NUM_THREADS', 'unset')}")
     print(f"  TXM_NO_SAM       {os.environ.get('TXM_NO_SAM', 'unset')}")
+    print(f"  TXM_SAM_DEVICE   {os.environ.get('TXM_SAM_DEVICE', 'unset')}")
 
 
 def report(image_id):
