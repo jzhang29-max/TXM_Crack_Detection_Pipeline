@@ -35,11 +35,13 @@ ingesting all 71 and a few retrains:
 | SAM ViT-H weights in `~/.cache/huggingface` | 2.4 GB |
 | the virtualenv | 1.3 GB |
 
-`app_data/` dominates and scales with how many images you load: roughly 330 MB per 23-megapixel
-frame for one model's prediction, rising toward 550 MB as the per-image cache fills — it keeps
-up to six models' predictions so switching between them is instant instead of minutes. Delete
-an image in the app to reclaim its share. A first pass over all 71 with a single model is
-about 24 GB; the 32 GB above is what several retrains leave behind.
+`app_data/` dominates and scales with how many images you load. Measured across the 71 shipped
+frames, which average 12 megapixels: about 290 MB each for one model's prediction, and about
+550 MB for the largest frames (a 23 MP frame stores five ~94 MB arrays before any cache). Each
+additional model's prediction adds another array per image — up to six are kept so switching
+between them is instant instead of minutes. Delete an image in the app to reclaim its share.
+A first pass over all 71 with a single model is about 20 GB; the 32 GB above is what several
+retrains leave behind.
 
 `--depth 1` only brings the clone to ~4.3 GB — measured, not
 guessed: the frames are 2.1 GB of the *current* tree, so skipping history barely helps.

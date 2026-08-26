@@ -60,20 +60,19 @@ a frame — with false positives on 6 owner-confirmed crack-free specimens:
 | crack-free false positives | **0.174%** of area (0.046% after speck pruning), 2.0 indications/frame |
 | mask width | ~5 px half-width, against a 2.5–3 px crack |
 
-Averaging beats either member alone on the same basis:
+Averaging beats either member alone on the same basis, in every fold rather than on average:
 
-| arm | mean IoU |
-|---|---|
-| 17 hand-crafted features | 0.726 |
-| SAM + 17 hybrid alone | 0.786 |
-| **mean-probability ensemble** | **0.811** |
+| arm | mean IoU | per fold |
+|---|---|---|
+| 17 hand-crafted features | 0.726 | 0.729 0.759 0.691 0.708 0.742 |
+| SAM + 17 hybrid alone | 0.786 | 0.747 0.780 0.814 0.820 0.770 |
+| **mean-probability ensemble** | **0.811** | 0.778 0.821 0.830 0.831 0.798 |
 
-Read from the deployed model's own gate record (`thincore_v5`, stamp `20260824_225236`) rather
-than typed in. This table previously carried the v4 figures (0.651 / 0.778 / 0.792) with a
-per-fold column, directly under the v5 headline above — the deploy updated the headline and
-left the breakdown behind. The per-fold column is dropped rather than reconstructed: the v5
-gate records the mean, spread and worst fold, not the individual folds, and inventing five
-numbers to fill a column is how the previous version came to disagree with itself.
+Read from the deployed model's own gate record (`thincore_v5`, stamp `20260824_225236`,
+`heldout.per_fold`) rather than typed in: the five ensemble folds average to 0.8113 with sd
+0.0229, and the ensemble beats both members in all five. This table previously carried the v4
+figures (0.651 / 0.778 / 0.792) under the v5 headline above — the deploy updated the headline
+and left the breakdown behind.
 
 The older figures for this comparison (17 alone 0.744, hybrid 0.795, ensemble 0.821) came from
 leave-one-image-out over 4 externally-labelled frames. Those labels are used nowhere in the

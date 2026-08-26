@@ -11,13 +11,13 @@ WHY AN ENSEMBLE RATHER THAN JUST THE SAM HYBRID. Cross-validation grouped by who
 over all 71 labelled images -- train and test never share a frame -- which is the only split
 this data supports honestly:
 
-  approach                      mean IoU
-  17 hand-crafted features        0.726
-  SAM 256 + 17 (the hybrid)       0.786
-  mean probability of the two     0.811
+  approach                      mean IoU   per fold
+  17 hand-crafted features        0.726     0.729 0.759 0.691 0.708 0.742
+  SAM 256 + 17 (the hybrid)       0.786     0.747 0.780 0.814 0.820 0.770
+  mean probability of the two     0.811     0.778 0.821 0.830 0.831 0.798
 
-The averaged pair beats either member. It costs about 25% more inference time than the hybrid
-alone. Read off the gate record of the deployed model (recipe thincore_v5, stamp
+Averaging wins in EVERY fold, not on average -- which is the property worth having, because a
+mean can be carried by one fold. It costs about 25% more inference time than the hybrid alone. Read off the gate record of the deployed model (recipe thincore_v5, stamp
 20260824_225236): grouped-by-image 5-fold, 71 labelled images, mean IoU 0.8113, sd 0.0229,
 worst fold 0.7777, precision 0.9355, recall 0.8597.
 
