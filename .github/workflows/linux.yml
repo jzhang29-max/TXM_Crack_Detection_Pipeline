@@ -38,10 +38,11 @@
 #
 #   - THE MODEL. This is the big one. Four of the five jobs set TXM_NO_SAM=1 or omit torch, and
 #     in that mode the detector is the 17-feature model alone, which is NOT the shipped
-#     configuration and is not a usable detector: measured on owner-confirmed crack-free
-#     specimens it marks 83.08% and 30.36% of the frame as crack, against 0.01% and 0.02% for
-#     the deployed ensemble. Every check can pass while the prediction is garbage. These jobs
-#     test plumbing, portability and invariants -- not detection quality.
+#     configuration and is not a usable detector. Measured over all six owner-confirmed
+#     crack-free specimens, it marks 26.9% to 83.7% of the frame as crack (mean 61.3%),
+#     against 0.000% to 0.144% for the deployed ensemble on the same frames. Every check below
+#     can pass while the prediction is that wrong. These jobs test plumbing, portability and
+#     invariants -- not detection quality.
 #   - THE CORPUS. app_data/ is gitignored, so a runner has no ingested images, no SAM embeddings
 #     and no predictions. The statistical checks (held-out IoU, the retrain gate, crack-free
 #     false positives over 6 specimens) need the whole 71-frame corpus with embeddings, which is

@@ -353,8 +353,9 @@ fallback now has its own cache key: the same sequence re-predicts and drops to 1
 
 **What a green tick does not mean.** Four of the five jobs run without SAM, and in that mode
 the detector is the 17-feature model alone — not the shipped configuration, and not a usable
-one: it marks 55% of a real frame and 83% of a confirmed crack-free specimen as crack. CI
-tests plumbing, portability and invariants, never detection quality. The statistical numbers
+one. Over all six confirmed crack-free specimens it marks 26.9% to 83.7% of the frame as
+crack (mean 61.3%), where the shipped ensemble marks 0.000% to 0.144%. CI tests plumbing,
+portability and invariants, never detection quality. The statistical numbers
 in [How well it does](#how-well-it-does) come from the full 71-frame corpus on the
 development machine, which no runner has: `app_data/` is gitignored, so CI checks out one
 frame and the corpus-wide checks report "1 frame" or skip. Retrain never runs. Neither does
