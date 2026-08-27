@@ -152,7 +152,70 @@ a diagnostic, not a correction.
 
 ## What would make the constraint usable
 
-1. Break the along-axis degeneracy: add a second term to the objective -- crack-tip position,
-   endpoint correspondence, or intensity agreement in the surrounding material.
+1. ~~Break the along-axis degeneracy~~ — **done, see the next section.** Mostly solved on a
+   synthetic control; it lowered the real-data numbers rather than rescuing them.
 2. Register on the IMAGE with the crack masked out, using the constraint only to validate.
 3. Recorded stage coordinates. The whole difficulty disappears if the shift is known.
+
+## The degeneracy is broken by an anchor, and the anchor makes the results worse
+
+`register_anchored()` in `app/core/sequence.py`. The physics: a fatigue crack has a **fixed
+root**. It initiates at a free surface and grows inward, so the mouth where it meets the
+specimen boundary does not move between load steps while the tip does. A point anchor constrains
+both axes where a self-overlap objective constrains only one.
+
+It needs **two different features**, one per axis, and that is the non-obvious part:
+
+| axis | taken from | why not the other feature |
+|---|---|---|
+| across-crack (here *y*) | the crack mouth's centroid | a genuine crack property, fixed by the physics |
+| along-crack (here *x*) | median leading edge of the specimen | the mouth's along-edge coordinate is merely wherever the boundary happens to be, so it carries no crack information |
+
+Taking both axes from the mouth was tried first and fixed only one of them — *dy* came back −112
+against a true −120, while *dx* came back 530 against a true 240. That failure is what forced
+the split.
+
+### Synthetic control, rebuilt with a specimen edge and a root fixed by construction
+
+Earlier frame: crack length 600 px. Later frame: 800 px of real growth, plus a known shift.
+
+| true shift | containment only | anchored | |
+|---|---|---|---|
+| (0, 0) | (0, 0) | **(0, 0)** | exact, 100% containment |
+| (12, −30) | (12, −30) | **(12, −30)** | exact, 100% containment |
+| (−120, 240) | (−124, 152) — wrong | **(−120, 240)** | exact, 100% containment |
+| (−40, 620) | (−48, 338) — wrong | **(−40, 620)** | exact |
+| (300, −500) | (316, −16) — wrong | (309, −152) | **still wrong** |
+
+Four of five, including both cases containment alone got wrong. The one remaining failure is
+understood rather than mysterious: a −500 px shift carries the specimen boundary off the frame,
+so the along-edge reference does not exist to be measured.
+
+The **negative control improves too** — an entirely different synthetic crack, root at a
+different height, falls from 46% containment to 23.5%. The metric now separates consistent from
+inconsistent pairs far better than it did. No threshold on it has been validated against enough
+pairs to be defensible, though.
+
+### And on the real data it lowers the headline
+
+Over the 13 consecutive pairs in the two usable series:
+
+- **3 of 13 pairs have the later crack smaller than the earlier one.** No registration rescues
+  that; it is an outright violation, detected with no labels. Unchanged by the anchor.
+- On the **wide-FOV wrought frames the mouth is not locatable** and the method falls back to
+  containment only. The anchor is not available everywhere.
+- Where the anchor does fire it agrees with containment-only on 4 of 6 HC pairs and **cuts the
+  other two hard: 78.7% → 46.8%, and 71.3% → 25.5%**.
+
+That last line is the result. The anchored number is *lower* because containment-only had been
+finding along-axis shifts that scored well and were wrong. **So 97.3% stays an upper bound, and
+the properly constrained estimate of sequence consistency in this data is materially worse than
+the unconstrained one.** The anchor did not rescue the claim — it measured how much the claim
+was inflated. `monotone_repair()` remains something not to use for producing masks.
+
+One bug worth recording because it silenced the method completely: the first `specimen_mask()`
+thresholded on brightness, and **the crack is dark**, so a plain threshold carved the crack out
+of the specimen support — and the mouth, which lies exactly on the boundary, fell outside it.
+Every frame returned `None` and every pair silently fell back to containment-only. Closing and
+hole-filling the support fixed it. A fallback that reports which path it took is what made this
+visible at all.
