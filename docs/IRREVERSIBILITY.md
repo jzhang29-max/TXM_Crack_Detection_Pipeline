@@ -96,3 +96,63 @@ flagged from unrelated evidence (region orientation showing a different feature 
 3. Run it on the reconstructed volumes rather than exported slices.
 4. Record stage coordinates at acquisition. The method does not need them, but they would bound
    the search and make the two unconverged pairs converge.
+
+---
+
+## CORRECTION: the synthetic control overturned the headline number
+
+Everything above was measured on real data, where the true alignment is unknown. A synthetic
+control -- known shift, known growth -- was then run, and it changes the conclusion.
+
+    case                          true shift     found        containment
+    translation only              (0, 0)         (0, 0)          100.0%
+    translation only              (12, -30)      (12, -30)       100.0%
+    translation only              (-120, 240)    (-128, -38)      38.1%
+    translation only              (300, -500)    (316, -30)       19.7%
+    translation + growth          (0, 0)         (0, 0)          100.0%
+    translation + growth          (40, -80)      (44, 120)        43.9%
+    a DIFFERENT crack entirely    n/a            (-148, 174)      46.0%
+
+Two things follow.
+
+**The objective is degenerate along the crack.** Small shifts are recovered exactly; large ones
+are not, and the failures are not random. A roughly linear crack slid along its own axis still
+overlaps itself, so containment is nearly flat in that direction. The method registers ACROSS a
+crack and cannot register ALONG it. This is intrinsic to the objective, not a bug in the search.
+
+**So the 97.3% figure is an upper bound, not a measurement.** A large along-axis registration
+error would score just as well as a correct alignment. The real-data test could not have
+revealed this -- it has no ground truth to check against -- and I reported 97.3% as evidence of
+physical consistency before running the control. That was wrong.
+
+**And the metric does not cleanly discriminate.** An entirely different synthetic crack still
+reaches 46% containment, so no threshold on this metric is currently defensible.
+
+## CORRECTION: monotone repair does not improve the masks
+
+Measured against the operator's own corrections across 11 consecutive pairs:
+
+    series             mean recall change     leak into painted NOT-crack
+    wrought >=800cyc      +0.00 pp             0.000% -> 0.000-0.151%
+    HC >=1300cyc          +1.98 pp             0.000% -> 0.178-5.823%
+
+Repair added 29,000-363,000 pixels per frame. On the wrought series it changed recall by
+exactly zero. On HC it bought 2 points of recall while putting up to 5.8% of explicitly
+marked not-crack material into the crack mask. At this registration accuracy the constraint is
+a diagnostic, not a correction.
+
+## What survives
+
+- The **area-decrease detector** survives untouched: three pairs show the later crack smaller
+  than the earlier one (-6.5%, -2.4%, -0.1%), which no alignment can explain and which needs no
+  registration to detect. That is a genuine label-free error signal.
+- The **observation** that no published method uses irreversibility survives.
+- The **registration difficulty** is real and documented: phase correlation gives no peak, ORB
+  gives 0-3 matches on 32 keypoints in 22 MP, edge tracking gives 36-80 px scatter.
+
+## What would make the constraint usable
+
+1. Break the along-axis degeneracy: add a second term to the objective -- crack-tip position,
+   endpoint correspondence, or intensity agreement in the surrounding material.
+2. Register on the IMAGE with the crack masked out, using the constraint only to validate.
+3. Recorded stage coordinates. The whole difficulty disappears if the shift is known.
