@@ -61,6 +61,12 @@ The best-registered pair reaches **97.3% containment, a 2.7% residual** — the 
 with physics to within three percent, established with **no ground truth**. Unregistered, the
 same pair reads 12.8%, so essentially all of the apparent violation was misalignment.
 
+> **Read the CORRECTION sections below before quoting that number.** A synthetic control showed
+> the objective is degenerate along the crack, so 97.3% is an **upper bound, not a measurement**;
+> anchoring the registration to the crack's fixed root cut two comparable pairs to 46.8% and
+> 25.5%. The paragraph above is what I concluded before the control existed, and it is left in
+> place so the sequence of claims is visible.
+
 ## Outright violations, and why they are the point
 
 Three pairs show the later crack SMALLER than the earlier one, which no alignment can fix:
@@ -79,8 +85,8 @@ flagged from unrelated evidence (region orientation showing a different feature 
 
 ## Honest limits
 
-- Demonstrated cleanly on **one pair** (97.3%). Six more land at 71-88%, two are still
-  unconverged at the +/-512 px search edge.
+- Demonstrated cleanly on **one pair** (97.3%) — an upper bound, see the corrections below.
+  Six more land at 71-88%, two are still unconverged at the +/-512 px search edge.
 - Translation only. No rotation, no scale, no non-rigid deformation.
 - The residual mixes registration error with segmentation error and this analysis does not
   separate them. That separation is the obvious next experiment: apply a known synthetic shift
