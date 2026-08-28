@@ -61,6 +61,12 @@ The best-registered pair reaches **97.3% containment, a 2.7% residual** — the 
 with physics to within three percent, established with **no ground truth**. Unregistered, the
 same pair reads 12.8%, so essentially all of the apparent violation was misalignment.
 
+> **Read the CORRECTION sections below before quoting that number.** A synthetic control showed
+> the objective is degenerate along the crack, so 97.3% is an **upper bound, not a measurement**;
+> anchoring the registration to the crack's fixed root cut two comparable pairs to 46.8% and
+> 25.5%. The paragraph above is what I concluded before the control existed, and it is left in
+> place so the sequence of claims is visible.
+
 ## Outright violations, and why they are the point
 
 Three pairs show the later crack SMALLER than the earlier one, which no alignment can fix:
@@ -79,8 +85,8 @@ flagged from unrelated evidence (region orientation showing a different feature 
 
 ## Honest limits
 
-- Demonstrated cleanly on **one pair** (97.3%). Six more land at 71-88%, two are still
-  unconverged at the +/-512 px search edge.
+- Demonstrated cleanly on **one pair** (97.3%) — an upper bound, see the corrections below.
+  Six more land at 71-88%, two are still unconverged at the +/-512 px search edge.
 - Translation only. No rotation, no scale, no non-rigid deformation.
 - The residual mixes registration error with segmentation error and this analysis does not
   separate them. That separation is the obvious next experiment: apply a known synthetic shift
@@ -96,3 +102,134 @@ flagged from unrelated evidence (region orientation showing a different feature 
 3. Run it on the reconstructed volumes rather than exported slices.
 4. Record stage coordinates at acquisition. The method does not need them, but they would bound
    the search and make the two unconverged pairs converge.
+
+---
+
+## CORRECTION: the synthetic control overturned the headline number
+
+Everything above was measured on real data, where the true alignment is unknown. A synthetic
+control -- known shift, known growth -- was then run, and it changes the conclusion.
+
+    case                          true shift     found        containment
+    translation only              (0, 0)         (0, 0)          100.0%
+    translation only              (12, -30)      (12, -30)       100.0%
+    translation only              (-120, 240)    (-128, -38)      38.1%
+    translation only              (300, -500)    (316, -30)       19.7%
+    translation + growth          (0, 0)         (0, 0)          100.0%
+    translation + growth          (40, -80)      (44, 120)        43.9%
+    a DIFFERENT crack entirely    n/a            (-148, 174)      46.0%
+
+Two things follow.
+
+**The objective is degenerate along the crack.** Small shifts are recovered exactly; large ones
+are not, and the failures are not random. A roughly linear crack slid along its own axis still
+overlaps itself, so containment is nearly flat in that direction. The method registers ACROSS a
+crack and cannot register ALONG it. This is intrinsic to the objective, not a bug in the search.
+
+**So the 97.3% figure is an upper bound, not a measurement.** A large along-axis registration
+error would score just as well as a correct alignment. The real-data test could not have
+revealed this -- it has no ground truth to check against -- and I reported 97.3% as evidence of
+physical consistency before running the control. That was wrong.
+
+**And the metric does not cleanly discriminate.** An entirely different synthetic crack still
+reaches 46% containment, so no threshold on this metric is currently defensible.
+
+## CORRECTION: monotone repair does not improve the masks
+
+Measured against the operator's own corrections across 11 consecutive pairs:
+
+    series             mean recall change     leak into painted NOT-crack
+    wrought >=800cyc      +0.00 pp             0.000% -> 0.000-0.151%
+    HC >=1300cyc          +1.98 pp             0.000% -> 0.178-5.823%
+
+Repair added 29,000-363,000 pixels per frame. On the wrought series it changed recall by
+exactly zero. On HC it bought 2 points of recall while putting up to 5.8% of explicitly
+marked not-crack material into the crack mask. At this registration accuracy the constraint is
+a diagnostic, not a correction.
+
+## What survives
+
+- The **area-decrease detector** survives untouched: three pairs show the later crack smaller
+  than the earlier one (-6.5%, -2.4%, -0.1%), which no alignment can explain and which needs no
+  registration to detect. That is a genuine label-free error signal.
+- The **observation** that no published method uses irreversibility survives.
+- The **registration difficulty** is real and documented: phase correlation gives no peak, ORB
+  gives 0-3 matches on 32 keypoints in 22 MP, edge tracking gives 36-80 px scatter.
+
+## What would make the constraint usable
+
+1. ~~Break the along-axis degeneracy~~ — **done, see the next section.** Mostly solved on a
+   synthetic control; it lowered the real-data numbers rather than rescuing them.
+2. Register on the IMAGE with the crack masked out, using the constraint only to validate.
+3. Recorded stage coordinates. The whole difficulty disappears if the shift is known.
+
+## The degeneracy is broken by an anchor, and the anchor makes the results worse
+
+`register_anchored()` in `app/core/sequence.py`. The physics: a fatigue crack has a **fixed
+root**. It initiates at a free surface and grows inward, so the mouth where it meets the
+specimen boundary does not move between load steps while the tip does. A point anchor constrains
+both axes where a self-overlap objective constrains only one.
+
+It needs **two different features**, one per axis, and that is the non-obvious part:
+
+| axis | taken from | why not the other feature |
+|---|---|---|
+| across-crack (here *y*) | the crack mouth's centroid | a genuine crack property, fixed by the physics |
+| along-crack (here *x*) | median leading edge of the specimen | the mouth's along-edge coordinate is merely wherever the boundary happens to be, so it carries no crack information |
+
+Taking both axes from the mouth was tried first and fixed only one of them — *dy* came back −112
+against a true −120, while *dx* came back 530 against a true 240. That failure is what forced
+the split.
+
+### Synthetic control, rebuilt with a specimen edge and a root fixed by construction
+
+Earlier frame: crack length 600 px. Later frame: 800 px of real growth, plus a known shift.
+
+| true shift | containment only | anchored | |
+|---|---|---|---|
+| (0, 0) | (0, 0) | **(0, 0)** | exact, 100% containment |
+| (12, −30) | (12, −30) | **(12, −30)** | exact, 100% containment |
+| (−120, 240) | (−124, 152) — wrong | **(−120, 240)** | exact, 100% containment |
+| (−40, 620) | (−48, 338) — wrong | **(−40, 620)** | exact |
+| (300, −500) | (316, −16) — wrong | (309, −152) | **still wrong** |
+
+Four of five, including both cases containment alone got wrong. The one remaining failure is
+understood rather than mysterious: a −500 px shift carries the specimen boundary off the frame,
+so the along-edge reference does not exist to be measured.
+
+The **negative control improves too** — an entirely different synthetic crack, root at a
+different height, falls from 46% containment to 23.5%. The metric now separates consistent from
+inconsistent pairs far better than it did. No threshold on it has been validated against enough
+pairs to be defensible, though.
+
+### And on the real data it lowers the headline
+
+Over the 13 consecutive pairs in the two usable series:
+
+- **3 of 13 pairs have the later crack smaller than the earlier one.** No registration rescues
+  that; it is an outright violation, detected with no labels. Unchanged by the anchor.
+- On the **wide-FOV wrought frames the mouth is not locatable** and the method falls back to
+  containment only. The anchor is not available everywhere.
+- Where the anchor does fire it agrees with containment-only on 4 of 6 HC pairs and **cuts the
+  other two hard: 78.7% → 46.8%, and 71.3% → 25.5%**.
+
+That last line is the result. The anchored number is *lower* because containment-only had been
+finding along-axis shifts that scored well and were wrong. **So 97.3% stays an upper bound, and
+the properly constrained estimate of sequence consistency in this data is materially worse than
+the unconstrained one.** The anchor did not rescue the claim — it measured how much the claim
+was inflated. `monotone_repair()` remains something not to use for producing masks.
+
+The anchor is reachable through the ordinary API, which it was not at first. `pair_consistency`,
+`monotone_repair` and `sequence_report` each take optional images and use the anchor when given
+them; every result carries a `method` field naming the path that ran. The first version wired
+`register_anchored` into nothing, so all three called `register_by_containment` directly and the
+anchor was dead code — every number the module reported still came from the degenerate objective
+it was written to fix. An edge-case suite caught it by asking of each function whether it calls
+the anchor at all.
+
+Two bugs worth recording. The first silenced the method completely: the first `specimen_mask()`
+thresholded on brightness, and **the crack is dark**, so a plain threshold carved the crack out
+of the specimen support — and the mouth, which lies exactly on the boundary, fell outside it.
+Every frame returned `None` and every pair silently fell back to containment-only. Closing and
+hole-filling the support fixed it. A fallback that reports which path it took is what made this
+visible at all.
