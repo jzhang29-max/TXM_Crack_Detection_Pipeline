@@ -219,7 +219,15 @@ the properly constrained estimate of sequence consistency in this data is materi
 the unconstrained one.** The anchor did not rescue the claim — it measured how much the claim
 was inflated. `monotone_repair()` remains something not to use for producing masks.
 
-One bug worth recording because it silenced the method completely: the first `specimen_mask()`
+The anchor is reachable through the ordinary API, which it was not at first. `pair_consistency`,
+`monotone_repair` and `sequence_report` each take optional images and use the anchor when given
+them; every result carries a `method` field naming the path that ran. The first version wired
+`register_anchored` into nothing, so all three called `register_by_containment` directly and the
+anchor was dead code — every number the module reported still came from the degenerate objective
+it was written to fix. An edge-case suite caught it by asking of each function whether it calls
+the anchor at all.
+
+Two bugs worth recording. The first silenced the method completely: the first `specimen_mask()`
 thresholded on brightness, and **the crack is dark**, so a plain threshold carved the crack out
 of the specimen support — and the mouth, which lies exactly on the boundary, fell outside it.
 Every frame returned `None` and every pair silently fell back to containment-only. Closing and

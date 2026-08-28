@@ -11,6 +11,15 @@ them can use this. It gives three things a single-frame method cannot have:
   pair_consistency()         a label-free error signal -- the residual violation after
                              optimal alignment
   monotone_repair()          the constraint applied as a correction, not just a check
+  sequence_report()          the above across a whole ordered series
+
+PASS THE IMAGES, NOT JUST THE MASKS. pair_consistency, monotone_repair and sequence_report all
+take optional images and use the anchor when they get them, falling back to containment-only
+when they do not. Every result carries a `method` field saying which ran, so a fallback is
+never silent. This matters because it was wrong once: the first version of the anchor was wired
+into nothing, so the three functions above all called register_by_containment directly and the
+anchor was dead code reachable only by name. An edge-case suite caught it by asking, of each
+function, whether it calls the anchor at all.
 
 WHY REGISTRATION IS THE WHOLE DIFFICULTY, and why the usual tools fail here. Measured on this
 project's wrought 316L series:
@@ -169,7 +178,25 @@ def register_by_containment(earlier, later, coarse_range=COARSE_RANGE):
     return best_y, best_x, int((ad & shifted).sum()) / tot, int((ad & zero).sum()) / tot
 
 
-def pair_consistency(earlier, later):
+def _register(a, b, img_earlier=None, img_later=None):
+    """(dy, dx, containment, containment_unregistered, method).
+
+    ONE place decides which registration runs, so the anchor cannot silently stop being used.
+    An earlier version of this module wired register_anchored() nowhere: pair_consistency,
+    monotone_repair and sequence_report all called register_by_containment directly, so the
+    anchor was reachable only by a caller who knew to ask for it by name and every number this
+    module reported came from the degenerate objective it was written to fix. Pass the images
+    to get the anchor; omit them and you get containment only, which is all the masks support.
+    """
+    if img_earlier is not None and img_later is not None:
+        r = register_anchored(a, b, img_earlier, img_later)
+        return (r["dy"], r["dx"], r["containment"], r["containment_unregistered"],
+                r["method"])
+    dy, dx, cont, unreg = register_by_containment(a, b)
+    return dy, dx, cont, unreg, "containment_only"
+
+
+def pair_consistency(earlier, later, img_earlier=None, img_later=None):
     """Label-free consistency of one consecutive pair.
 
     `violation` is the fraction of the earlier crack absent from the later one after optimal
@@ -177,11 +204,21 @@ def pair_consistency(earlier, later):
 
     `area_decreased` is the blunt case no alignment can rescue: the later mask is smaller than
     the earlier one, so the crack shrank. That is physically impossible for the same region and
-    is therefore a measured segmentation or acquisition error.
+    is therefore a measured segmentation or acquisition error. It needs no registration at all,
+    which is why it is the one signal here that survived every correction.
+
+    PASS THE IMAGES. Without them this falls back to containment-only registration, which is
+    degenerate along the crack axis -- see the module docstring. `method` in the result says
+    which path ran, so a fallback is never invisible.
+
+    NOTE ON PRECISION: `containment` is scored on a 2x decimation, the same grid the search
+    ends on. Measured against a full-resolution recount of the very same shift it differs by
+    up to ~0.05 (0.5505 decimated against 0.5457 full-res on one pair). Treat it as a
+    diagnostic to two decimal places, not an exact fraction.
     """
     a = np.asarray(earlier, bool)
     b = np.asarray(later, bool)
-    dy, dx, cont, cont_unreg = register_by_containment(a, b)
+    dy, dx, cont, cont_unreg, method = _register(a, b, img_earlier, img_later)
     ac, bc = _crop_common(a, b)
     moved, valid = _shift_into(bc, dy, dx, ac.shape)
     av = ac & valid
@@ -190,6 +227,7 @@ def pair_consistency(earlier, later):
         containment=round(float(cont), 4),
         containment_unregistered=round(float(cont_unreg), 4),
         violation=round(float(1.0 - cont), 4),
+        method=method,
         earlier_px=int(a.sum()), later_px=int(b.sum()),
         area_decreased=bool(int(b.sum()) < int(a.sum())),
         vanished_px=int((av & ~moved).sum()),
@@ -197,7 +235,7 @@ def pair_consistency(earlier, later):
     )
 
 
-def monotone_repair(earlier, later):
+def monotone_repair(earlier, later, img_earlier=None, img_later=None):
     """Apply the constraint: the later mask must contain the registered earlier one.
 
     Returns (repaired_later, info). This can only ADD pixels, so it can only raise recall and
@@ -206,24 +244,32 @@ def monotone_repair(earlier, later):
     """
     a = np.asarray(earlier, bool)
     b = np.asarray(later, bool)
-    dy, dx, cont, cont_unreg = register_by_containment(a, b)
+    dy, dx, cont, _unreg, method = _register(a, b, img_earlier, img_later)
     ac, bc = _crop_common(a, b)
     # move the EARLIER mask forward onto the later frame's grid: the inverse of the shift that
     # brought the later frame back onto the earlier one
     moved, valid = _shift_into(ac, -dy, -dx, bc.shape)
     repaired = bc | (moved & valid)
     return repaired, dict(dy=int(dy), dx=int(dx),
-                          containment=round(float(cont), 4),
+                          containment=round(float(cont), 4), method=method,
                           added_px=int((repaired & ~bc).sum()),
                           before_px=int(bc.sum()), after_px=int(repaired.sum()))
 
 
 def sequence_report(masks_in_order):
-    """Consistency across a whole ordered series. `masks_in_order` is [(label, mask), ...]."""
+    """Consistency across a whole ordered series.
+
+    `masks_in_order` is [(label, mask), ...] or [(label, mask, image), ...]. Supply the third
+    element to get anchored registration; with two elements it falls back to containment only
+    and every row says so in `method`.
+    """
+    if not masks_in_order:
+        return []                       # also covers None, which used to raise a bare TypeError
+    items = [(t[0], t[1], t[2] if len(t) > 2 else None) for t in masks_in_order]
     out = []
-    for i in range(1, len(masks_in_order)):
-        (l0, m0), (l1, m1) = masks_in_order[i - 1], masks_in_order[i]
-        r = pair_consistency(m0, m1)
+    for i in range(1, len(items)):
+        (l0, m0, i0), (l1, m1, i1) = items[i - 1], items[i]
+        r = pair_consistency(m0, m1, i0, i1)
         r["pair"] = f"{l0}->{l1}"
         out.append(r)
     return out
@@ -265,6 +311,15 @@ def specimen_mask(img, thresh_pct=45):
     """
     from scipy.ndimage import binary_closing, binary_fill_holes
     a = np.asarray(img, np.float32)
+    # A 3-channel image is a plausible real input -- anything loaded through PIL without an
+    # explicit convert("L") arrives this way -- and it used to raise IndexError from inside
+    # scipy, several frames from the actual mistake. NaN likewise poisoned the percentiles and
+    # returned an all-False mask, which reads as "no specimen" rather than as bad input.
+    if a.ndim == 3:
+        a = a.mean(axis=2)
+    if a.ndim != 2:
+        raise ValueError(f"specimen_mask needs a 2-D image, got shape {np.shape(img)}")
+    a = np.nan_to_num(a, nan=0.0, posinf=0.0, neginf=0.0)
     lo, hi = np.percentile(a, [2, 98])
     n = np.clip((a - lo) / (hi - lo + 1e-9), 0, 1)
     bright = n > (thresh_pct / 100.0)
@@ -284,6 +339,8 @@ def crack_mouth(mask, spec):
     from scipy.ndimage import binary_dilation, binary_erosion
     m = np.asarray(mask, bool)
     sp = np.asarray(spec, bool)
+    if m.shape != sp.shape:
+        raise ValueError(f"crack_mouth: mask {m.shape} and specimen {sp.shape} must match")
     if not m.any() or not sp.any():
         return None
     # boundary of the specimen: dilate the outside and intersect with the inside
