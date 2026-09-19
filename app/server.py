@@ -852,9 +852,21 @@ def _want_labels(default=False):
 
 
 def _tight(default=True):
-    """`tight=1` narrows the mask to the dark core inside it -- see pipeline.tighten_to_image.
+    """`tight=1` narrows the mask to what the image shows -- see pipeline._narrow_to_image.
 
-    On by default. It changes predicted crack AREA by roughly a factor of two, so
+    On by default. TWO steps, and the second is doing most of the work:
+
+      tighten_to_image       keeps pixels darker than a 301 px box mean. Worth about 6% of
+                             area over 71 frames -- this docstring used to say "roughly a
+                             factor of two", which came from the function's own docstring
+                             and is wrong: the box mean is taken over the mask as well as
+                             around it, so a 30-50 px band inside a 301 px window is
+                             compared against the bright matrix either side and passes.
+      clip_to_measured_width clips to the transverse FWHM read off the image. Targeted
+                             rather than uniform: 32.0% of area off HC_316L_fatigue_600,
+                             the worst over-marker, and 0.6% off wrought_1200, which was
+                             already narrower than its feature.
+
     `tight=0` is how you get the wider, label-shaped boundary back.
     """
     v = request.args.get("tight")
