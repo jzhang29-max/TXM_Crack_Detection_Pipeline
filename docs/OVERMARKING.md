@@ -1,4 +1,34 @@
-# The predicted crack is ~1.7× wider than the label, and four levers do not fix it
+# On thin-crack frames the prediction is wider than the label; corpus-wide it is narrower
+
+> **CORRECTION 2026-09-19 — the original title generalised a subpopulation.** It read "The
+> predicted crack is ~1.7× wider than the label, and four levers do not fix it". Everything
+> measured below still reproduces on the frames it was measured on, and the four levers still
+> fail. What does not hold is the generalisation, because the four frames were *selected as
+> thin-crack frames* — which is precisely the subpopulation where the model over-marks.
+>
+> Re-measured at the deployed v5 operating point (p>0.60, thin-label training, speck pruning)
+> over all 61 labelled frames:
+>
+> | | label width | predicted width | direction |
+> |---|---|---|---|
+> | HC_316L_fatigue_600 | 21.2 px | 48.4 px | model wider |
+> | HC_316L_fatigue_800 | 19.7 px | 34.1 px | model wider |
+> | wrought_800_cycles | 21.8 px | 32.3 px | model wider |
+> | wrought_900_cycles | 72.8 px | 23.7 px | **label wider** |
+> | **all 61 labelled frames** | **73.4 px** | **28.9 px** | **label wider on 53 of 61** |
+>
+> So the original claim survives on 3 of its own 4 frames — the model did get narrower there
+> (56.4→48.4, 53.9→34.1, 37.5→32.3, the thin-label training working) but not narrower than the
+> brush. Corpus-wide the sign is the other way: median label/prediction width ratio **2.20×**
+> (IQR 1.35–3.10), label wider on 53 of 61 frames.
+>
+> **The consequence for every IoU in this repo.** Against the raw painted strokes, IoU now
+> penalises the model for being *correctly narrow* on most frames. Centreline agreement, which
+> is width-tolerant, reads **clDice 0.863** with **Tprec 0.955** where IoU on the same frames
+> reads 0.505 — 95.5% of the predicted centreline lands inside the label, so IoU is measuring
+> width disagreement, not misplacement. The honest residual is Tsens 0.814: 18.6% of the label
+> centreline is uncovered. Measured in `crack-evolution-5d/out/cldice_centreline.json`.
+
 
 Reproduce with `research/code/pilot_stride8.py`, `pilot_threshold.py`, `pilot_features.py`.
 
@@ -17,8 +47,10 @@ is measurable and real. Mean local thickness from the medial axis, on thin-crack
 And 37–48% of every mask is brighter than its frame's median intensity — for a feature that
 is defined by being dark.
 
-Note the direction: **the owner's brush strokes are the tighter boundary, by up to 3.6×.** The
-over-marking belongs to the model, not to the painting. This is the same defect as the AM/HC
+Note the direction: **on these four thin-crack frames the owner's brush strokes are the tighter
+boundary, by up to 3.6×.** The over-marking belongs to the model, not to the painting — on this
+subpopulation. See the correction at the top: corpus-wide the label is the wider one on 53 of 61
+frames. This is the same defect as the AM/HC
 precision of 0.355 ("marks 3–12× too much material") seen from the other end.
 
 ## Four levers, measured
