@@ -932,6 +932,56 @@ def main():
         check("exported centres are filled, and filling stays inside the corridor",
               False, str(e))
 
+    # WIDTH CLIPPING MUST ONLY EVER REMOVE. clip_to_measured_width narrows the mask to the
+    # transverse width the image shows, and every argument for it -- and every number in
+    # docs/WIDTH_REFERENCE.md -- rests on it being a SUBSET of what the detector accepted. A
+    # step that could add area would be drawing crack from an intensity profile, which is a
+    # different and much weaker claim than trimming one. This also catches the operator
+    # silently going inert: it did exactly that once, when both exits of effective_mask had
+    # their own copy of the narrowing and only one got the new call.
+    try:
+        import numpy as _npW
+        import pipeline as _PW
+        import store as _SW
+        _fr = _subset = _acted = 0
+        for _mW in _SW.list_images():
+            if "SELFTEST" in (_mW.get("filename") or ""):
+                continue
+            _wid = _PW.effective_mask(_mW["id"], corrections="none", tight=False)
+            if _wid is None or not _wid.any() or _wid.mean() < 0.005:
+                continue
+            _clipped = _PW.clip_to_measured_width(_mW["id"], _wid)
+            if _clipped is None:
+                continue
+            _fr += 1
+            if not bool((_clipped & ~_wid).any()):
+                _subset += 1
+            if _clipped.sum() < _wid.sum():
+                _acted += 1
+            if _fr >= 4:
+                break
+        check("width clipping only ever removes, and is not inert",
+              _fr > 0 and _subset == _fr and _acted > 0,
+              f"{_fr} frames: {_subset} stayed a subset, {_acted} were actually narrowed")
+    except Exception as e:                                      # noqa: BLE001
+        check("width clipping only ever removes, and is not inert", False, str(e))
+
+    # Both exits of effective_mask narrow through ONE helper. The `corrections == "none"`
+    # branch returns early and used to carry its own copy of the tighten call; when
+    # clip_to_measured_width was added to the other exit, that branch silently skipped it and
+    # the overlays for "Model output only" were a step behind the app. Assert the early
+    # branch still goes through the shared helper rather than calling tighten directly.
+    try:
+        import inspect as _insW
+        import pipeline as _PW2
+        _src = _insW.getsource(_PW2.effective_mask)
+        check("both exits of effective_mask narrow through one helper",
+              _src.count("_narrow_to_image(") == 2 and "tighten_to_image(" not in _src,
+              f"_narrow_to_image x{_src.count('_narrow_to_image(')}, "
+              f"direct tighten calls: {_src.count('tighten_to_image(')}")
+    except Exception as e:                                      # noqa: BLE001
+        check("both exits of effective_mask narrow through one helper", False, str(e))
+
     # The closing is for the picture, not the labels. If it leaked into thin-core sampling it
     # would quietly widen every training core and change what `thincore_v5` means, while the
     # shipped model stayed on disk trained the old way -- a recipe tag that no longer

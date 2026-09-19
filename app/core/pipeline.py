@@ -550,6 +550,219 @@ TIGHTEN_WINDOW = 301
 TIGHTEN_MIN_CORE = 0.60
 
 
+# ---------------------------------------------------------------------------------------
+# WIDTH-MATCHED CLIPPING
+#
+# WHY THIS EXISTS, and why tighten_to_image is not enough. tighten_to_image keeps
+# `img <= uniform_filter(img, 301)`. That box mean is taken over the mask as well as around
+# it, and the accepted band is 30-50 px wide inside a 301 px window, so the mean is set by
+# the bright matrix either side and the whole band passes its own test. Measured over all 71
+# frames the area drop is about 6% (wrought_1200: 0.0689 -> 0.0649) -- not the
+# 8.178% -> 6.464% its docstring records, and not the "roughly a factor of two"
+# app/server.py promises callers. Both of those claims are now corrected in place.
+#
+# WHAT REPLACED IT IS NOT ANOTHER THRESHOLD. The repo's position has been that width cannot
+# be checked because no tight reference exists (docs/OVERMARKING.md:100). Measured, one
+# does: the transverse contrast profile. Over 11,426 profiles on 61 frames the crack's
+# transverse FWHM has median 45 px (1.3 um at 29 nm/px) and ranges 3-147 px at the
+# 10th-90th, CV 0.916, with Spearman rho +0.673 against peak contrast (frame medians +0.756,
+# p = 1.9e-12). A fixed point-spread cannot produce a width that ranges over 50x and rises
+# with depth, so this width is the crack's, not the instrument's, and it can be read off the
+# image with no annotation in the loop. See docs/WIDTH_REFERENCE.md.
+#
+# WHAT IT FOUND. Against that reference (15,397 profiles), mask width / image FWHM per frame:
+#
+#       shipped detector   0.61x     wider than the feature on  8 / 61 frames
+#       wide (tight=0)     0.79x     wider on 19 / 61
+#       human brush label  0.69x     wider on 19 / 61
+#
+# The detector UNDER-marks the dark feature corpus-wide, by close to the factor the human
+# brush does (Wilcoxon vs 1.0, p = 5.8e-06). Over-marking is real but LOCAL -- 8 frames, all
+# of them hairline-feature frames, which is what MIN_BLOB_PX = 2000 forces: a component
+# thinner than about 2000/length px cannot survive the floor, so the only hairlines that
+# reach an export are ones the model drew fat.
+#
+# So this step CLIPS ONLY. Where the mask is already narrower than the feature it does
+# nothing, which is what makes it safe on the 53 frames that do not over-mark.
+WIDTH_CLIP = True
+WIDTH_CLIP_RADIUS = 200        # half-length of the transverse profile, px
+WIDTH_CLIP_DIRS = 12           # directions tried; the MINIMUM width is the transverse one
+WIDTH_CLIP_PROBES = 4000       # skeleton points measured per frame, then carried by kd-tree
+WIDTH_CLIP_RECENTRE = 3        # px of slack for the skeleton sitting off the ridge
+# The peak must clear this many background sigmas for a width to be accepted. NOT a contrast
+# gate on the pixel: v1 of this step required each skeleton point's own contrast to clear
+# 3 sigma, which is a selection effect rather than a guard, because width rises with contrast
+# (rho = +0.673) so gating on contrast measures only the wide places. On
+# HC_316L_fatigue_600 -- the worst over-marker -- it admitted 1.6% of the skeleton and
+# reported a median half-width of 17.6 px where an ungated sample of the same frame reports
+# 3.5 px, and the clip then had nothing to act on. Gating on whether the MEASUREMENT
+# succeeded instead took the measurable fraction from 43% to 65% and the frame from 2.57x
+# down to 1.15x.
+WIDTH_CLIP_PEAK_SIGMA = 2.0
+WIDTH_CLIP_BG_WINDOWS = (301, 901, 2401)
+WIDTH_CLIP_MIN_MEASURED = 8    # fewer measurable points than this: decline, do not guess
+WIDTH_CLIP_IDW_K = 12          # probes averaged per skeleton point; 1 would be Voronoi
+
+
+def local_background(image, mask, wins=WIDTH_CLIP_BG_WINDOWS):
+    """Local mean of the material AROUND the mask, widening until there is enough of it.
+
+    A single window has no non-mask pixels at all deep inside a wide accepted region and
+    silently degrades to a box mean over the crack itself -- the defect in tighten_to_image.
+    Widening keeps the estimator the same KIND of thing everywhere in the frame, so its
+    percentiles mean one thing.
+    """
+    from scipy.ndimage import uniform_filter
+    w = (~mask).astype(np.float32)
+    bg = np.zeros(image.shape, np.float32)
+    have = np.zeros(image.shape, bool)
+    for win in wins:
+        den = uniform_filter(w, size=win)
+        ok = (den > 0.02) & ~have
+        if ok.any():
+            num = uniform_filter(image * w, size=win)
+            bg[ok] = num[ok] / den[ok]
+            del num
+            have |= ok
+        del den, ok
+        if have.all():
+            break
+    if not have.all():
+        bg[~have] = float(image[~mask].mean()) if (~mask).any() else float(image.mean())
+    return bg
+
+
+def _transverse_fwhm(contrast, y, x, sigma, dirs, offs, rad):
+    """Full width at half maximum of the darkest transverse profile through (y, x).
+
+    Tries `dirs` directions and keeps the SMALLEST width: along the crack the profile never
+    comes back up, across it the width is the feature's. A direction is discarded when the
+    profile does not cross back under half maximum inside the search radius -- that is the
+    along-crack case, and it is also how a region that is not a line at all declines to be
+    measured.
+    """
+    best = np.inf
+    for dy, dx in dirs:
+        yy = np.clip(np.rint(y + offs * dy).astype(np.int32), 0, contrast.shape[0] - 1)
+        xx = np.clip(np.rint(x + offs * dx).astype(np.int32), 0, contrast.shape[1] - 1)
+        p = contrast[yy, xx]
+        c = rad - WIDTH_CLIP_RECENTRE + int(
+            np.argmax(p[rad - WIDTH_CLIP_RECENTRE:rad + WIDTH_CLIP_RECENTRE + 1]))
+        pk = float(p[c])
+        if pk < WIDTH_CLIP_PEAK_SIGMA * sigma:
+            continue
+        half = pk / 2.0
+        i = c
+        while i + 1 <= 2 * rad and p[i + 1] >= half:
+            i += 1
+        j = c
+        while j - 1 >= 0 and p[j - 1] >= half:
+            j -= 1
+        if i == 2 * rad or j == 0:
+            continue
+        best = min(best, float(i - j + 1))
+    return best
+
+
+def clip_to_measured_width(image_id, mask, slack=1.0, report=None):
+    """Clip the mask to the width the IMAGE says the feature has. Never widens it.
+
+    Returns the mask unchanged whenever the width cannot be measured -- no image, too few
+    measurable profiles, empty skeleton. Declining is the right failure here: AM cracks are
+    intensity-invisible (Cohen d +0.09 against +1.10..+2.91 on the other specimens), and a
+    step that guesses a width where it cannot read one would do its worst damage on 38% of
+    the corpus.
+    """
+    from scipy.ndimage import distance_transform_edt
+    from scipy.spatial import cKDTree
+    from skimage.morphology import skeletonize
+    img = S.load_npy(image_id, "img.npy")
+    if img is None or not mask.any():
+        return mask
+    img = np.asarray(img, np.float32)
+    if img.shape != mask.shape:
+        return mask
+    bg = local_background(img, mask)
+    contrast = (bg - img).astype(np.float32)
+    del bg, img
+    outside = contrast[~mask]
+    if outside.size < 64:
+        return mask
+    sigma = float(np.percentile(outside, 84.1) - np.percentile(outside, 50))
+    del outside
+    if not sigma > 0:
+        return mask
+    skel = skeletonize(mask)
+    ys, xs = np.nonzero(skel)
+    if ys.size == 0:
+        return mask
+    rng = np.random.default_rng(0)
+    sub = (np.arange(ys.size) if ys.size <= WIDTH_CLIP_PROBES
+           else np.sort(rng.choice(ys.size, WIDTH_CLIP_PROBES, replace=False)))
+    rad = WIDTH_CLIP_RADIUS
+    offs = np.arange(-rad, rad + 1)
+    dirs = [(np.cos(t), np.sin(t))
+            for t in np.linspace(0, np.pi, WIDTH_CLIP_DIRS, endpoint=False)]
+    half = np.array([_transverse_fwhm(contrast, int(ys[k]), int(xs[k]), sigma, dirs, offs,
+                                      rad) / 2.0 for k in sub], np.float32)
+    ok = np.isfinite(half)
+    if report is not None:
+        report.update(sigma=sigma, n_skel=int(ys.size), n_probe=int(sub.size),
+                      n_measured=int(ok.sum()))
+    if ok.sum() < WIDTH_CLIP_MIN_MEASURED:
+        return mask
+    # Carry the measured radius to every skeleton point by INVERSE-DISTANCE weighting over
+    # the k nearest probes, not by nearest probe alone.
+    #
+    # Nearest-probe assignment makes the radius field piecewise constant over the probes'
+    # Voronoi cells, and the clip boundary then follows the cell edges: rendered at native
+    # resolution the mask picks up long straight cuts and triangular wedges that no crack
+    # has. It is the same class of artefact as the diamond lattice a radius-1 closing stamps
+    # into the export, and it is just as obvious once you look at the picture instead of the
+    # area. Weighting over k neighbours makes the field continuous, so the boundary follows
+    # the image again.
+    pts = np.stack([ys[sub][ok], xs[sub][ok]], 1).astype(np.float32)
+    vals = half[ok].astype(np.float32)
+    k = int(min(WIDTH_CLIP_IDW_K, pts.shape[0]))
+    dist_k, idx_k = cKDTree(pts).query(np.stack([ys, xs], 1).astype(np.float32), k=k)
+    if k == 1:
+        dist_k = dist_k[:, None]
+        idx_k = idx_k[:, None]
+    w = 1.0 / np.maximum(dist_k, 1.0) ** 2
+    smooth = (vals[idx_k] * w).sum(1) / w.sum(1)
+    allowed = np.zeros(mask.shape, np.float32)
+    allowed[ys, xs] = smooth
+    vals = smooth
+    dist, idx = distance_transform_edt(~skel, return_distances=True, return_indices=True)
+    out = mask & (dist <= np.maximum(allowed[idx[0], idx[1]], slack))
+    if report is not None:
+        report["half_width_med"] = float(np.median(vals))
+    if not out.any():
+        return mask
+    return out
+
+
+
+def _narrow_to_image(image_id, mask, prune, spare=None):
+    """tighten_to_image, then clip to the width the image shows. Both exits of
+    effective_mask go through here -- the `corrections == "none"` branch keeps its own
+    early return, and giving it a second copy of the narrowing is how it silently skipped
+    a step once already (see the comment on that branch)."""
+    mask = tighten_to_image(image_id, mask, prune=prune, spare=spare)
+    if not WIDTH_CLIP or not mask.any():
+        return mask
+    # Clip to the width the image actually shows. tighten_to_image narrows by about 6%
+    # because its reference includes the mask it is testing; this uses a reference the mask
+    # cannot contaminate, and only ever removes pixels. Painted crack is exempt for the same
+    # reason it is exempt above: a stroke is an assertion, not a candidate.
+    clipped = clip_to_measured_width(image_id, mask)
+    if spare is not None:
+        clipped = clipped | (mask & spare)
+    if prune:
+        clipped = prune_specks_keeping(clipped, spare)
+    return clipped if clipped.any() else mask
+
+
 def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
                    corrections="paste", fill_holes=True, tight=False):
     """The model's prediction, combined with the user's corrections in one of three ways.
@@ -616,7 +829,7 @@ def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
         # silently ignored the switch: the URL carried tight=1, the picture did not change,
         # and nothing said why. Verified before the fix -- b2_338_13 read 27.417% either way.
         if tight and mask.any():
-            mask = tighten_to_image(image_id, mask, prune=prune and not postprocess)
+            mask = _narrow_to_image(image_id, mask, prune and not postprocess)
         return mask
     corr = S.load_npy(image_id, "correction.npy")
     if corr is not None and corr.shape == mask.shape:
@@ -682,7 +895,7 @@ def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
             corr_p = S.load_npy(image_id, "correction.npy")
             if corr_p is not None and corr_p.shape == mask.shape:
                 spare = corr_p == 1
-        mask = tighten_to_image(image_id, mask, prune=prune and not postprocess, spare=spare)
+        mask = _narrow_to_image(image_id, mask, prune and not postprocess, spare=spare)
     return mask
 
 
@@ -716,6 +929,25 @@ def tighten_to_image(image_id, mask, prune=True, spare=None, fill_voids=True):
     dark core actually present, while keeping 83.7% of the painted crack instead of 59.7%. It
     follows the crack ridge everywhere rather than comparing a faint branch against the
     darkest pixels elsewhere in the frame.
+
+    CORRECTION, 2026-09-19: THE TABLE ABOVE OVERSTATES WHAT THIS FUNCTION DOES.
+    Re-measured over all 71 frames at the deployed v5 operating point, the area drop is about
+    6%, not the 21% the first two rows imply -- wrought_316L_fatigue_1200 goes 0.0689 ->
+    0.0649, and the corpus median half-width moves 49.0 -> 44.4 px, a factor of 1.10 rather
+    than the 12x the third column suggests.
+
+    The cause is in the comparison itself: `uniform_filter` averages over the mask as well as
+    around it, and the accepted band is 30-50 px wide inside a 301 px window, so the mean is
+    set by the bright matrix either side and the whole band passes its own test. The 1.4 px
+    figure was a distance-transform median over a mask the narrowing had broken into threads,
+    not a clean narrow crack; the hole fill below then re-thickens it, which is why the area
+    and the half-width in that table disagree by an order of magnitude.
+
+    This function is LEFT AS IT IS -- it is the operating point every shipped number was
+    measured at, and changing it would invalidate them. The narrowing that works runs after
+    it: clip_to_measured_width, which estimates the background from NON-mask pixels so the
+    corridor cannot lower its own reference, and clips to a width read off the image rather
+    than to a threshold. See docs/WIDTH_REFERENCE.md.
 
     ON by default since 2026-08-24. Predicted area on the six confirmed crack-free specimens
     holds or improves (0.0230% wide, 0.0209% here), so this is not bought with false
