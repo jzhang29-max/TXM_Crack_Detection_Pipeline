@@ -60,7 +60,8 @@ a frame — with false positives on 6 owner-confirmed crack-free specimens:
 | crack-free false positives | **0.174%** of area (0.046% after speck pruning), 2.0 indications/frame |
 | mask width | ~5 px half-width, against a 2.5–3 px crack |
 
-Averaging beats either member alone on the same basis, in every fold rather than on average:
+Averaging beats either member alone on the same basis, in every fold rather than on average —
+**pooled over all four specimens. It does not hold on all four; see the breakdown below.**
 
 | arm | mean IoU | per fold |
 |---|---|---|
@@ -73,6 +74,37 @@ Read from the deployed model's own gate record (`thincore_v5`, stamp `20260824_2
 0.0229, and the ensemble beats both members in all five. This table previously carried the v4
 figures (0.651 / 0.778 / 0.792) under the v5 headline above — the deploy updated the headline
 and left the breakdown behind.
+
+### The averaging gain is specimen-dependent, and on AM it is absent (measured 2026-09-19)
+
+The table above pools all four specimens. Re-running the SAME harness
+(`pipeline.crossval_on_rows`, GroupKFold by image, 5 folds, IoU at the deployed 0.60 threshold,
+rows from `gather_training_data`) with the folds restricted to one specimen group at a time:
+
+| subset | images | ensemble | hybrid alone | 17-feature alone | folds ensemble wins |
+|---|---|---|---|---|---|
+| non-AM (B2 + B3 + wrought) | 44 | **0.7850** | 0.7696 | 0.7640 | **5/5** |
+| AM / HC_316L | 27 | 0.7447 | **0.7483** | 0.7261 | **1/5** |
+
+Paired per-fold delta, ensemble minus hybrid-alone: non-AM **+0.0154** (sd 0.0124, p = 0.049);
+AM **−0.0035** (sd 0.0070, p = 0.321). The difference between the two deltas is significant at
+**p = 0.0175**, and the fold pattern — 5/5 one way, 1/5 the other — is more convincing than
+either magnitude.
+
+Read this carefully in both directions. The pooled claim above is **not wrong**: the ensemble
+does beat both members in all five pooled folds. But it averages a real gain on 44 images with
+no gain on 27, so "averaging beats either member alone" should not be read as holding per
+specimen. Equally, the AM penalty is **small and individually not significant** — dropping the
+17-feature member on AM would recover about 0.004 IoU. This is "the gain is absent on one
+specimen", not "the ensemble is broken there".
+
+The likely cause is a property of the AM imagery, not of the ensemble: on AM the labelled
+crack has essentially no intensity contrast against its surroundings (standardised separation
+d = +0.09, against +1.10 / +2.91 / +1.57 on B2 / B3 / wrought, Mann-Whitney p < 1e-5), so the
+globally-trained 17-feature member transfers badly there — its AUC on AM frames runs 0.320–0.601,
+at or below chance. Retrained *within* AM folds it reaches 0.7261, so the 17 features are not
+uninformative on AM; the deployed member is mis-specified across specimens. Full record:
+`crack-evolution-5d/out/ensemble_vs_hybrid_by_specimen.json` and `out/am_label_separability.json`.
 
 The older figures for this comparison (17 alone 0.744, hybrid 0.795, ensemble 0.821) came from
 leave-one-image-out over 4 externally-labelled frames. Those labels are used nowhere in the
