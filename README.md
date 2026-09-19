@@ -316,12 +316,19 @@ are in `docs/` — `REFERENCE_FRAMES_AND_HGB.md`, `SAM_COMBINATION_SWEEP.md`,
 `PUBLISHABILITY.md`
 and `HANDOFF.md`.
 
-**Why is the predicted crack wider than the real one?** Measured, and four fixes tried and
-rejected: [docs/OVERMARKING.md](docs/OVERMARKING.md). The model draws a ~15 px hairline about
-50 px wide, your own brush strokes are the tighter boundary, and raising the threshold,
+**Is the predicted crack wider than the real one?** On thin-crack frames, yes, and four fixes
+were tried and rejected: [docs/OVERMARKING.md](docs/OVERMARKING.md) — raising the threshold,
 dropping the large smoothing scales, image-guided refinement and halving the SAM embedding
-stride all trade accuracy for thinness without localising better. The blocker is that every
-accuracy number is scored against brush strokes that over-mark too.
+stride all trade accuracy for thinness without localising better.
+
+**Corpus-wide the direction is the other way, and that changes how to read every IoU here.**
+Over all 61 labelled frames the median label is **73.4 px** wide against a **28.9 px**
+prediction — the label is wider on 53 of them, median ratio 2.20×. That is the thin-label
+training working, and its consequence is that IoU against raw painted strokes now penalises
+the model for being correctly narrow. Width-tolerant centreline agreement reads **clDice
+0.863** with **Tprec 0.955** where IoU on the same frames reads 0.505: 95.5% of the predicted
+centreline lands inside the label, so IoU is measuring width disagreement, not misplacement.
+The honest residual is Tsens 0.814 — 18.6% of the label centreline is uncovered.
 
 **Why SAM 1 and not SAM 2 or SAM 3?** Measured, not assumed:
 [docs/ENCODER_COMPARISON.md](docs/ENCODER_COMPARISON.md). SAM 2's features are more
