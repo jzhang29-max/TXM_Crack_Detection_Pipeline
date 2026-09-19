@@ -1076,10 +1076,16 @@ def main():
         _saved12 = open(_reg12).read() if os.path.exists(_reg12) else None
         try:
             _cur_before = (_S12.registry().get("current") or {}).get("label")
+            # Point at the SHIPPED files, not at superseded ones. This probe only needs a
+            # pair of paths that exist -- available_models() drops any entry whose declared
+            # files are missing, by design. It used to name f17_v3/hybrid_v3, so removing
+            # those from the tree failed this check on both CI runners for a reason that had
+            # nothing to do with what it tests. Its own `created` stamp keys it, so reusing
+            # the current model's paths cannot collide with the current entry.
             _probe = dict(kind="ensemble",
-                          path_17=os.path.join(PROJECT, "models", "f17_v3_20260822.joblib"),
+                          path_17=os.path.join(PROJECT, "models", "f17_v5_20260824.joblib"),
                           path_hybrid=os.path.join(PROJECT, "models",
-                                                   "hybrid_v3_20260822.joblib"),
+                                                   "hybrid_v5_20260824.joblib"),
                           recipe="selftest", label="SELFTEST_REFUSED",
                           created="19700101_000000", gate_passed=False,
                           gate_reason="selftest probe")
