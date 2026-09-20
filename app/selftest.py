@@ -966,6 +966,47 @@ def main():
     except Exception as e:                                      # noqa: BLE001
         check("width clipping only ever removes, and is not inert", False, str(e))
 
+    # THE STRAIGHTNESS GUARD MUST BE ABLE TO EMPTY A MASK, and must run after the
+    # empty-result fallback rather than under it. That fallback exists twice -- once in
+    # _narrow_to_image and once, briefly, inside drop_straight_lines -- and while the guard
+    # sat under either of them it could not remove the one component it most needed to: on
+    # b3_amb, a specimen asserted crack-free throughout, the straight artefact is the ONLY
+    # accepted component, so emptying the mask triggered the fallback and the false positive
+    # shipped. Both the guard-removes-it property and the ordering are asserted here,
+    # because a test that only checked "did the mask change" passed while it was broken.
+    try:
+        import numpy as _npS
+        import inspect as _insS
+        import pipeline as _PS
+        _src = _insS.getsource(_PS._narrow_to_image)
+        _i_fb = _src.find("clipped if clipped.any() else mask")
+        _i_dl = _src.find("drop_straight_lines(")
+        check("the straightness guard runs after the empty-result fallback, not under it",
+              _i_fb != -1 and _i_dl != -1 and _i_dl > _i_fb,
+              f"fallback at {_i_fb}, drop_straight_lines at {_i_dl}")
+        # a synthetic dead-straight line is removed; a wandering one of the same size is not
+        _h, _w = 600, 400
+        _straight = _npS.zeros((_h, _w), bool)
+        _straight[50:550, 200:205] = True
+        _wavy = _npS.zeros((_h, _w), bool)
+        for _r in range(50, 550):
+            _c = 200 + int(round(40 * _npS.sin(_r / 60.0)))
+            _wavy[_r, _c:_c+5] = True
+        _gs = _PS.drop_straight_lines(_straight)
+        _gw = _PS.drop_straight_lines(_wavy)
+        check("a dead-straight component is dropped and a wandering one of equal size is kept",
+              not _gs.any() and int(_gw.sum()) == int(_wavy.sum()),
+              f"straight {int(_straight.sum())}->{int(_gs.any() and _gs.sum() or 0)} px, "
+              f"wavy {int(_wavy.sum())}->{int(_gw.sum())} px")
+        # painted pixels are exempt from the shape rule, as everywhere else
+        _spare = _npS.zeros_like(_straight)
+        _spare[300, 202] = True
+        check("a painted pixel exempts a straight component from the shape rule",
+              int(_PS.drop_straight_lines(_straight, _spare).sum()) == int(_straight.sum()),
+              f"{int(_PS.drop_straight_lines(_straight, _spare).sum())} px kept")
+    except Exception as e:                                      # noqa: BLE001
+        check("the straightness guard behaves", False, str(e))
+
     # Both exits of effective_mask narrow through ONE helper. The `corrections == "none"`
     # branch returns early and used to carry its own copy of the tighten call; when
     # clip_to_measured_width was added to the other exit, that branch silently skipped it and

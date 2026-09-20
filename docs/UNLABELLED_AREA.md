@@ -109,12 +109,102 @@ looks right on them is what selection does. What it does support: the 0.197%-of-
 crack figure quoted as the detector's false-positive rate is an **upper bound**, because some
 of that 0.197% is the annotator, not the model.
 
+## The sub-4000 px components, checked (added 2026-09-20)
+
+They are not 12,303 detections. `MIN_BLOB_PX = 2000` means no ACCEPTED component is that
+small -- these are the unpainted REMAINDER of large accepted components after intersecting
+with the label map, i.e. the rim of a stroke that did not quite cover the crack under it.
+
+| | |
+|---|---|
+| exactly 1 px | 6,921 comps (56.3%), 0.09% of unlabelled area |
+| 2-9 px | 3,141 comps, 0.13% |
+| within 25 px of a painted stroke | **80.4% of their area** |
+| median distance to nearest stroke | **11 px** |
+
+Filtering to where "nobody checked this" is a real claim -- >= 200 px AND >= 200 px from any
+stroke -- leaves **32 components = 0.229% of all accepted area**. That is the entire
+exposure even if every one were wrong.
+
+Second blind run, same design, 400 px fields so a test component's 200 px clearance means no
+painted crack can appear in frame. Positive controls stratified to match the test sizes
+(median 2418 vs 2403 px, p = 0.94; a first attempt matched at p = 0.003 and was rebuilt,
+since larger controls would have biased the comparison toward calling the test class crack).
+Leak guard clear at p >= 0.089.
+
+| class | majority CRACK | score |
+|---|---|---|
+| painted crack, size-matched | 18/32 (56%) | 0.594 |
+| **isolated small indications** | **11/32 (34%)** | **0.417** |
+| crack-free specimens, FP by assertion | **0/4** | 0.000 |
+| plain matrix | 4/26 (15%) | 0.192 |
+
+Above matrix (p = 0.020), not separable from real crack (p = 0.066). **The instrument is
+weak at this size**: it recognises only 56% of KNOWN crack here against 92% on the large
+regions. A Rogan-Gladen correction for that gives a bootstrap 95% CI of **0-100%**, so no
+prevalence is quoted. This class is unresolved, and it is 0.23% of the mask.
+
+A limitation of the method at this scale: each crop shows a 400 px FIELD, not the component
+in isolation, so a voter answers "is there a crack here", not "is this component a crack".
+Two of the five artefacts below were called crack, and the panel's written evidence shows it
+was describing a different feature in the same field.
+
+## A new artefact class: cracks do not run straight
+
+Five of the 32 read as obvious cracks on every summary statistic -- elongation 24 to 197,
+12 to 49 sigma darker than their surroundings. The panel rejected them. Geometry settles it:
+they are **vertical lines wandering 0.13 to 0.93 px over 171 to 788 px of length**, width
+sd 0.37 to 2.19 px. A crack at that aspect wanders tens of pixels.
+
+Censused over all 71 frames, standalone components of >= 200 px with bbox aspect >= 6:
+
+| | n | wander | area |
+|---|---|---|---|
+| straight-line artefacts | 5 | 0.13 - 0.71 px | 15,241 px = 0.047% of accepted |
+| one painted crack | 1 | 1.73 px | 2,433 px, 55.9% painted |
+| genuine long crack | 6 | 2.9 - 12.9 px | |
+
+`drop_straight_lines` removes components of >= 200 px, aspect >= 6 and wander < 1.0 px;
+painted pixels are exempt. Verified guard-ON against guard-OFF across all 71 frames:
+
+| | |
+|---|---|
+| fires on | 4 frames, 15,241 px |
+| painted crack removed | **0 px** (criterion was 0) |
+| clDice / Tsens / Tprec / IoU | **unchanged to six decimals** |
+| `b3_amb`, a crack-free specimen | 0.0169% -> **0.0000%** |
+| false-positive area on crack-free material | 0.02528% -> 0.02359%, a 6.7% reduction |
+
+**It is a lower bound.** The test is component-level, so it catches the three standalone
+artefacts. Two more are fused into 440k and 228k px crack systems and ride in attached to
+real cracks; those need a within-component test that does not exist yet.
+
+## Three checks in this work reported success while measuring nothing
+
+Recorded because the pattern repeated, not for confession's sake.
+
+1. The corpus straightness census printed **0.00%**. It crashed with `ptp was removed in
+   NumPy 2.0` on exactly the 10 frames that contained long components -- the crash only
+   fires once one is found -- and the per-frame error handler caught it while the summary
+   filtered those frames out and averaged the survivors.
+2. The first guard verification compared `effective_mask` against `effective_mask`. The
+   guard runs inside it, so both arms were guarded: `0 px removed, clDice delta 0.000000,
+   PASS`. A test that could not fail.
+3. The empty-result fallback existed **twice**, in `_narrow_to_image` and inside
+   `drop_straight_lines`. Removing the inner one changed nothing because the outer one
+   caught the fall, and `b3_amb` -- the single confirmed false positive in the corpus --
+   kept shipping through a guard that reported PASS. Fixed by ordering: the fallback covers
+   tighten and clip, which rest on measurements that can fail; the straightness guard runs
+   after it and is final, because an empty mask on a crack-free specimen is a correct answer.
+
+A selftest probe now asserts all three properties, including the ordering.
+
 ## What is still not checked
 
-- The 12.2% of unlabelled area in components under 4000 px. 12,588 components, 285 of them
-  over the floor. Small components are where speck-level false positives would live.
-- NEGF has n = 2. The crack-free specimens barely produce components large enough to sample,
-  which is itself good news, but it means that arm proves nothing.
+- The two artefacts fused into large crack systems. A within-component straightness test
+  would find them; none exists.
+- NEGF/CFREE have n = 2 and n = 4. The crack-free specimens barely produce components large
+  enough to sample, which is itself the good news, but those arms prove little on their own.
 - The panel is a careful reader applying stated physics, not a metallurgist. It agrees with
-  the annotator on 24/26 of their own strokes, which is the strongest thing that can be said
-  for it.
+  the annotator on 24/26 of their own strokes at full size, which is the strongest thing
+  that can be said for it -- and only 18/32 at small size, which is the honest caveat.

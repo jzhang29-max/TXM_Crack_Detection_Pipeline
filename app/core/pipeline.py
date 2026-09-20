@@ -743,6 +743,102 @@ def clip_to_measured_width(image_id, mask, slack=1.0, report=None):
 
 
 
+# A crack that runs 800 px does not do it in a straight line.
+#
+# Three of the detector's most confident ISOLATED indications turned out to be dead-straight
+# vertical lines: 788x4 px at elongation 197 wandering 0.18 px about its own best-fit line,
+# 536x4 at 134 wandering 0.13 px, 877x5 at 175 wandering 0.34 px. They read as cracks on
+# every summary statistic -- long, thin, and 12 to 49 sigma darker than their surroundings --
+# and they are not cracks. One of them is on b3_amb, a specimen asserted crack-free
+# throughout, so it is a confirmed false positive.
+#
+# Aspect ratio cannot catch them; it is what makes them look right. The separating quantity
+# is WANDER: the standard deviation of the component's centreline about a straight-line fit
+# along its own long axis. Censused over all 71 frames, standalone components of >= 200 px
+# with bbox aspect >= 6 split cleanly into two populations --
+#
+#     5 components   wander 0.13 - 0.71 px     15,241 px   the artifacts
+#     1 component    wander 1.73 px              2,433 px   <-- 55.9% painted CRACK
+#     6 components   wander 2.9 - 12.9 px, median 5.3 px    genuine long crack
+#
+# THE CUT IS 1.0 px, AND THE FIRST VERSION HAD IT AT 2.0. At 2.0 the guard removed 1,360 px
+# of crack the annotator had painted, on b2_341_88_take2 -- the wander-1.73 component, which
+# also has the most variable width of the twelve (sd 6.39 px against 0.37-2.19 for the five
+# artifacts). "Must not remove painted crack" was fixed before the run, so the cut moved to
+# where the population actually separates: 0.71 to 1.73 is a 2.4x step, 1.73 to 2.9 is only
+# 1.7x. An earlier note in this file claimed "11x separation with nothing in between"; that
+# was read off the two group medians and it was wrong -- 1.73 sits in the gap, and it is a
+# crack.
+#
+# All the artifacts clear the 2000 px floor on SIZE, so the sub-floor aspect rule above is
+# not what admits them and tightening it would not help.
+#
+# Painted pixels are exempt, as everywhere else: an assertion the user drew is not judged on
+# its shape. Full measurement in docs/UNLABELLED_AREA.md.
+STRAIGHT_MIN_PX = 200
+STRAIGHT_MIN_ASPECT = 6.0
+STRAIGHT_MAX_WANDER = 1.0
+
+
+def _centreline_wander(sub):
+    """SD of a component's centreline about a straight-line fit along its own long axis."""
+    ys, xs = np.nonzero(sub)
+    h, w = sub.shape
+    if h >= w:
+        keys = np.unique(ys)
+        if keys.size < 8:
+            return None
+        cen = np.array([xs[ys == k].mean() for k in keys])
+    else:
+        keys = np.unique(xs)
+        if keys.size < 8:
+            return None
+        cen = np.array([ys[xs == k].mean() for k in keys])
+    t = np.arange(cen.size, dtype=float)
+    return float((cen - np.polyval(np.polyfit(t, cen, 1), t)).std())
+
+
+def drop_straight_lines(mask, spare=None, report=None):
+    """Remove standalone components that are too straight to be cracks. Never widens."""
+    from scipy.ndimage import label as _cc, find_objects as _fo
+    if not mask.any():
+        return mask
+    lab, n = _cc(mask)
+    if n == 0:
+        return mask
+    sizes = np.bincount(lab.ravel())
+    sizes[0] = 0
+    kill = []
+    objs = _fo(lab)
+    for c in range(1, n + 1):
+        if sizes[c] < STRAIGHT_MIN_PX:
+            continue
+        sl = objs[c-1]
+        if sl is None:
+            continue
+        h = sl[0].stop - sl[0].start
+        w = sl[1].stop - sl[1].start
+        if max(h, w) / max(min(h, w), 1) < STRAIGHT_MIN_ASPECT:
+            continue
+        sub = lab[sl] == c
+        if spare is not None and (spare[sl] & sub).any():
+            continue                      # the user asserted this; shape does not overrule
+        wander = _centreline_wander(sub)
+        if wander is not None and wander < STRAIGHT_MAX_WANDER:
+            kill.append((c, int(sizes[c]), float(wander)))
+    if report is not None:
+        report["dropped"] = kill
+    if not kill:
+        return mask
+    # No "keep it if the result would be empty" fallback. That clause was here and it
+    # silently protected the one case this exists for: on b3_amb -- a specimen asserted
+    # crack-free throughout -- the straight artifact is the ONLY accepted component, so the
+    # fallback handed it straight back and the guard reported nothing. An empty mask on a
+    # crack-free specimen is the correct answer, not a failure to be caught.
+    return mask & ~np.isin(lab, [k[0] for k in kill])
+
+
+
 def _narrow_to_image(image_id, mask, prune, spare=None):
     """tighten_to_image, then clip to the width the image shows. Both exits of
     effective_mask go through here -- the `corrections == "none"` branch keeps its own
@@ -760,7 +856,22 @@ def _narrow_to_image(image_id, mask, prune, spare=None):
         clipped = clipped | (mask & spare)
     if prune:
         clipped = prune_specks_keeping(clipped, spare)
-    return clipped if clipped.any() else mask
+    # The empty-result fallback belongs to the NARROWING steps only. Tighten and clip both
+    # rest on a measurement that can fail, and when one of them deletes everything the right
+    # reading is "could not narrow this", so the corridor comes back.
+    out = clipped if clipped.any() else mask
+    # drop_straight_lines runs AFTER that decision, and is final. It is not a measurement
+    # that might have failed -- it is a positive finding that a component is too straight to
+    # be a crack, and an empty mask is a legitimate answer to it.
+    #
+    # This ordering is the whole point. The same "keep it if the result would be empty"
+    # clause existed here AND inside drop_straight_lines; removing only the inner one changed
+    # nothing, because this one caught the fall. On b3_amb -- a specimen asserted crack-free
+    # throughout -- the straight artifact is the only accepted component, so under either
+    # clause the guard reported 0 px removed and the false positive shipped.
+    if prune:
+        out = drop_straight_lines(out, spare)
+    return out
 
 
 def effective_mask(image_id, threshold=None, postprocess=False, prune=True,
