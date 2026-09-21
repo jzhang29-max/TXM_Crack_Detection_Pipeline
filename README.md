@@ -233,10 +233,19 @@ In words, for one image:
 3. **Ask two small neural networks, and average them.** One sees only the 17 measurements, one
    sees all 273. Their average is the crack probability. Averaging beats either alone.
 4. **Turn probability into a mask.** Keep pixels above 0.60, drop isolated blobs under 2000 px,
-   fill pinholes, then narrow what is left to the darker core inside it using the image itself.
-   That last step is why the mask is a few pixels across rather than tens. Narrowing opens new
-   pinholes of its own — 342,963 of them across the corpus, which is what read as unfilled
-   centres in a black-and-white export — so the fill runs again afterwards, leaving 894.
+   fill pinholes, then narrow what is left using the image itself, in three steps that do very
+   different amounts of work:
+   `tighten_to_image` keeps pixels darker than a 301 px box mean and is worth about **6%** of
+   area (its own docstring claimed a factor of two; measured over all 71 frames it is not, and
+   the reason is that the box mean is taken over the mask as well as around it);
+   `clip_to_measured_width` clips to the transverse full-width-at-half-maximum read off the
+   image, which is the step that actually narrows — 32% off the worst over-marking frame and
+   0.6% off one that was already narrower than its feature;
+   `drop_straight_lines` removes components too straight to be cracks (centreline wander under
+   1 px over hundreds of px), which took one crack-free specimen from 0.0169% to zero.
+   Narrowing opens new pinholes of its own — 342,963 of them across the corpus, which is what
+   read as unfilled centres in a black-and-white export — so the fill runs again afterwards,
+   leaving 894. See `docs/WIDTH_REFERENCE.md`.
 5. **You correct it.** Paint missed crack, erase false positives, or click once to remove a whole
    wrong region. Your strokes are saved immediately and always win over the model on screen.
 6. **Retrain learns from your corrections and nothing else.** No external labels are used
@@ -322,13 +331,24 @@ dropping the large smoothing scales, image-guided refinement and halving the SAM
 stride all trade accuracy for thinness without localising better.
 
 **Corpus-wide the direction is the other way, and that changes how to read every IoU here.**
-Over all 61 labelled frames the median label is **73.4 px** wide against a **28.9 px**
-prediction — the label is wider on 53 of them, median ratio 2.20×. That is the thin-label
-training working, and its consequence is that IoU against raw painted strokes now penalises
-the model for being correctly narrow. Width-tolerant centreline agreement reads **clDice
-0.863** with **Tprec 0.955** where IoU on the same frames reads 0.505: 95.5% of the predicted
+Over all 61 labelled frames the label is wider than the prediction on 53 of them, median ratio
+2.20×. That is the thin-label training working, and its consequence is that IoU against raw
+painted strokes now penalises the model for being correctly narrow. At the **shipped**
+operating point — p > 0.60, specks pruned, then all three narrowing steps — width-tolerant
+centreline agreement reads **clDice 0.823** with **Tprec 0.970**: 97.0% of the predicted
 centreline lands inside the label, so IoU is measuring width disagreement, not misplacement.
-The honest residual is Tsens 0.814 — 18.6% of the label centreline is uncovered.
+The honest residual is **Tsens 0.761 — 23.9% of the label centreline is uncovered.**
+
+Those numbers moved on 2026-09-19 when `clip_to_measured_width` shipped (clDice 0.846 → 0.823,
+Tsens 0.798 → 0.761) and this page quoted the pre-clip trio 0.863 / 0.955 / 0.814 until
+2026-09-21. Every stale value erred in the flattering direction, which is worth saying plainly
+on a page whose subject is honest measurement. Source: `crack-evolution-5d/out/txm_width_clip_final.json`.
+
+**Do not read the width story as settled in the model's favour.** Measured against the image's
+own transverse FWHM rather than against the brush, the detector marks **0.68×** the width of
+the feature it sits on and the human annotator **0.69×** — on one instrument over one frame
+set, those are indistinguishable. Both under-mark. `docs/WIDTH_REFERENCE.md` has the method
+and the prior art it rests on.
 
 **Why SAM 1 and not SAM 2 or SAM 3?** Measured, not assumed:
 [docs/ENCODER_COMPARISON.md](docs/ENCODER_COMPARISON.md). SAM 2's features are more

@@ -572,15 +572,23 @@ TIGHTEN_MIN_CORE = 0.60
 #
 # WHAT IT FOUND. Against that reference (15,397 profiles), mask width / image FWHM per frame:
 #
-#       shipped detector   0.61x     wider than the feature on  8 / 61 frames
-#       wide (tight=0)     0.79x     wider on 19 / 61
-#       human brush label  0.69x     wider on 19 / 61
+#       wide (tight=0)     0.672     wider than the feature on 14 / 64 frames
+#       tighten only       0.590     wider on  7 / 64
+#       SHIPPED            0.505     wider on  0 / 64
+#       human brush label  0.529     wider on 11 / 61
 #
-# The detector UNDER-marks the dark feature corpus-wide, by close to the factor the human
-# brush does (Wilcoxon vs 1.0, p = 5.8e-06). Over-marking is real but LOCAL -- 8 frames, all
-# of them hairline-feature frames, which is what MIN_BLOB_PX = 2000 forces: a component
+# Re-measured 2026-09-21 in one pass, one estimator, one frame set, the SAME sample points
+# for every row. The figures this comment used to carry (0.61x / 0.79x / 0.69x, 8 or 10 of
+# 61 or 63) were a splice of two runs and disagreed with docs/WIDTH_REFERENCE.md and with
+# out/txm_width_prereg_and_failed_variants.md -- three places, three different counts.
+#
+# The detector and the human annotator are INDISTINGUISHABLE on this measure -- paired over
+# the 61 frames with both, 0.506 against 0.529, Wilcoxon p = 0.061 -- and both under-mark the
+# dark feature heavily (against 1.0: p = 3.5e-12 and p = 1.1e-06). Over-marking was real but
+# LOCAL, on hairline-feature frames, which is what MIN_BLOB_PX = 2000 forces: a component
 # thinner than about 2000/length px cannot survive the floor, so the only hairlines that
-# reach an export are ones the model drew fat.
+# reach an export are ones the model drew fat. With the clip and the straightness guard both
+# shipped, the measured over-marking count is now 0 of 64.
 #
 # So this step CLIPS ONLY. Where the mask is already narrower than the feature it does
 # nothing, which is what makes it safe on the 53 frames that do not over-mark.

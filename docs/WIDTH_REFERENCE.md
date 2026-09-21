@@ -25,10 +25,44 @@ three came back negative:
   sits 1.63 sigma above matrix at 42% of the core contrast. It is dark. Deleting it is not
   narrowing, it is deleting crack.
 
-## The measurement that settled it
+## Prior art, checked 2026-09-21 — the METHOD is standard, and this doc did not say so
 
-`docs/OVERMARKING.md:100` says the blocker is that "no tight reference exists". One does:
-the transverse contrast profile. At each skeleton point, take the profile along 12
+An earlier version of this page pitched the transverse-profile width measurement as new
+("a width metric that does not go through the annotations at all") and carried **zero
+citations**. That was wrong, and it is the seventh novelty claim in this project to die on a
+prior-art check. What is standard:
+
+- **The method.** Sampling intensity along lines perpendicular to the crack centreline is a
+  named, established algorithm for automated crack width measurement -- *Orthogonal Profile
+  Extraction* -- and is one of the two principal approaches alongside the Euclidean distance
+  transform on the mask. Its canonical steps are exactly the ones implemented here:
+  skeletonise, compute the local tangent, take the normal, sample the profile.
+  ([TarmacView, Automated Crack Width Measurement from Imagery](https://www.tarmacview.com/glossary/crack-width-measurement/);
+  cf. [Edge-OrthoBoundary, *Buildings* 15:2489](https://doi.org/10.3390/buildings15142489))
+- **The half-maximum criterion.** Taking the edge at half the profile's peak is **ISO50**,
+  the default surface-determination rule in X-ray CT dimensional metrology, codified in
+  VDI/VDE 2630 and with its own measurement-uncertainty literature.
+  ([VDI/VDE 2630 Blatt 1.1](https://www.vdi.de/en/home/vdi-standards/details/vdivde-2630-blatt-11-computed-tomography-in-dimensional-measurement-fundamentals-and-definitions);
+  [Precision Engineering, S0141635919301590](https://www.sciencedirect.com/science/article/abs/pii/S014163591930159X))
+- **The orthogonality requirement.** That width must be taken perpendicular or it
+  overestimates by 1/cos(theta) is textbook, and is why the minimum over 12 directions is
+  used here.
+
+One difference worth stating precisely rather than inflating: ISO50 in XCT is a **global**
+threshold at the midpoint of the air/material histogram peaks, whereas this takes a **local**
+half-maximum of each transverse profile against a locally-estimated background. That is a
+routine variation, not a new instrument.
+
+**So what, if anything, is left.** Not the measurement. What this repo has that the crack-
+width literature does not is the *use*: turning a standard metrology rule into an AUDIT
+instrument, and pointing it at the annotations rather than at the specimen -- asking "is the
+mask as wide as the feature", and getting the answer that the detector and the human
+annotator are indistinguishable and both under-mark. Any claim beyond that should be cut.
+
+## The measurement
+
+`docs/OVERMARKING.md:100` says the blocker is that "no tight reference exists" for width on
+this corpus. One does, and it is an off-the-shelf one: the transverse contrast profile. At each skeleton point, take the profile along 12
 directions and keep the smallest full-width-at-half-maximum -- along the crack the profile
 never returns below half maximum, across it the width is the feature's.
 
@@ -50,30 +84,73 @@ loop.
 
 ## What the reference says about over-marking
 
-Mask width / image FWHM, per-frame medians, 15,397 profiles. **1.00 means the mask is
+**This table was re-measured on 2026-09-21 and the previous one was a splice.** Its detector
+row came from the final inverse-distance-weighted estimator over 63 frames while the `wide`
+and label rows came from an earlier run over 61, and it printed them side by side as though
+they were comparable. They were not. Every row below is one pass, one estimator, one frame
+set, and -- the part that actually matters -- **the same sample points for every variant**,
+taken on the skeleton of the widest mask so that no variant is scored at points chosen by
+its own geometry. Generator: `code/audit/measure_width_ratio.py`. Artifact:
+`crack-evolution-5d/out/txm_width_ratio_unified.json`.
+
+Mask width / image transverse FWHM, per-frame medians, 64 frames. **1.00 means the mask is
 exactly as wide as the feature it sits on.**
 
-| mask | ratio | IQR | wider than the feature on |
+| mask | n | ratio | IQR | wider than the feature |
+|---|---|---|---|---|
+| wide (`tight=0`) | 64 | 0.672 | 0.58-0.94 | 14 / 64 |
+| tighten only | 64 | 0.590 | 0.51-0.74 | 7 / 64 |
+| **SHIPPED (`tight=1`)** | 64 | **0.505** | 0.44-0.59 | **0 / 64** |
+| human brush label | 61 | 0.529 | 0.43-0.77 | 11 / 61 |
+
+Three things change against what this page said before.
+
+**1. The shipped detector over-marks on nothing.** Zero frames of 64, against 7 for tighten
+alone and 14 for the wide corridor. The "10 of 63 frames" this page reported was measured on
+the mask BEFORE `clip_to_measured_width` and `drop_straight_lines` shipped. Those two steps
+removed the over-marking they were built to remove, and the earlier figure should be read as
+the problem statement, not the current state.
+
+**2. The detector and the human annotator are indistinguishable.** Paired on the 61 frames
+that have both, same points, same estimator: shipped **0.506** against label **0.529**, a
+paired median difference of -0.011, **Wilcoxon p = 0.061**. The previous page reported
+0.61x against 0.69x and read that as a gap. On one instrument there is no gap. What survives
+is the direction, and it is strong: both under-mark the dark feature, shipped vs 1.0
+p = 3.5e-12, label vs 1.0 p = 1.1e-06.
+
+**3. Everything under-marks by more than previously stated.** Scoring every variant at the
+same points is what makes the rows comparable, and it necessarily lowers all of them: the
+shared skeleton reaches places a narrow mask does not, and those points enter its median as
+near-zero width. So **these numbers are a fair comparison ACROSS masks and are not absolute
+width estimates** -- do not quote 0.505 as "the detector is half as wide as the crack"
+without that qualification. The per-mask self-skeleton figures (detector 0.68, label 0.69)
+are the better absolute estimate and are in `out/txm_width_reference.json`.
+
+Five frames are excluded: they have no accepted area at all, so there is no skeleton to
+sample. All five are crack-free controls, which is the correct behaviour rather than a
+failure.
+
+Per specimen, shipped against label on the same points:
+
+| group | n | shipped | label |
 |---|---|---|---|
-| shipped detector (`tight=1`) | **0.61x** | 0.57-0.90 | 10 / 63 frames |
-| wide (`tight=0`) | 0.79x | 0.64-1.06 | 19 / 61 |
-| human brush label | 0.69x | 0.47-1.13 | 19 / 61 |
-
-Wilcoxon against 1.0: p = 5.8e-06. **The detector under-marks the dark feature corpus-wide,
-by close to the factor the human annotator does.** That is the third framing of
-"over-marking" in this repo to come out the other way round when measured; see the
-correction at the top of `docs/OVERMARKING.md`.
-
-The over-marking is real, and it is **local**: 10 frames of 63, and every one of them is a
-frame whose feature is a hairline. That is what `MIN_BLOB_PX = 2000` forces -- a component
-thinner than roughly 2000/length px cannot survive the floor, so the only hairlines that
-reach an export are the ones the model happened to draw fat.
+| B2 | 15 | 0.491 | 0.546 |
+| B3 | 13 | 0.455 | 0.453 |
+| AM | 24 | 0.563 | 0.582 |
+| Wrought | 12 | 0.506 | 0.703 |
 
 ## `clip_to_measured_width`
 
-Clips the mask to the width the image shows, per location, and **never widens it**. Where
-the mask is already narrower than the feature it does nothing, which is what makes it safe
-on the 53 frames that do not over-mark. Where the width cannot be measured -- fewer than 8
+Clips the mask to the width the image shows, per location, and **never widens it**.
+
+**A correction to how that safety was described.** This page said "where the mask is already
+narrower than the feature it does nothing, which is what makes it safe on the 53 frames that
+do not over-mark". The first half is an argument about monotonicity -- the operator can only
+remove pixels -- but the sentence asserted an empirical no-op, and the per-frame data
+contradicts it. Of the 53 frames with a pre-clip ratio at or below 1.0, **50 lose area**
+(median 4.6% of it, max 14.1%), 45 of the 52 labelled ones lose Tsens (median -0.016), and
+48 end up further from a ratio of 1.0 than they started. The operator is safe in the sense
+that it cannot invent crack, not in the sense that it leaves well-behaved frames alone. Where the width cannot be measured -- fewer than 8
 measurable profiles, no image, empty skeleton -- it declines and returns the mask unchanged.
 Declining matters here: AM cracks are intensity-invisible (Cohen d +0.09 against +1.10 to
 +2.91 elsewhere) and a step that guessed a width would do its worst damage on 38% of the
@@ -85,7 +162,7 @@ operating point:
 | | | |
 |---|---|---|
 | (a) safety: Tsens and clDice drop <= 0.02 | clDice 0.846 -> 0.823 (paired **-0.017**), Tsens 0.798 -> 0.761 (paired **-0.026**) | **clDice PASS, Tsens FAIL** |
-| (b) median \|ratio-1\| falls | 0.390 -> 0.442 | **FAIL** |
+| (b) median \|ratio-1\| falls | 0.399 -> 0.442 | **FAIL** |
 | (c) every over-marking frame comes down, none of the others rises | **10/10 down**, median 1.24x -> 0.88x, worst **2.91x -> 0.92x**; 0 of 53 rose | **PASS** |
 | (d) crack-free specimens do not gain area | max 0.00139 -> 0.00128 | **PASS** |
 
@@ -143,7 +220,8 @@ replaced, which is why the final numbers above are more aggressive than the firs
 
 ## What this gives the paper
 
-A width metric that does not go through the annotations at all. Every accuracy number in
+An APPLICATION of standard profile metrology (see the prior-art section above -- the method
+itself is not ours) as a scoring instrument that does not go through the annotations. Every accuracy number in
 this repo is scored against brush strokes, and the strokes over-mark -- that is the
 documented ceiling (`docs/OVERMARKING.md`, IoU ceiling 0.0498 for a perfect 3 px crack).
 The width ratio is scored against the image. It ranks a mask on whether it is as wide as the
