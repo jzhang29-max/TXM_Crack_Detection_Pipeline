@@ -25,9 +25,29 @@ from scipy.stats import fisher_exact, mannwhitneyu
 SCORE = {"yes": 1.0, "unsure": 0.5, "no": 0.0}
 
 
+def group_of(iid):
+    low = (iid or "").lower()
+    if "_b2_" in low:
+        return "B2"
+    if "b3" in low:
+        return "B3"
+    if "hc_316l" in low:
+        return "AM"
+    if "wrought" in low:
+        return "WR"
+    return "other"
+
+
 def load_key(path):
     d = json.load(open(path))
-    return d["crops"] if isinstance(d, dict) and "crops" in d else d
+    crops = d["crops"] if isinstance(d, dict) and "crops" in d else d
+    # Older key files predate the `grp` field. Derive it, because the group-confound check
+    # below is the whole reason this script exists and it must run on those too -- that is
+    # how the confound in run 1 was found in the first place.
+    for c in crops:
+        if not c.get("grp"):
+            c["grp"] = group_of(c.get("iid"))
+    return crops
 
 
 def main(keyfile, votefile, outfile=None):
