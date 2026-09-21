@@ -24,10 +24,21 @@
 >
 > **The consequence for every IoU in this repo.** Against the raw painted strokes, IoU now
 > penalises the model for being *correctly narrow* on most frames. Centreline agreement, which
-> is width-tolerant, reads **clDice 0.863** with **Tprec 0.955** where IoU on the same frames
-> reads 0.505 — 95.5% of the predicted centreline lands inside the label, so IoU is measuring
-> width disagreement, not misplacement. The honest residual is Tsens 0.814: 18.6% of the label
-> centreline is uncovered. Measured in `crack-evolution-5d/out/cldice_centreline.json`.
+> is width-tolerant, reads **clDice 0.823** with **Tprec 0.970** at the shipped operating
+> point — 97.0% of the predicted centreline lands inside the label, so IoU is measuring width
+> disagreement, not misplacement. The honest residual is Tsens 0.761: 23.9% of the label
+> centreline is uncovered. Measured in `crack-evolution-5d/out/txm_width_clip_final.json`.
+>
+> **Second correction, 2026-09-21.** This block was itself carrying superseded numbers. It
+> quoted clDice 0.863 / Tprec 0.955 / Tsens 0.814 from `out/cldice_centreline.json`, which
+> was measured before `clip_to_measured_width` shipped on 2026-09-19. A correction block that
+> needs correcting is worth leaving visible rather than editing silently.
+>
+> **And the direction here is not the whole story either.** "The label is 2.20× wider than the
+> prediction" is a statement about the brush. Measured against the IMAGE — the transverse
+> full-width-at-half-maximum of the crack itself — the detector is 0.68× the width of the
+> feature and the human brush 0.69×, indistinguishable on one instrument. Both under-mark the
+> dark feature. `docs/WIDTH_REFERENCE.md`.
 
 
 Reproduce with `research/code/pilot_stride8.py`, `pilot_threshold.py`, `pilot_features.py`.
@@ -224,6 +235,23 @@ neighbourhood — is better on both axes at once:
 | **local mean, w=301** | 6.464% | **1.4 px** | **83.7%** |
 
 1.4 px against the 1.0 px dark core actually present, while keeping 83.7% instead of 59.7%.
+
+> **CORRECTION 2026-09-21 — this table overstates what the local-mean rule does.**
+> Re-measured over all 71 frames at the deployed operating point, `tighten_to_image` drops
+> about **6% of area**, not the ~21% rows 1 and 3 imply, and the corpus median half-width moves
+> **49.0 → 44.4 px**, a factor of 1.10 rather than the 12× the third column suggests
+> (wrought_316L_fatigue_1200: 0.0689 → 0.0649).
+>
+> The cause is in the comparison itself: `uniform_filter` averages over the mask as well as
+> around it, and the accepted band is 30–50 px wide inside a 301 px window, so the mean is set
+> by the bright matrix either side and the whole band passes its own test. The 1.4 px figure
+> is a distance-transform median over a mask the narrowing had broken into threads, not a clean
+> narrow crack — which is why the area and the half-width in this table disagree by an order of
+> magnitude. The hole fill then re-thickens it.
+>
+> The rule is still shipped, because it is the operating point every earlier number was
+> measured at. The narrowing that works runs after it: `clip_to_measured_width`. See
+> `docs/WIDTH_REFERENCE.md` and the correction block in `app/core/pipeline.py`.
 Across three frames retention went 59.7/43.8/62.4% → 83.2/62.8/78.3%, and predicted area on
 the crack-free specimens improved (0.0230% → 0.0192%).
 

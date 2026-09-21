@@ -10,13 +10,24 @@ labelled domain, because outside it there is no truth to compare against. So non
 can see how much of the mask falls where the annotator never painted anything. Measured,
 area-weighted over 64 frames:
 
-| | share of ACCEPTED area never labelled either way |
-|---|---|
-| corpus | **24.7%** |
-| AM / HC_316L | 51.1% |
-| B2 | 36.9% |
-| Wrought | 10.7% |
-| B3 | 4.7% |
+Generator: `code/audit/measure_unlabelled_area.py`. Artifact:
+`crack-evolution-5d/out/txm_unlabelled_area_per_frame.json`, one record per frame, with the
+mask version it was measured on recorded in each record. **This table had no supporting
+artifact until 2026-09-21** -- three of its five figures existed only inside an English
+sentence in a JSON `why` field, and two appeared nowhere at all. Re-measured on the current
+shipped mask, 65 frames:
+
+| | n | share of ACCEPTED area never labelled either way |
+|---|---|---|
+| corpus | 65 | **24.7%** |
+| AM / HC_316L | 24 | 51.1% |
+| B2 | 16 | 36.8% |
+| Wrought | 12 | 10.7% |
+| B3 | 13 | 4.5% |
+
+(Earlier text said 64 frames, B2 36.9% and B3 4.7%. The drift is the mask changing under it
+when `drop_straight_lines` shipped, which is exactly why the per-frame artifact and the
+mask-version field now exist.)
 
 On `b2_336_25` it is 17.3% of the whole frame and 95% of everything the detector marked
 there. That area is not wrong — it is **unchecked**, and it is the largest single hole in
@@ -82,7 +93,7 @@ On Panel B alone: POS 20/26, UNLAB 16/26, NEGM 2/26 — UNLAB vs POS p = 0.37, U
 p = 4.2e-05. The conclusion does not depend on a permissive voter.
 
 Area-weighted by component size: **93.4%** of the unlabelled area sampled reads as crack.
-The sample was drawn from components ≥ 4000 px, which hold 87.8% of all unlabelled area, so
+The sample was drawn from components ≥ 4000 px, which hold 87.9% of all unlabelled area, so
 the claim covers **21.7% of all accepted area** — not the last 3%.
 
 **The unlabelled quarter of the mask is crack the annotator did not reach.** The detector
@@ -119,7 +130,7 @@ with the label map, i.e. the rim of a stroke that did not quite cover the crack 
 |---|---|
 | exactly 1 px | 6,921 comps (56.3%), 0.09% of unlabelled area |
 | 2-9 px | 3,141 comps, 0.13% |
-| within 25 px of a painted stroke | **80.4% of their area** |
+| within 25 px of a painted stroke | **80.4% of their area** (of SMALL-component area; across ALL unlabelled area it is 32.4%, since large components dominate) |
 | median distance to nearest stroke | **11 px** |
 
 Filtering to where "nobody checked this" is a real claim -- >= 200 px AND >= 200 px from any
