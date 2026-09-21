@@ -137,28 +137,59 @@ Filtering to where "nobody checked this" is a real claim -- >= 200 px AND >= 200
 stroke -- leaves **32 components = 0.229% of all accepted area**. That is the entire
 exposure even if every one were wrong.
 
-Second blind run, same design, 400 px fields so a test component's 200 px clearance means no
-painted crack can appear in frame. Positive controls stratified to match the test sizes
-(median 2418 vs 2403 px, p = 0.94; a first attempt matched at p = 0.003 and was rebuilt,
-since larger controls would have biased the comparison toward calling the test class crack).
-Leak guard clear at p >= 0.089.
+### First run (size-matched only) — SUPERSEDED, and how it failed
+
+A second blind run, 400 px fields, positive controls stratified to match the test sizes
+(median 2418 vs 2403 px, p = 0.94). It reported test 11/32 (34%) against control 18/32
+(56%), concluded the instrument was weak at this size, and quoted a Rogan-Gladen prevalence
+CI of 0-100%.
+
+**It was confounded with specimen and the entire effect was the confound.** Size was matched;
+group mix was not. The control came out AM 20/32 (62%), the test class Wrought 13/32 (41%).
+Per stratum the two were never far apart -- AM control 13/20 against test 4/6, B2 5/9 against
+5/11, Wrought 0/2 against 2/13 -- so direct standardisation of the control to the test mix
+moves its yes-rate **0.562 -> 0.313**, against a test rate of 0.344. There was no gap. The
+"56% here against 92% at full size" contrast was not a size contrast, and the prevalence
+built on that sensitivity was void.
+
+It also punctures a shortcut this repo had been taking. AM is documented as
+intensity-invisible (Cohen d +0.09) and I had been treating that as "AM is hard". For a
+reader judging morphology AM was the EASIEST group in the set (control 13/20) and Wrought the
+hardest (0/2). Invisible to the model's intensity features and invisible to an eye reading
+shape are two different properties, and conflating them is what let the confound through.
+
+### Second run: matched on size AND specimen
+
+`code/audit/build_small_component_crops.py` now matches within group first and then on size,
+and refuses to substitute across groups -- it records a shortfall instead. Zero shortfall was
+needed. Group mix identical (B2 11, Wrought 13, AM 6, B3 2 in both). Size matched overall
+(p = 0.47) and within every group (p = 0.33-0.94). Leak guard clear at p >= 0.057.
+`code/audit/score_blind_panel.py` prints the group mix and the standardised control rate on
+every run now, asked for or not.
 
 | class | majority CRACK | score |
 |---|---|---|
-| painted crack, size-matched | 18/32 (56%) | 0.594 |
-| **isolated small indications** | **11/32 (34%)** | **0.417** |
-| crack-free specimens, FP by assertion | **0/4** | 0.000 |
-| plain matrix | 4/26 (15%) | 0.192 |
+| painted crack, size- and specimen-matched | 13/32 (41%) | 0.401 |
+| **isolated small indications** | **13/32 (41%)** | **0.458** |
+| crack-free specimens, FP by assertion | 0/4 | 0.083 |
+| plain matrix | 3/26 (12%) | 0.115 |
 
-Above matrix (p = 0.020), not separable from real crack (p = 0.066). **The instrument is
-weak at this size**: it recognises only 56% of KNOWN crack here against 92% on the large
-regions. A Rogan-Gladen correction for that gives a bootstrap 95% CI of **0-100%**, so no
-prevalence is quoted. This class is unresolved, and it is 0.23% of the mask.
+Instrument validated: control 41% against matrix 12%, Fisher p = 0.013.
 
-A limitation of the method at this scale: each crop shows a 400 px FIELD, not the component
-in isolation, so a voter answers "is there a crack here", not "is this component a crack".
-Two of the five artefacts below were called crack, and the panel's written evidence shows it
-was describing a different feature in the same field.
+**Test against matched control: 13/32 vs 13/32, Fisher p = 1.000 — identical.**
+Test against matrix: p = 0.013. Rogan-Gladen prevalence with the matched sensitivity is
+**100%, bootstrap 95% CI 32-100%**.
+
+So the conclusion reverses. The small isolated indications are **indistinguishable from known
+crack of the same size in the same specimens**, which is the same answer the large unlabelled
+regions gave (25/26, p = 0.31). Both size classes agree: the unadjudicated area is crack.
+
+The honest residuals. The CI is 32-100% — n = 32 and a 41% control rate leave it wide, and
+the point estimate of 100% is an artifact of the observed rate landing exactly on the
+sensitivity, not a claim that every one is crack. Panel A, the permissive lens, called one of
+the four crack-free-specimen fields a crack (0/4 majority still, but 0.000 -> 0.083 on score
+against run 1). And 41% is a low control rate in absolute terms: at this size the panel misses
+most known crack, which caps how much any of this can settle.
 
 ## A new artefact class: cracks do not run straight
 
