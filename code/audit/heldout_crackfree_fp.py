@@ -14,6 +14,18 @@ frame removed, then predicts those frames and measures the same quantity. The de
 is not touched -- swapping it would invalidate every other number in the repo -- so this
 reports the honest figure alongside, rather than replacing it.
 
+STATUS 2026-09-22: THIS SCRIPT DOES NOT CLOSE THE BLOCKER. Both arms are a 17-feature-only
+MLP, and the deployed detector is an ensemble of that branch with a SAM+17 hybrid whose
+per-tile embedding lookup is not reimplemented here. The arms score 8.35% and 5.43% mean
+predicted area on the crack-free specimens against 0.174% for the deployed ensemble, so they
+are 48x and 31x worse than the model whose contamination was in question. The measured
+direction is also backwards -- removing the clean labels IMPROVED false positives on those
+specimens, on all six frames -- and with one fit per arm that cannot be separated from
+fit-to-fit variance. See `VERDICT` and `what_would_answer_it` in the emitted JSON.
+
+What it does establish, on an axis this repo already argues about: the 17-feature branch
+alone is 48x worse than the ensemble on material confirmed to contain no crack.
+
 Emits: out/txm_heldout_crackfree_fp.json
 
 Usage:  python3 code/audit/heldout_crackfree_fp.py [out.json]
