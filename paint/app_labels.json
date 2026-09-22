@@ -2,7 +2,7 @@
   "images": {
     "Average_mosaic_260618_B2_2_1_lbf_idx00000_mosaictileAA_img001of005.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 14684090,
+      "not_crack": 14798039,
       "shape": [
         3899,
         3914
@@ -17,7 +17,7 @@
       ]
     },
     "Average_mosaic_260618_B2_333_75_um_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 24217,
+      "crack": 69159,
       "not_crack": 789267,
       "shape": [
         1671,
@@ -25,16 +25,16 @@
       ]
     },
     "Average_mosaic_260618_B2_3_1_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 53669,
-      "not_crack": 13047324,
+      "crack": 30752,
+      "not_crack": 0,
       "shape": [
         3703,
         5039
       ]
     },
     "Average_mosaic_260618_B2_3_2_lbf_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 29280,
-      "not_crack": 3824052,
+      "crack": 86156,
+      "not_crack": 4000181,
       "shape": [
         3702,
         5028
@@ -49,8 +49,8 @@
       ]
     },
     "Average_mosaic_260618_b2_335_31um_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 65779,
-      "not_crack": 854199,
+      "crack": 119104,
+      "not_crack": 853572,
       "shape": [
         1688,
         1714
@@ -65,72 +65,72 @@
       ]
     },
     "Average_mosaic_260618_b2_337_19_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 238542,
-      "not_crack": 677662,
+      "crack": 323616,
+      "not_crack": 695686,
       "shape": [
         1694,
         1693
       ]
     },
     "Average_mosaic_260618_b2_338_13_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 187514,
-      "not_crack": 675772,
+      "crack": 228283,
+      "not_crack": 675719,
       "shape": [
         1706,
         1693
       ]
     },
     "Average_mosaic_260618_b2_339_06_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 229820,
-      "not_crack": 624961,
+      "crack": 290387,
+      "not_crack": 624767,
       "shape": [
         1689,
         1693
       ]
     },
     "Average_mosaic_260618_b2_340_00_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 325078,
-      "not_crack": 784963,
+      "crack": 580097,
+      "not_crack": 784205,
       "shape": [
         1683,
         2362
       ]
     },
     "Average_mosaic_260618_b2_340_94_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 1073162,
-      "not_crack": 1082647,
+      "crack": 1086871,
+      "not_crack": 1085110,
       "shape": [
         1706,
         2355
       ]
     },
     "Average_mosaic_260618_b2_341_88_take2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 813519,
-      "not_crack": 648945,
+      "crack": 849705,
+      "not_crack": 648828,
       "shape": [
         1699,
         2351
       ]
     },
     "Average_mosaic_260618_b2_342_81_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 682201,
-      "not_crack": 685618,
+      "crack": 694679,
+      "not_crack": 752781,
       "shape": [
         1706,
         2371
       ]
     },
     "Average_mosaic_260618_b2_343_75_LARGE_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 4077170,
-      "not_crack": 7658099,
+      "crack": 4082128,
+      "not_crack": 7657574,
       "shape": [
         3691,
         6367
       ]
     },
     "Average_mosaic_260618_b2_343_75_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 811917,
-      "not_crack": 813173,
+      "crack": 846515,
+      "not_crack": 809527,
       "shape": [
         1684,
         2375
@@ -153,16 +153,16 @@
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1100_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 162203,
-      "not_crack": 6267240,
+      "crack": 172616,
+      "not_crack": 6265453,
       "shape": [
         2368,
         4372
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1200_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 152705,
-      "not_crack": 4821453,
+      "crack": 171569,
+      "not_crack": 4818412,
       "shape": [
         2363,
         4376
@@ -170,7 +170,7 @@
     },
     "Average_mosaic_260619_HC_316L_fatigue_1250_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 18961,
-      "not_crack": 4889406,
+      "not_crack": 4902627,
       "shape": [
         1689,
         3049
@@ -185,24 +185,24 @@
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1350_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 147209,
-      "not_crack": 4764620,
+      "crack": 182088,
+      "not_crack": 4756198,
       "shape": [
         2363,
         5041
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 195540,
-      "not_crack": 9188648,
+      "crack": 237342,
+      "not_crack": 9187028,
       "shape": [
         2321,
         4377
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1400_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 0,
-      "not_crack": 8528952,
+      "crack": 27135,
+      "not_crack": 8617703,
       "shape": [
         3006,
         3037
@@ -218,7 +218,7 @@
     },
     "Average_mosaic_260619_HC_316L_fatigue_1450_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 369173,
-      "not_crack": 4109315,
+      "not_crack": 4285499,
       "shape": [
         3028,
         3036
@@ -226,47 +226,47 @@
     },
     "Average_mosaic_260619_HC_316L_fatigue_1500_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 330449,
-      "not_crack": 3279515,
+      "not_crack": 3383933,
       "shape": [
         2367,
         4355
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1600_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 366928,
-      "not_crack": 1699627,
+      "crack": 336549,
+      "not_crack": 1754281,
       "shape": [
         2359,
         4396
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 425382,
-      "not_crack": 3587282,
+      "crack": 394448,
+      "not_crack": 3686459,
       "shape": [
         2357,
         4409
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1650_cycles_tip_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 397646,
-      "not_crack": 3017539,
+      "crack": 392666,
+      "not_crack": 3005174,
       "shape": [
         2354,
         3044
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1750_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 654253,
-      "not_crack": 2707133,
+      "crack": 625755,
+      "not_crack": 2779485,
       "shape": [
         2330,
         4364
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1750_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 40084,
-      "not_crack": 4550082,
+      "crack": 46499,
+      "not_crack": 4547476,
       "shape": [
         2378,
         3694
@@ -281,7 +281,7 @@
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1770_tip_zoom_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 0,
+      "crack": 14694,
       "not_crack": 2932694,
       "shape": [
         2371,
@@ -289,24 +289,24 @@
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1780_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 0,
-      "not_crack": 4293677,
+      "crack": 51557,
+      "not_crack": 4312688,
       "shape": [
         2275,
         3507
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1790_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 269538,
-      "not_crack": 1492787,
+      "crack": 289178,
+      "not_crack": 1617834,
       "shape": [
         2333,
         5043
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_1790_tip_zoom_2_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 0,
-      "not_crack": 4066650,
+      "crack": 16765,
+      "not_crack": 4063816,
       "shape": [
         2293,
         3499
@@ -322,7 +322,7 @@
     },
     "Average_mosaic_260619_HC_316L_fatigue_400_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 16207552,
+      "not_crack": 16510579,
       "shape": [
         6372,
         5041
@@ -337,8 +337,8 @@
       ]
     },
     "Average_mosaic_260619_HC_316L_fatigue_700_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 72927,
-      "not_crack": 4491441,
+      "crack": 60300,
+      "not_crack": 4648932,
       "shape": [
         3694,
         3665
@@ -354,7 +354,7 @@
     },
     "Average_mosaic_260619_HC_316L_fatigue_900_cycles_FRFR_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 136214,
-      "not_crack": 6010351,
+      "not_crack": 6284720,
       "shape": [
         3017,
         4380
@@ -442,7 +442,7 @@
     },
     "Average_mosaic_260620_b3_3_0lbf_268_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 6085414,
+      "not_crack": 6779572,
       "shape": [
         3716,
         3694
@@ -450,7 +450,7 @@
     },
     "Average_mosaic_260620_b3_3_18lbf_348_13um_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 13170503,
+      "not_crack": 13426021,
       "shape": [
         3752,
         3743
@@ -458,15 +458,15 @@
     },
     "Average_mosaic_260620_wrought_316L_fatigue_0_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 21121976,
+      "not_crack": 21156613,
       "shape": [
         5012,
         4363
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1000_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 71361,
-      "not_crack": 12741187,
+      "crack": 101120,
+      "not_crack": 12724194,
       "shape": [
         5026,
         4367
@@ -474,7 +474,7 @@
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1100_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 509457,
-      "not_crack": 411302,
+      "not_crack": 456280,
       "shape": [
         2379,
         3710
@@ -497,8 +497,8 @@
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1250_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 898886,
-      "not_crack": 716090,
+      "crack": 886572,
+      "not_crack": 785065,
       "shape": [
         2355,
         4387
@@ -513,8 +513,8 @@
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1270_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 1073145,
-      "not_crack": 805176,
+      "crack": 1288323,
+      "not_crack": 672077,
       "shape": [
         2378,
         4371
@@ -529,7 +529,7 @@
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1290_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 1193693,
+      "crack": 1194173,
       "not_crack": 1249482,
       "shape": [
         2394,
@@ -537,8 +537,8 @@
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_1300_cycles_crack_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 2072366,
-      "not_crack": 1624581,
+      "crack": 2107411,
+      "not_crack": 1878774,
       "shape": [
         2410,
         5717
@@ -546,15 +546,15 @@
     },
     "Average_mosaic_260620_wrought_316L_fatigue_300_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 0,
-      "not_crack": 16451216,
+      "not_crack": 16760987,
       "shape": [
         5051,
         4383
       ]
     },
     "Average_mosaic_260620_wrought_316L_fatigue_800_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
-      "crack": 0,
-      "not_crack": 13708860,
+      "crack": 32701,
+      "not_crack": 14013674,
       "shape": [
         5032,
         4371
@@ -562,7 +562,7 @@
     },
     "Average_mosaic_260620_wrought_316L_fatigue_900_cycles_idx00000_mosaictileAA_img001of010.xrm.bim.bim.tif": {
       "crack": 38957,
-      "not_crack": 15457999,
+      "not_crack": 15641239,
       "shape": [
         5049,
         4396
@@ -572,7 +572,7 @@
   "n_carried_forward": 0,
   "n_from_app_data": 71,
   "n_images": 71,
-  "saved": "2026-08-18 22:07:46",
-  "total_crack_px": 30206488,
-  "total_not_crack_px": 384852469
+  "saved": "2026-09-21 16:18:37",
+  "total_crack_px": 31317667,
+  "total_not_crack_px": 375632172
 }
