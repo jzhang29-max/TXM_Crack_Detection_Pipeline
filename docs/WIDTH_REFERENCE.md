@@ -135,9 +135,13 @@ Per specimen, shipped against label on the same points:
 | group | n | shipped | label |
 |---|---|---|---|
 | B2 | 15 | 0.491 | 0.546 |
-| B3 | 13 | 0.455 | 0.453 |
-| AM | 24 | 0.563 | 0.582 |
+| B3 | 12 | 0.444 | 0.442 |
+| AM | 25 | 0.566 | 0.615 |
 | Wrought | 12 | 0.506 | 0.703 |
+
+(Grouping corrected 2026-09-22: one AM frame was filed as B3 because its content hash
+contains the substring `b3` and the generator tested that before `hc_316l`. Corpus figures
+unchanged; see the note in `docs/UNLABELLED_AREA.md`.)
 
 ## `clip_to_measured_width`
 

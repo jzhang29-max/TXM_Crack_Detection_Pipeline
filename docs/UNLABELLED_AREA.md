@@ -20,10 +20,19 @@ shipped mask, 65 frames:
 | | n | share of ACCEPTED area never labelled either way |
 |---|---|---|
 | corpus | 65 | **24.7%** |
-| AM / HC_316L | 24 | 51.1% |
+| AM / HC_316L | 25 | 50.2% |
 | B2 | 16 | 36.8% |
 | Wrought | 12 | 10.7% |
-| B3 | 13 | 4.5% |
+| B3 | 12 | 2.8% |
+
+> **Grouping corrected 2026-09-22.** One frame was mis-filed. The generator tested the
+> substring `b3` against the stored image id before `hc_316l`, and
+> `HC_316L_fatigue_1600_cycles` carries the content hash `4cb30dc6`, which contains `b3`.
+> So an AM frame counted as B3, moving AM 51.1% -> 50.2% and B3 4.5% -> 2.8% (n 24/13 ->
+> 25/12). The corpus figure is unchanged at 24.7%, and B2 and Wrought are unaffected.
+> Same fix applied to `txm_iou_ceiling_v2.json` and `txm_width_ratio_unified.json`; each
+> artifact records the before/after. Found by an agent re-reading the drafted Methods
+> section against the artifacts, not by any check I had written.
 
 (Earlier text said 64 frames, B2 36.9% and B3 4.7%. The drift is the mask changing under it
 when `drop_straight_lines` shipped, which is exactly why the per-frame artifact and the
