@@ -58,16 +58,27 @@ def transverse_fwhm(contrast, y, x, sigma):
     return best
 
 
-def group_of(iid):
-    low = iid.lower()
-    if "_b2_" in low:
-        return "B2"
-    if "b3" in low:
-        return "B3"
+def group_of(iid_or_meta):
+    """Specimen group. Matched most-specific-first, and on the FILENAME where available.
+
+    The obvious version tests `"b3" in id.lower()` before `"hc_316l"`, and the stored id
+    carries a content hash: `HC_316L_fatigue_1600_cycles..._`4cb30dc6`` contains the
+    substring "b3" inside the hash, so that frame was filed as B3 in three artifacts
+    emitted from this directory. One frame, but it moved AM's unlabelled share 51.06% ->
+    50.16% and B3's 4.49% -> 2.83%. Specific tokens first, and prefer the filename.
+    """
+    if isinstance(iid_or_meta, dict):
+        low = (iid_or_meta.get("filename") or iid_or_meta.get("id") or "").lower()
+    else:
+        low = str(iid_or_meta).lower()
     if "hc_316l" in low:
         return "AM"
     if "wrought" in low:
         return "WR"
+    if "_b2_" in low or "_b2" in low.split("260618_")[-1][:3]:
+        return "B2"
+    if "b3_" in low or "_b3" in low:
+        return "B3"
     return "other"
 
 
