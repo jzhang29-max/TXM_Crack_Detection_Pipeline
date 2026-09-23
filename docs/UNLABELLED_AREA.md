@@ -283,8 +283,11 @@ lower it; the direction is not in doubt.
 
 The deployed model reads 0.174% on the same frames, so the gate's headline is a **lower
 bound**: a model that has not seen those labels marks several times more of that material.
-This does not condemn the detector -- 1.58% still clears the MIL-HDBK-1823A yardstick of
-1%... -- but the figure as reported is partly memorisation.
+And the corrected figure crosses a threshold the contaminated one did not. The repo cites
+MIL-HDBK-1823A's 1% yardstick and the gate's 0.174% sits comfortably under it; held out,
+**1.58% is above it**. The contamination is not a rounding matter -- it moves the detector
+from passing that yardstick to failing it on the only material where a false positive is
+certain.
 
 Two things it is NOT. It is not the shipped weights' false-positive rate: these are
 retrained models at a reduced row budget, so the comparison bounds the contamination rather
