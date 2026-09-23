@@ -259,3 +259,37 @@ A selftest probe now asserts all three properties, including the ordering.
 - The panel is a careful reader applying stated physics, not a metallurgist. It agrees with
   the annotator on 24/26 of their own strokes at full size, which is the strongest thing
   that can be said for it -- and only 18/32 at small size, which is the honest caveat.
+
+
+## The other thing the labelled domain hides: the crack-free gate
+
+**The crack-free false-positive figure is inflated by training on those specimens.**
+The six specimens asserted crack-free contribute 0 crack pixels and 95,351,647 not-crack
+pixels to the labels -- 4.3% of training rows after per-image capping -- and the gate then
+measures false positives on those same frames. Held out properly (5 seeds per arm, both
+branches refitted at a 400,000-row budget and scored through the shipped
+`CrackModel` ensemble path):
+
+| arm | mean predicted area on crack-free material |
+|---|---|
+| trained WITH their labels | 0.289% +/- 0.032 |
+| **trained WITHOUT them** | **1.581% +/- 0.337** |
+| inflation | **5.5x**, all 5/5 pairs same direction, Wilcoxon p = 0.0625 |
+
+p = 0.0625 is the **smallest value a two-sided signed-rank test can return at five pairs**
+(2/2^5). It is floored by the sample size, not by a weak effect: every pair separated, and
+the arms do not overlap (0.289 +/- 0.032 against 1.581 +/- 0.337). More seeds would
+lower it; the direction is not in doubt.
+
+The deployed model reads 0.174% on the same frames, so the gate's headline is a **lower
+bound**: a model that has not seen those labels marks several times more of that material.
+This does not condemn the detector -- 1.58% still clears the MIL-HDBK-1823A yardstick of
+1%... -- but the figure as reported is partly memorisation.
+
+Two things it is NOT. It is not the shipped weights' false-positive rate: these are
+retrained models at a reduced row budget, so the comparison bounds the contamination rather
+than replacing the gate's number. And it is not a verdict on the ensemble: both arms use it.
+Generator `code/audit/heldout_crackfree_fp_v2.py`, artifact
+`crack-evolution-5d/out/txm_heldout_crackfree_fp_v2.json`. An earlier attempt
+(`heldout_crackfree_fp.py`) fitted a 17-feature-only model, landed 48x off the deployed
+figure and got the sign backwards; it is kept with that failure recorded.

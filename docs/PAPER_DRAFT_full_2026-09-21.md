@@ -1089,3 +1089,36 @@ The mask itself is `effective_mask` at `app/core/pipeline.py:885`, with its thre
 **Known gaps in the provenance chain, stated rather than papered over.** Four load-bearing artifacts carry no `generator` key: `txm_iou_ceiling.json`, `txm_width_reference.json`, `txm_unlabelled_adjudication.json` and `txm_width_clip_final.json`. For three of them no driver exists in `code/audit/` at all. For the fourth, `measure_iou_ceiling.py` was written afterwards and emits a new file (`txm_iou_ceiling_v2.json`) rather than reproducing the old one, and has not been run — so the shipped `txm_iou_ceiling.json` remains an unreproduced output with a superseded model column (§6.2). Separately, `code/audit/README.md` lists `measure_transverse_fwhm.py` as emitting `out/txm_transverse_fwhm.json`; **that file does not exist**, and the §7.4 numbers are read from `txm_width_reference.json` instead. **[TODO-AUTHOR]** re-emit these under named generators, or state in the final version that they are recorded outputs of scripts that were lost to a scratch directory — which is what they are.
 
 **Pre-registration record.** The four pre-registered tests of §6.4, their decision rules fixed before the data were read, and the two that failed, are recorded in full at `out/txm_width_prereg_and_failed_variants.md`, including the rejected per-component FWHM variant (Tsens 0.798 → 0.261, clDice 0.846 → 0.412) and the named mechanisms for both failures. The four acceptance criteria (a)–(d) of the width-clip run are scored at `docs/WIDTH_REFERENCE.md:157–165`; that table is the only record of criterion (b), and it is not backed by an artifact.
+
+## Addendum: the crack-free gate is contaminated
+
+**The crack-free false-positive figure is inflated by training on those specimens.**
+The six specimens asserted crack-free contribute 0 crack pixels and 95,351,647 not-crack
+pixels to the labels -- 4.3% of training rows after per-image capping -- and the gate then
+measures false positives on those same frames. Held out properly (5 seeds per arm, both
+branches refitted at a 400,000-row budget and scored through the shipped
+`CrackModel` ensemble path):
+
+| arm | mean predicted area on crack-free material |
+|---|---|
+| trained WITH their labels | 0.289% +/- 0.032 |
+| **trained WITHOUT them** | **1.581% +/- 0.337** |
+| inflation | **5.5x**, all 5/5 pairs same direction, Wilcoxon p = 0.0625 |
+
+p = 0.0625 is the **smallest value a two-sided signed-rank test can return at five pairs**
+(2/2^5). It is floored by the sample size, not by a weak effect: every pair separated, and
+the arms do not overlap (0.289 +/- 0.032 against 1.581 +/- 0.337). More seeds would
+lower it; the direction is not in doubt.
+
+The deployed model reads 0.174% on the same frames, so the gate's headline is a **lower
+bound**: a model that has not seen those labels marks several times more of that material.
+This does not condemn the detector -- 1.58% still clears the MIL-HDBK-1823A yardstick of
+1%... -- but the figure as reported is partly memorisation.
+
+Two things it is NOT. It is not the shipped weights' false-positive rate: these are
+retrained models at a reduced row budget, so the comparison bounds the contamination rather
+than replacing the gate's number. And it is not a verdict on the ensemble: both arms use it.
+Generator `code/audit/heldout_crackfree_fp_v2.py`, artifact
+`crack-evolution-5d/out/txm_heldout_crackfree_fp_v2.json`. An earlier attempt
+(`heldout_crackfree_fp.py`) fitted a 17-feature-only model, landed 48x off the deployed
+figure and got the sign backwards; it is kept with that failure recorded.

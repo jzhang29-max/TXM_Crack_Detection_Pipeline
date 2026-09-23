@@ -879,3 +879,36 @@ Mask: `effective_mask` (`app/core/pipeline.py:885`); stages `clip_to_measured_wi
 **The panel votes are not reproducible here:** they require a blind multi-agent panel over the crops, are an artifact of a specific model and harness, and **ship as data, not regenerated** (`txm_small_component_adjudication_v2.json` `.generators.note`; `code/audit/README.md`). Preserved: crop keys with frame id and centre per field (`txm_unlabelled_adjudication_cropkey.json`, 88 fields; `txm_small_component_cropkey_v2.json`, 94 fields); the fixed native crop window, **700 × 700 px** large-region and **400 × 400 px** small-component, the latter sized so a 200 px clearance puts no painted crack in frame (`build_small_component_crops.py:35`); the shuffling seed (`:61`, `default_rng(20260921)`); leak-guard statistics, group-matching record, deterministic scorer. Crop PNGs are byte-reproducible from `images/` and the crop keys; every vote, its panel and each panel's free-text evidence ship in the `per_field` arrays of both adjudication artifacts.
 
 **Known gaps in the provenance chain.** Four load-bearing artifacts carry no `generator` key: `txm_iou_ceiling.json`, `txm_width_reference.json`, `txm_unlabelled_adjudication.json`, `txm_width_clip_final.json`. Three have no driver in `code/audit/` at all; for the fourth, `measure_iou_ceiling.py` was written afterwards, emits a new file rather than reproducing the old one, and has not been run, so the shipped `txm_iou_ceiling.json` remains an unreproduced output with a superseded model column (§5.2). `code/audit/README.md` also lists `measure_transverse_fwhm.py` as emitting `out/txm_transverse_fwhm.json`; **that file does not exist**, and the §6.4 numbers are read from `txm_width_reference.json` instead. **[TODO-AUTHOR]** re-emit these under named generators, or state in the final version that they are recorded outputs of scripts lost to a scratch directory — which is what they are.
+
+## Addendum: the crack-free gate is contaminated
+
+**The crack-free false-positive figure is inflated by training on those specimens.**
+The six specimens asserted crack-free contribute 0 crack pixels and 95,351,647 not-crack
+pixels to the labels -- 4.3% of training rows after per-image capping -- and the gate then
+measures false positives on those same frames. Held out properly (5 seeds per arm, both
+branches refitted at a 400,000-row budget and scored through the shipped
+`CrackModel` ensemble path):
+
+| arm | mean predicted area on crack-free material |
+|---|---|
+| trained WITH their labels | 0.289% +/- 0.032 |
+| **trained WITHOUT them** | **1.581% +/- 0.337** |
+| inflation | **5.5x**, all 5/5 pairs same direction, Wilcoxon p = 0.0625 |
+
+p = 0.0625 is the **smallest value a two-sided signed-rank test can return at five pairs**
+(2/2^5). It is floored by the sample size, not by a weak effect: every pair separated, and
+the arms do not overlap (0.289 +/- 0.032 against 1.581 +/- 0.337). More seeds would
+lower it; the direction is not in doubt.
+
+The deployed model reads 0.174% on the same frames, so the gate's headline is a **lower
+bound**: a model that has not seen those labels marks several times more of that material.
+This does not condemn the detector -- 1.58% still clears the MIL-HDBK-1823A yardstick of
+1%... -- but the figure as reported is partly memorisation.
+
+Two things it is NOT. It is not the shipped weights' false-positive rate: these are
+retrained models at a reduced row budget, so the comparison bounds the contamination rather
+than replacing the gate's number. And it is not a verdict on the ensemble: both arms use it.
+Generator `code/audit/heldout_crackfree_fp_v2.py`, artifact
+`crack-evolution-5d/out/txm_heldout_crackfree_fp_v2.json`. An earlier attempt
+(`heldout_crackfree_fp.py`) fitted a 17-feature-only model, landed 48x off the deployed
+figure and got the sign backwards; it is kept with that failure recorded.
