@@ -1,66 +1,64 @@
 <!--
-CUT VERSION, rebuilt 2026-09-22. Full 23,909-word draft: docs/PAPER_DRAFT_full_2026-09-21.md.
-2026-08-26 original: docs/PAPER_DRAFT_2026-08-26_superseded.md.
+PAPER DRAFT, 12,643 words, assembled 2026-09-23.
+  full 23,909-word version: docs/PAPER_DRAFT_full_2026-09-21.md
+  2026-08-26 original:         docs/PAPER_DRAFT_2026-08-26_superseded.md
+  editors' notes on the cuts:  crack-evolution-5d/out/paper_final_cut_notes.md
 
-13,289 words. Target for a materials-characterisation article is 6,000-8,000, so this is still
-roughly 65% over and needs one more pass. NOT submittable.
+STATUS. Title/Abstract/Intro, Results 3 and Results 4 are at final-cut length. Methods
+(4,662 w) and the back matter (3,570 w) are NOT -- two cut agents were lost to a session
+limit and then to a network failure, and rather than ship a half-assembled file those two
+sections are carried at their previous length. Target is 6,000-8,000, so roughly 4,600 words
+still have to come out of those two. NOT SUBMITTABLE.
 
-A DEFECT IN AN EARLIER BUILD OF THIS FILE, recorded because it was shipped before it was
-caught: the assembled cut contained the metric-blindness Results section TWICE (two versions
-91% similar) and was missing the width Results section entirely -- 0.672 / 0.590 / 0.5061 /
-"0 of 64" appeared nowhere. A section file held the wrong content at assembly time and the
-duplicate heading was the only symptom. Rebuilt from the source agent outputs; the recovered
-width section's per-group table has been updated for the 2026-09-22 grouping fix (B3 n 13->12,
-AM n 24->25).
+EVIDENCE CHECKED MECHANICALLY against the full draft after assembly, not by eye. Every
+load-bearing number survives, every section heading appears exactly once, and all required
+self-corrections are present: the specimen confound that reversed the small-component
+conclusion; the width table that spliced two runs; the IoU ceiling ratio measured against a
+superseded mask (13.6x, the 10.1x retired by name); the prior-art finding that the width
+method is Orthogonal Profile Extraction + ISO50 and NOT novel; the failed v1 held-out
+experiment; the 5.5x crack-free false-positive inflation that puts the held-out detector
+above the 1% MIL-HDBK-1823A line the deployed figure passes; the one-frame grouping bug; and
+that the adjudication panels are language-model agents rather than human experts.
 
-EVIDENCE PRESERVED THROUGH EVERY CUT, checked mechanically against the full draft rather than
-by eye. All required disclosures survive: the specimen confound that reversed the
-small-component result; the width table that spliced two runs; the IoU ceiling ratio measured
-against a superseded mask (13.6x, not the retired 10.1x); the prior-art finding that the width
-method is Orthogonal Profile Extraction + ISO50 and not novel; the failed v1 held-out
-experiment; the 5.46x crack-free false-positive inflation that puts the held-out detector ABOVE
-the 1% yardstick it passes when contaminated; the one-frame grouping bug; and the statement
-that the adjudication panels are language-model agents, not human experts.
+TWO THINGS THE CUT AGENTS FLAGGED, for the author rather than for me to decide:
+  - a [TODO-AUTHOR] asking for the held-out false-positive rate is now satisfied by the
+    Addendum and should be retired.
+  - "25.4% of every background label" (Intro) and "4.3% of training rows after per-image
+    capping" (Addendum) answer different questions. Both are sourced; neither was edited.
+    Decide which belongs in the Intro.
 
-REMAINING [TODO-AUTHOR] MARKERS: see docs/AUTHOR_TODO.md, which groups them into four fill-in
-blocks.
-
-STILL OPEN AND NOT CLOSABLE FROM THIS REPOSITORY:
-  - acquisition metadata (beam energy, reconstruction, voxel-size provenance, loading
-    protocol, specimen history). Absent everywhere; must be supplied, not inferred.
+STILL NOT CLOSABLE FROM THIS REPOSITORY:
+  - acquisition metadata -- beam energy, reconstruction, voxel-size provenance, loading
+    protocol, specimen history. Absent everywhere. Must be supplied, never inferred.
+    docs/AUTHOR_TODO.md groups the 34 markers into four fill-in blocks.
   - human expert adjudication. Protocol, crops and seed are preserved; two blinded readers
-    would move the central claim off language-model evidence.
+    move the central claim off language-model evidence. This is the single step that
+    separates a Q2 submission from a Q1 one.
 -->
 
 # A quarter of an operator-trained crack detector's output has never been adjudicated, and it reads as crack: labelled-pixel metrics on broad-brush TXM annotations of 316L steel
 
-*Backticked names are artifacts in the analysis repository's `out/` directory; numbers that exist only in pipeline-repository code name that file instead.*
-
 ## Abstract
 
-Accuracy in crack segmentation is reported inside the annotated domain: IoU, clDice, precision and recall are computed where an operator painted something. We audit an interactive detector on 71 transmission X-ray microscopy (TXM) mosaic frames of fatigue-cracked 316L steel — four specimen groups, broad-brush hand annotation — and measure what that convention cannot see. Area-weighted over the 65 frames the census covers, 24.7% of all accepted mask area was never labelled either way, 51.1% on the additively manufactured group and 4.5% on the best-annotated one (`txm_unlabelled_area_per_frame.json`); every metric named above is blind to this area by construction. Blind three-panel adjudication of the large-component part of it — components of 4,000 px or more, 21.7% of all accepted area — returns crack: 25 of 26 regions, indistinguishable from painted crack (Mann–Whitney on the vote score, p = 0.31) and far from plain matrix (p = 4.4e-08), with the single rejection a specimen free surface and so a genuine false positive (`txm_unlabelled_adjudication.json`). For small isolated indications with controls matched on size and specimen, the test arm and the painted-crack control are identical at 13/32 (two-sided Fisher p = 1.000) and both exceed matrix at 3/26 (Fisher p = 0.013, computed one-sided) (`txm_small_component_adjudication_v2.json`). The default metric cannot flag any of this: against a median label width of 73 px, a physically correct 3 px crack scores IoU 0.0498 (`txm_iou_ceiling.json`), so IoU here ranks imitation of a paintbrush. Measured against the image instead of the labels, detector and annotator widths are indistinguishable — 0.506 against 0.529 of the transverse feature on the 61 frames carrying labels, paired Wilcoxon p = 0.061 — and both under-mark (`txm_width_ratio_unified.json`). Our adjudication panels are language-model agents, not human experts: that is this audit's principal limitation, and we release the protocol so human readers can repeat it.
+We audit an interactive crack detector on 71 transmission X-ray microscopy (TXM) mosaic frames of broad-brush-annotated fatigue-cracked 316L steel across four specimen groups. Area-weighted over the 65 frames the census covers, 24.7% of accepted mask area was never labelled either way (`txm_unlabelled_area_per_frame.json`) — invisible to IoU, clDice, precision and recall, which are computed only where an operator painted something. Blinded three-panel adjudication calls its large components crack: 25 of 26, indistinguishable from painted crack (p = 0.31), far from plain matrix (p = 4.4e-08); the one rejection is a genuine false positive at a specimen free surface (`txm_unlabelled_adjudication.json`). Size- and specimen-matched small indications tie with the painted-crack control at 13/32 and both exceed matrix at 3/26 (`txm_small_component_adjudication_v2.json`). Against a median label width of 73 px, a physically correct 3 px crack scores IoU 0.0498 (`txm_iou_ceiling.json`): the metric ranks imitation of a paintbrush. Detector and annotator widths, measured against the image, are indistinguishable (0.506 against 0.529 of the transverse feature, paired Wilcoxon p = 0.061) and both under-mark (`txm_width_ratio_unified.json`). Our adjudication panels are language-model agents, not human experts — this audit's principal limitation; we release the protocol so human readers can repeat it.
 
 **Keywords:** crack segmentation, transmission X-ray microscopy, 316L stainless steel, annotation quality, segmentation metrics, blinded adjudication, audit
 
 ## 1. Introduction
 
-A crack segmentation is scored against what a person painted. Where the operator painted nothing, a predicted pixel is neither a true positive nor a false positive: it is dropped from every term and reported by nothing. In sparse, thin, low-contrast tomographic imaging the assumption that unannotated area is empty is not safe, and this paper measures how unsafe it is.
+A predicted pixel where the operator painted nothing is neither a true positive nor a false positive: it is dropped from every term.
 
-Our corpus is 71 TXM mosaic frames of fatigue-cracked 316L stainless steel in four specimen groups — additively manufactured (AM / HC_316L), two bending series (B2, B3) and wrought — annotated by one operator with a broad brush during interactive correction; 61 carry labels. The detector is not weak by the field's conventions: on the shipped mask it scores clDice 0.823, topological precision 0.970, topological sensitivity 0.761 and IoU 0.675 over those 61 frames (`txm_width_clip_final.json`). Nothing here is a new architecture. The contribution is honest measurement of what a detector trained this way can be said to do, and of how much of that the annotation decides rather than the specimen.
+The corpus is 71 TXM mosaic frames of fatigue-cracked 316L steel — additively manufactured (AM / HC_316L), bending series B2 and B3, wrought — annotated by one operator with a broad brush; 61 carry labels. On the shipped mask the detector scores clDice 0.823, topological precision 0.970, topological sensitivity 0.761 and IoU 0.675 over those 61 frames (`txm_width_clip_final.json`). The contribution is not an architecture but a measurement of how much of that score the annotation decides.
 
-**A quarter of the mask has never been adjudicated.** Area-weighted over the 65 frames the census covers, 24.7% of everything the detector accepted falls where the operator painted neither crack nor not-crack — 8,016,109 px of 32,504,070 (`txm_unlabelled_area_per_frame.json`); the census omits six of the 71 frames, skipped by its generator for having no mask or no correction map (`code/audit/measure_unlabelled_area.py`). The share is not even: 51.1% on AM (n = 24) against 4.5% on B3 (n = 13), and on the worst frame 97.3% of accepted area is unadjudicated. Nor is it dust: 87.9% sits in components of 4,000 px or more. Nor is it all far from the strokes: 32.4% lies within 25 px of a painted stroke and is to that extent stroke rim rather than independent indication.
+**A quarter of the mask has never been adjudicated.** Area-weighted over the 65 frames the census covers, 24.7% of accepted area — 8,016,109 px of 32,504,070 — was painted neither crack nor not-crack (`txm_unlabelled_area_per_frame.json`); six of the 71 frames are skipped for want of a mask or correction map (`code/audit/measure_unlabelled_area.py`). It is uneven — 51.1% on AM (n = 24) against 4.5% on B3 (n = 13), 97.3% on the worst frame — and not dust: 87.9% is in components of 4,000 px or more, though 32.4% lies within 25 px of a painted stroke and is to that extent stroke rim.
 
-**Adjudicated, it reads as crack.** A blinded three-panel protocol against four control classes (§2.11) called 25 of 26 large unlabelled regions crack, indistinguishable from painted crack (p = 0.31) and separated from plain matrix (p = 4.4e-08); the one rejection, a specimen free surface, is a genuine false positive (§3.4) (`txm_unlabelled_adjudication.json`). Small isolated indications matched on size and specimen scored 13/32, as did the painted-crack control (two-sided Fisher p = 1.000), against matrix's 3/26 (Fisher p = 0.013, computed one-sided, `code/audit/score_blind_panel.py`) (`txm_small_component_adjudication_v2.json`). Two limits bound this: the large-region sample came from components of 4,000 px or more and so covers 21.7% of accepted area, not the whole 24.7%; the small-component class is 0.23% of accepted area, its entire exposure even if every member were a false positive (`txm_small_component_adjudication.json`). Within that scope, the adjudicated unlabelled area is crack the annotator did not reach rather than false positive.
+**Adjudicated, it reads as crack.** Against four control classes (§2.11), blinded three-panel adjudication called 25 of 26 large unlabelled regions crack — indistinguishable from painted crack (p = 0.31), separated from plain matrix (p = 4.4e-08); the one rejection, a specimen free surface, is a genuine false positive (§3.4) (`txm_unlabelled_adjudication.json`). Size- and specimen-matched small indications scored 13/32, as did the painted-crack control (two-sided Fisher p = 1.000), against matrix's 3/26 (p = 0.013, computed one-sided; `code/audit/score_blind_panel.py`, `txm_small_component_adjudication_v2.json`). Two limits: the large-region sample is components of 4,000 px or more, 21.7% of accepted area, not the whole 24.7%; and the small-component class is 0.23% of accepted area, its entire exposure even if every member were a false positive (`txm_small_component_adjudication.json`).
 
-**Why the default metric cannot see it.** Scored under one convention in one pass, the
-shipped detector reaches IoU 0.6748 against a 3 px ceiling of 0.0498 -- **13.6x the ceiling**
-(`txm_iou_ceiling_v2.json`). The older artifact's "10.1x" paired the same ceiling with a mask
-measured before `clip_to_measured_width` shipped, and its three model keys are retired by name
-in the v2 `.supersedes` block. Skeletonising the operator's own painted crack and re-dilating it to a physical width scores the labels against themselves: a correct 3 px crack reaches a median IoU of 0.0498 over 61 frames, against a median label width of 73 px (`txm_iou_ceiling.json`; further rungs in §3.2). The ceiling is a property of the annotations, not of any method, and no detector can raise it.
+**Why the default metric cannot see it.** The operator's labels scored against themselves — skeletonised, re-dilated to a physical width — set a ceiling: against a median label width of 73 px, a correct 3 px crack reaches a median IoU of 0.0498 over 61 frames (`txm_iou_ceiling.json`; further rungs in §3.2). The detector's IoU 0.6748, scored under one convention in one pass, is **13.6x that ceiling** (`txm_iou_ceiling_v2.json`); the older artifact's "10.1x" paired the same ceiling with a mask measured before `clip_to_measured_width` shipped, and its three model keys are retired by name in the v2 `.supersedes` block.
 
-**A width instrument pointed at the annotation.** The measurement is standard metrology and is not claimed as new (§2.9.1); what is ours is aiming it at the labels. On one estimator and shared sample points, the shipped mask covers a median 0.505 of the transverse feature over all 64 frames and 0.506 against the brush's 0.529 on the 61 labelled frames (paired Wilcoxon p = 0.061, indistinguishable); both fall short of the dark feature, and the mask is wider than the feature on 0 of 64 frames (`txm_width_ratio_unified.json`, §4).
+**A width instrument pointed at the annotation.** The measurement is standard metrology, not claimed as new (§2.9.1); only its target is ours. On one estimator and shared sample points, the shipped mask covers a median 0.505 of the transverse feature over all 64 frames, 0.506 against the brush's 0.529 on the 61 labelled frames (paired Wilcoxon p = 0.061); it exceeds the feature on 0 of 64 frames (`txm_width_ratio_unified.json`, §4).
 
-**What we do not claim, and what is weak.** We make no corpus-wide over-marking claim; the detector under-marks, and is indistinguishable from the annotator. We make no crack-growth claim; that test lost to doing nothing. Our adjudication panels are language-model agents, not human experts: their validation shows they agree with the same annotator's strokes, which is not competence at 316L TXM, and their votes are not regenerable from the released code (`code/audit/README.md`). The small-component arm is further limited by a panel sensitivity of 13/32 on known crack of that size: it establishes that the test indications are indistinguishable from known crack, not that they are crack. The false-positive rate on crack-free specimens is contaminated: the six confirmed crack-free specimens contribute 0 crack pixels and 95,351,647 not-crack pixels, 25.4% of every background label the model trains on, so that figure is partly memorisation (recorded in the header of `code/audit/heldout_crackfree_fp.py`, not in an `out/` artifact). A held-out refit with those frames removed is running; `out/txm_heldout_crackfree_fp.json` does not yet exist, no held-out false-positive figure is quoted here, and the deployed figure should be read as an upper bound until one lands. [TODO-AUTHOR: insert the held-out crack-free false-positive rate, and the deployed figure beside it, when the refit completes.] Beam energy, reconstruction, loading protocol and specimen provenance are recorded in neither repository and are marked [TODO-AUTHOR] throughout.
+**What we do not claim, and what is weak.** We claim no corpus-wide over-marking (the detector under-marks) and no crack growth; that test lost to doing nothing. Our adjudication panels are language-model agents, not human experts: their validation shows only agreement with the same annotator's strokes, which is not competence at 316L TXM, and their votes are not regenerable from the released code (`code/audit/README.md`). Panel sensitivity on known crack of that size is 13/32, so that arm shows indistinguishability from known crack, not crack. The crack-free false-positive rate is contaminated: those six specimens contribute 0 crack pixels and 95,351,647 not-crack pixels, 25.4% of every background label the model trains on (header of `code/audit/heldout_crackfree_fp.py`, not an `out/` artifact), so it is partly memorisation. Held out, the refit reads 1.581% against 0.289% trained with those labels — above the 1% MIL-HDBK-1823A yardstick the deployed 0.174% passes (`txm_heldout_crackfree_fp_v2.json`, Addendum). [TODO-AUTHOR: insert the held-out crack-free false-positive rate, and the deployed figure beside it, when the refit completes.] Beam energy, reconstruction, loading protocol and specimen provenance are in neither repository, and are marked [TODO-AUTHOR] throughout.
 
 ## 2. Methods
 
@@ -243,17 +241,15 @@ Guard verification over all 71 frames is in §3.6. It is **component-level and t
 Python with scikit-learn, scikit-image, SciPy, NumPy; encoder frozen Segment Anything ViT-H. Audit generators live in `code/audit/`, mapped to artifacts in §7 with the gaps recorded there: `measure_transverse_fwhm.py` is listed as emitting `out/txm_transverse_fwhm.json`, which does not exist (§2.9.4's numbers come from `txm_width_reference.json`, which has no listed generator); `measure_iou_ceiling.py` and `heldout_crackfree_fp.py` are not listed at all, though the first produced the artifact §2.8 relies on; the guard-verification generator is in neither repository, which is why its crack-free denominator had to be recovered arithmetically; and the panel votes are not regenerable (§2.11). Three checks in this project reported success while measuring nothing; §5.4 reports them rather than omitting them.
 
 ```markdown
+
 ## 3. Results: metric blindness and the unlabelled quarter
 
-Every accuracy number for this detector covers only pixels the operator labelled;
-outside the strokes there is no reference. This section sizes that blind spot — labels
-cap IoU below 0.05 — and adjudicates the rest, including the confound that reversed our
-first adjudication.
+Outside the operator's strokes there is no reference; labels cap IoU below 0.05.
 
 ### 3.1 A quarter of the accepted mask was never labelled either way
 
 Of 32,504,070 px accepted across 65 frames, 8,016,109 (**24.7%**, area-weighted) carry
-no judgement in the operator's correction map (`txm_unlabelled_area_per_frame.json`,
+no judgement in the correction map (`txm_unlabelled_area_per_frame.json`,
 `.corpus_frac_unlabelled` = 0.2466). By set (`.per_group.<G>.*`):
 
 | set | n | accepted px | unlabelled share |
@@ -264,39 +260,37 @@ no judgement in the operator's correction map (`txm_unlabelled_area_per_frame.js
 | B3 | 13 | 7,375,357 | **4.49%** |
 | **corpus** | **65** | **32,504,070** | **24.66%** |
 
-Nineteen of the 65 frames are over half unlabelled (*derived*,
-`.per_frame[].frac_unlabelled`); the extreme, `HC_316L_fatigue_1770_tip_zoom`, is 97.27%
-of accepted area; `b2_336_25` is **94.65%** of what the detector marked and **17.34%** of
-the frame (`.unlabelled_frac_of_frame` = 0.17338).
+Nineteen of the 65 are over half unlabelled (*derived*, `.per_frame[].frac_unlabelled`);
+the extreme, `HC_316L_fatigue_1770_tip_zoom`, 97.27% of accepted area; `b2_336_25`,
+**94.65%** of what the detector marked and **17.34%** of the frame
+(`.unlabelled_frac_of_frame` = 0.17338).
 
 The area resolves into 12,583 components; 284 of ≥4,000 px hold **87.88%**
-(`.frac_unlab_in_components_ge_4000px` = 0.87877), and only **32.39%** lies within 25 px
-of a painted stroke (`.frac_unlab_within_25px_of_stroke`) — not stroke rim. The other
-12,299 fall below 4,000 px (§3.5).
+(`.frac_unlab_in_components_ge_4000px` = 0.87877); only **32.39%** lies within 25 px of
+a painted stroke (`.frac_unlab_within_25px_of_stroke`). The other 12,299 fall below
+4,000 px (§3.5).
 
-**Why six frames are missing.** The census covers 65 of 71 frames.
-`measure_unlabelled_area.py` skips frames with an empty accepted mask or no correction
-map, tags both causes with one string, and records neither; only `b3_amb` is explained in
-the evidence, its accepted area zeroed by the straight-line guard (§3.6).
-**[TODO-AUTHOR]** Re-run with a distinct skip reason per frame and skipped records kept,
-so all six are accounted for.
+**Six frames are missing.** The census covers 65 of 71. `measure_unlabelled_area.py`
+skips frames with an empty accepted mask or no correction map, tags both causes with one
+string, records neither; only `b3_amb` is explained — accepted area zeroed by the
+straight-line guard (§3.6). **[TODO-AUTHOR]** Re-run with a distinct skip reason per
+frame and skipped records kept, so all six are accounted for.
 
 ### 3.2 The annotation caps IoU at 0.0498 for a physically correct crack
 
-Each painted crack was skeletonised, re-dilated to width *w*, and scored against its own
-label (`txm_iou_ceiling.json`, `.method`; per-frame `txm_iou_ceiling_per_frame.json`,
-n = 61 labelled frames).
+Painted crack skeletonised, re-dilated to width *w*, scored against its own label (§2.8;
+`txm_iou_ceiling.json`, `.method`; per-frame `txm_iou_ceiling_per_frame.json`, n = 61).
 
 | trace width | 3 px | 5 px | 11 px | 21 px |
 |---|---|---|---|---|
 | IoU against the operator's label | **0.0498** | 0.0822 | 0.1754 | 0.3140 |
 
 (`.headline.perfect_3px_trace_IoU` / `.perfect_5px` / `.perfect_11px` / `.perfect_21px`,
-each the verified median over the 61 per-frame records.) Even a 21 px trace scores below
-0.5 on 44/61 frames (*derived*, `iou_w21`). The driver is label width: median stroke
-**73.4 px** (*derived* median of `label_width_px`; `.headline.median_label_width_px`
-rounds to 73.0), 10th–90th percentile **19.7–165.3 px**, maximum 337.5 px (*derived*,
-linear-interpolation percentiles). By set:
+each the verified median over 61 per-frame records.) A 21 px trace scores below 0.5 on
+44/61 frames (*derived*, `iou_w21`). The driver is label width: median stroke **73.4
+px** (*derived* median of `label_width_px`; `.headline.median_label_width_px` rounds to
+73.0), 10th–90th percentile **19.7–165.3 px**, maximum 337.5 px (*derived*, linear
+interpolation). By set:
 
 | set | AM | B2 | Wrought | B3 |
 |---|---|---|---|---|
@@ -305,17 +299,15 @@ linear-interpolation percentiles). By set:
 | median label width | 36.4 px | 88.1 px | 96.6 px | 126.2 px |
 
 (`.per_specimen.<G>.{n, ceiling_3px}`; widths *derived* as per-group medians of
-`label_width_px`, artifact-rounded to 36 / 88 / 97 / 126 px.) The same construction on an
-SEM corpus (59 px median brush) gives a 3 px ceiling of 0.1662 (`.why`, `.verdict`) —
-three times the TXM ceiling.
-
-IoU here ranks imitation of a ~73 px paintbrush, not crack accuracy; never compare it
-against published IoU from tighter-annotated corpora.
+`label_width_px`, artifact-rounded to 36 / 88 / 97 / 126 px.) The same construction on
+an SEM corpus (59 px median brush) gives 0.1662 at 3 px (`.why`, `.verdict`), three times
+the TXM ceiling. IoU here ranks imitation of a ~73 px paintbrush; it is not comparable
+with published IoU from tighter-annotated corpora.
 
 **We report no "× the ceiling" multiple.** `txm_iou_ceiling.json` gives
 `.headline.deployed_model_IoU_same_frames` = 0.5047, `.model_over_ceiling` = 10.1 and
-`.per_specimen.<G>.model_iou`, but those values are byte-identical across all 61 records
-to the pre-`WIDTH_CLIP` run in `cldice_centreline_per_frame.json` (field `iou`, not
+`.per_specimen.<G>.model_iou`, but all 61 records are byte-identical to the
+pre-`WIDTH_CLIP` run in `cldice_centreline_per_frame.json` (field `iou`, not
 `iou_model`; record 0 = 0.10710188107052317 in both) — a mask no longer shipped, whose
 superseded clDice / Tprec / Tsens medians are 0.8635 / 0.9546 / 0.8145 against the
 shipped 0.8234 / 0.970 / 0.761. The ceiling is label-only, unaffected. **[TODO-AUTHOR]**
@@ -323,15 +315,15 @@ Re-run the ceiling script against the shipped mask if a multiple is wanted.
 
 ### 3.3 Blind adjudication: instrument validation
 
-Blind adjudication (`txm_unlabelled_adjudication.json`; design, blinding and leak guard
-in §2.11): missed crack, or detector invention? The panels are language-model agents, not
-human experts (`.design.votes`: 3 votes per field, 33 agents). UNLAB fields: components
-≥4,000 px, median 9,706.5 px, range 4,001–64,509 px (*derived*, `.per_field[].comp_px`).
-All p-values are two-sided; stored one-sided values are flagged. On the two known classes
-(POS 24/26, NEGM 4/26 in §3.4; `.instrument_validation`): Fisher exact p = 2.31 × 10⁻⁸,
-Mann–Whitney on vote score p = 4.50 × 10⁻⁸ (*recomputed; stored `.fisher_p` =
-1.16 × 10⁻⁸, `.mannwhitney_p` = 2.25 × 10⁻⁸ are one-sided*). Panel false-negative rate on
-known crack: 2/26 (`.panel_false_negative_rate`) — the error bar on §3.4.
+Blind adjudication (`txm_unlabelled_adjudication.json`; design, blinding, leak guard:
+§2.11). The panels are language-model agents, not human experts (`.design.votes`: 3
+votes per field, 33 agents). UNLAB fields: components ≥4,000 px, median 9,706.5 px,
+range 4,001–64,509 px (*derived*, `.per_field[].comp_px`). All p-values two-sided;
+stored one-sided values flagged. On the two known classes (POS 24/26, NEGM 4/26 in §3.4;
+`.instrument_validation`): Fisher exact p = 2.31 × 10⁻⁸, Mann–Whitney on vote score p =
+4.50 × 10⁻⁸ (*recomputed; stored `.fisher_p` = 1.16 × 10⁻⁸, `.mannwhitney_p` = 2.25 ×
+10⁻⁸ are one-sided*). Panel false-negative rate on known crack: 2/26
+(`.panel_false_negative_rate`) — the error bar on §3.4.
 
 ### 3.4 The large unlabelled regions read as crack
 
@@ -343,17 +335,17 @@ known crack: 2/26 (`.panel_false_negative_rate`) — the error bar on §3.4.
 | NEGM (plain matrix) | 4/26 (15.4%) | 0.2115 |
 | NEGF (crack-free specimen) | 0/2 | 0.0000 |
 
-Majorities: `.result.UNLAB_majority_yes` / `.UNLAB_pct` = 96.154,
-`.instrument_validation`; scores *derived*, `.per_field[].s`. Area-weighted, **93.42%**
-of sampled unlabelled area reads as crack (`.result.area_weighted_pct`).
+(`.result.UNLAB_majority_yes` / `.UNLAB_pct` = 96.154, `.instrument_validation`; scores
+*derived*, `.per_field[].s`.) Area-weighted, **93.42%** of sampled unlabelled area reads
+as crack (`.result.area_weighted_pct`).
 
 UNLAB vs POS: **Mann–Whitney p = 0.3135** (`.vs_POS_p`, the artifact's test), Fisher on
-25/26 vs 24/26 p = 1.000 (*recomputed*) — indistinguishable from painted crack either
-way. UNLAB vs NEGM: **Mann–Whitney p = 4.44 × 10⁻⁸** (`.vs_NEGM_p`), Fisher
-p = 2.22 × 10⁻⁹ (*recomputed*).
+25/26 vs 24/26 p = 1.000 (*recomputed*) — indistinguishable from painted crack. UNLAB vs
+NEGM: **Mann–Whitney p = 4.44 × 10⁻⁸** (`.vs_NEGM_p`), Fisher p = 2.22 × 10⁻⁹
+(*recomputed*).
 
-**Strictest reader alone.** Panel B (false-alarm penalised, default "no"): yes-rate 49%
-vs A 75%, C 69% (`.panel_agreement.yes_rate`). B alone: POS 20/26, UNLAB 16/26, NEGM 2/26
+**Strictest reader.** Panel B (false-alarm penalised, default "no"): yes-rate 49% vs A
+75%, C 69% (`.panel_agreement.yes_rate`). B alone: POS 20/26, UNLAB 16/26, NEGM 2/26
 (`.result.conservative_panel_only`); UNLAB vs POS Fisher p = 0.3678 (`.UNLAB_vs_POS_p`,
 two-sided), vs NEGM p = 8.48 × 10⁻⁵ (*recomputed; `UNLABELLED_AREA.md` prints one-sided
 4.2 × 10⁻⁵*). Pairwise agreement A–B 73%, A–C 90%, B–C 76% (`.panel_agreement`).
@@ -362,53 +354,52 @@ two-sided), vs NEGM p = 8.48 × 10⁻⁵ (*recomputed; `UNLABELLED_AREA.md` prin
 prints 87.8%, rounding the wrong way), so the claim covers **21.7%** of accepted area
 (0.8788 × 0.2466 = 0.2167).
 
-**The one genuine false positive was not unanimous.** `field_085`, 27,179 px on
-`wrought_316L_fatigue_1280_cycles`: Panels A and B read a specimen free surface with
-parallel Fresnel fringes, **Panel C voted crack** (`.per_field[]`: 1 yes / 2 no,
-`s` = 0.333; `.the_one_rejection.why`) — one rejection in 26.
+**The one genuine false positive.** `field_085`, 27,179 px on
+`wrought_316L_fatigue_1280_cycles`: A and B read a specimen free surface with parallel
+Fresnel fringes, **C voted crack** (`.per_field[]`: 1 yes / 2 no, `s` = 0.333;
+`.the_one_rejection.why`) — one rejection in 26.
 
-**An unexpected result.** On NEGP — accepted regions the operator painted not-crack — the
-panel sided with the detector 7/8, mean 0.8333 against 0.8910 (`.unexpected.what`). Our
-caveat: n = 8, and these are the *largest* detector/operator disagreements, not a random
-sample — selection, not accuracy. **This is not a measurement of annotation accuracy and
-must not be quoted as one**; it supports only that a false-positive rate as a fraction of
-painted not-crack area is an upper bound, part of that area being the annotator.
-**[TODO-AUTHOR]** `UNLABELLED_AREA.md` and `.unexpected.caveat` cite "the
-0.197%-of-painted-not-crack figure", in no artifact in either repository; the nearest
-match, 0.0197%, is predicted area on crack-free specimens — different quantity and
-denominator, off by ten. Source or drop it.
+On NEGP — accepted regions the operator painted not-crack — the panel sided with the
+detector 7/8, mean 0.8333 against 0.8910 (`.unexpected.what`). Caveat: n = 8, the
+*largest* detector/operator disagreements, not a random sample — selection, not
+accuracy. **This is not a measurement of annotation accuracy and must not be quoted as
+one**; it supports only that a false-positive rate measured against painted not-crack
+area is an upper bound, part of that area being the annotator. **[TODO-AUTHOR]**
+`UNLABELLED_AREA.md` and `.unexpected.caveat` cite "the 0.197%-of-painted-not-crack
+figure", in no artifact in either repository; the nearest match, 0.0197%, is predicted
+area on crack-free specimens — different quantity and denominator, off by ten. Source or
+drop it.
 
 ### 3.5 The small isolated indications: a confound, and the reversal it forced
 
 **Most small components are not detections.** No accepted component falls below
-`MIN_BLOB_PX = 2000`, so the 12,299 unlabelled components under 4,000 px are unpainted
-remainder where large accepted components meet the label map — stroke rim, not findings.
-They total 982,920 px, 12.2% of unlabelled area; 6,921 are one pixel, 3,141 are 2–9 px;
-80.4% of their area lies within 25 px of a painted stroke, median distance 11 px
-(`txm_small_component_adjudication.json`, `.population.*`). *Those are the 2026-09-20 run
-(12,303 components); the 2026-09-21 census on the current mask gives 12,299
-(`txm_unlabelled_area_per_frame.json`, 12,583 minus 284) — the mask moved under the
+`MIN_BLOB_PX = 2000`: the 12,299 unlabelled components under 4,000 px are unpainted
+remainder where accepted components meet the label map — stroke rim, not findings.
+982,920 px, 12.2% of unlabelled area; 6,921 single-pixel, 3,141 of 2–9 px; 80.4% of
+their area within 25 px of a painted stroke, median distance 11 px
+(`txm_small_component_adjudication.json`, `.population.*`). *Those are the 2026-09-20
+run (12,303 components); the 2026-09-21 census on the current mask gives 12,299
+(`txm_unlabelled_area_per_frame.json`, 12,583 minus 284): the mask moved under the
 measurement when `drop_straight_lines` shipped. We use 12,299; area, distance and
 tractable-subset figures are the earlier run, not recomputed.*
 
-Components ≥200 px **and** ≥200 px from any painted stroke — where "nobody checked this"
-is a real claim — number **32, 74,404 px, 0.229% of accepted area**
-(`.tractable_subset.n`, `.px`, `.share_of_all_accepted_area`): the class's whole exposure
-even if all were false positives.
+Components ≥200 px **and** ≥200 px from any painted stroke number **32, 74,404 px,
+0.229% of accepted area** (`.tractable_subset.n`, `.px`, `.share_of_all_accepted_area`)
+— the class's whole exposure even if all were false positives.
 
-**First run: size-matched, and confounded.** A second blind panel scored test 11/32
-against size-matched control 18/32, one-sided p = 0.0656, concluding the instrument weak
-at this size (`.adjudication`).
+**First run, confounded.** A second blind panel scored test 11/32 against size-matched
+control 18/32, one-sided p = 0.0656, concluding the instrument weak at this size
+(`.adjudication`).
 
 **The entire gap was a confound.** Size was matched; specimen was not. The control was
 62% AM, the test class 41% Wrought; standardising the control to the test specimen mix
 moves its yes-rate 0.562 → 0.313 against a test rate of 0.344
-(`txm_small_component_adjudication_v2.json`, `.why`). There was no gap, no size contrast,
-and the sensitivity the prevalence estimate rested on was void.
+(`txm_small_component_adjudication_v2.json`, `.why`). No gap; and the sensitivity the
+prevalence estimate rested on was void.
 
-**Second run: matched on size and specimen.** Identical group mix in both arms (B2 11,
-Wrought 13, AM 6, B3 2); size matched overall p = 0.468, within every group
-p = 0.333–0.937; leak guard clear at minimum p = 0.057 (`.matching.*`).
+**Second run, matched on size and specimen.** Identical group mix in both arms (B2 11,
+Wrought 13, AM 6, B3 2); size matched overall p = 0.468, within every group p =
+0.333–0.937; leak guard clear at minimum p = 0.057 (`.matching.*`).
 
 | class | majority called crack | mean vote score |
 |---|---|---|
@@ -417,29 +408,27 @@ p = 0.333–0.937; leak guard clear at minimum p = 0.057 (`.matching.*`).
 | plain matrix | 3/26 (11.5%) | 0.1154 |
 | crack-free specimens, false positive by assertion | 0/4 | 0.0833 |
 
-(`.by_class.{POSS, TEST, NEGM, CFREE}.{majority_yes, score}`.) Instrument validation
-here: control vs matrix, Fisher p = 0.0185 (*stored `.instrument.fisher_p` = 0.0134
+(`.by_class.{POSS, TEST, NEGM, CFREE}.{majority_yes, score}`.) Instrument validation:
+control vs matrix, Fisher p = 0.0185 (*stored `.instrument.fisher_p` = 0.0134
 one-sided*). Test vs matched control: **13/32 vs 13/32, Fisher p = 1.000**
 (`.test_vs_control_fisher_p`), Mann–Whitney p = 0.5319 (`.test.vs_control_p`). Test vs
 matrix: Fisher p = 0.0185 (*stored `.test_vs_matrix_fisher_p` = 0.0134 one-sided*),
 Mann–Whitney p = 2.06 × 10⁻⁴ (`.test.vs_matrix_p`).
 
 **The conclusion reverses.** The small isolated indications are indistinguishable from
-known crack of the same size in the same specimens and clearly separated from matrix — as
-the large regions were in §3.4. We report the reversal, not only its outcome: it is
-load-bearing evidence that the protocol can overturn its own result. A clean-looking
-negative was killed by a matching criterion we had not enforced, found by standardising a
-control we had already reported; `code/audit/score_blind_panel.py` now prints group mix
-and standardised control rate.
+known crack of the same size in the same specimens and clearly separated from matrix, as
+in §3.4. A clean-looking negative was killed by a matching criterion we had not
+enforced, found by standardising a control we had already reported.
+`code/audit/score_blind_panel.py` now prints group mix and standardised control rate.
 
-**Residuals.** Rogan–Gladen prevalence with the matched sensitivity is 1.0, bootstrap 95%
-CI **[0.3209, 1.0]** (`.prevalence`, `.ci`). No artifact says so: the 100% point estimate
-is arithmetic — the observed rate landing exactly on the sensitivity (`.obs` = `.sens` =
-0.40625) — not a claim that every component is crack. A 40.6% control rate is low — the
-panel misses most known crack at this size, capping what the arm can settle. Panel
-yes-rates test/control: A 69/59%, B 25/22%, C 41/38% (`.per_panel`); the conservative
-lens is near silent. The crack-free arm is n = 4 and proves nothing alone, though Panel A
-called one of its four fields crack (majority 0/4; score 0.0833).
+**Residuals.** Rogan–Gladen prevalence with the matched sensitivity: 1.0, bootstrap 95%
+CI **[0.3209, 1.0]** (`.prevalence`, `.ci`). No artifact says so: the 100% point
+estimate is arithmetic, the observed rate landing exactly on the sensitivity (`.obs` =
+`.sens` = 0.40625) — not a claim that every component is crack. The 40.6% control rate
+is low: the panel misses most known crack at this size, capping what the arm can settle.
+Panel yes-rates test/control: A 69/59%, B 25/22%, C 41/38% (`.per_panel`); the
+conservative lens is near silent. The crack-free arm, n = 4, proves nothing alone,
+though Panel A called one of its four fields crack (majority 0/4; score 0.0833).
 
 ### 3.6 One class in the unlabelled area is not crack: straight-line artefacts
 
@@ -447,30 +436,30 @@ Five of the 32 tractable components read as obvious cracks on every summary stat
 elongation 24–197, 12–49 sigma darker than their surroundings — yet run near-straight
 (`.straight_line_artefacts.finding`). **The panel did not settle them**: three
 majority-rejected, two majority-called crack (*derived*, `.per_field[]` with `cls ==
-"TEST"` and `el >= 6`: scores 0.000, 0.000, 0.333, 0.667, 0.667). Geometry does.
+"TEST"` and `el >= 6`: scores 0.000, 0.000, 0.333, 0.667, 0.667).
 
-Censused over all 71 frames on standalone components ≥200 px with aspect ratio ≥6
-(`.census.scope`), median centreline wander is **0.4736 px** for the straight class,
-**5.2511 px** for the curved (`.median_wander_straight`, `.median_wander_curved`). Five
-of the six enumerated components wander 0.13–0.71 px over 415–877 px at elongations
-37.7–197.0 (`.census.components[]`); one is on `b3_amb`, asserted crack-free throughout.
-**The artefact class is therefore 5 components, 15,241 px, 0.0469% of accepted area**;
-the top-level `.census.artefacts` = 6, `.artefact_px` = 17,674, `.pct_of_accepted` =
-0.0543 include a sixth component, 55.9% painted crack (*derived*: `cut_history` records
-1,360 px removed), not to be quoted; that sixth is why the guard threshold sits at
-1.0 px, not 2.0 px (§2.10).
+Over all 71 frames, standalone components ≥200 px with aspect ratio ≥6
+(`.census.scope`): median centreline wander **0.4736 px** straight against **5.2511 px**
+curved (`.median_wander_straight`, `.median_wander_curved`). Five of the six enumerated
+components wander 0.13–0.71 px over 415–877 px at elongations 37.7–197.0
+(`.census.components[]`); one is on `b3_amb`, asserted crack-free throughout. **The
+artefact class is therefore 5 components, 15,241 px, 0.0469% of accepted area**; the
+top-level `.census.artefacts` = 6, `.artefact_px` = 17,674, `.pct_of_accepted` = 0.0543
+include a sixth, 55.9% painted crack (*derived*: `cut_history` records 1,360 px
+removed), not to be quoted; it is why the guard threshold sits at 1.0 px, not 2.0 px
+(§2.10).
 
-Guard-on vs guard-off over all 71 frames: it fires on 4, removes those 15,241 px and
-**0 px of painted crack**, against a pre-registered criterion of zero. clDice is
-unchanged to sixteen decimal places (0.8234071528920338 before and after); false-positive
-area on crack-free material falls from 0.025278 to 0.023588 in the artifact's units, a
-6.7% relative reduction (`.guard.verified.*`). On `b3_amb`, accepted area goes to exactly
-zero (`.guard.verified.detail[1]`). Two caveats, neither optional.
+Guard-on vs guard-off, all 71 frames: fires on 4, removes those 15,241 px and **0 px of
+painted crack**, against a pre-registered criterion of zero. clDice unchanged to sixteen
+decimal places (0.8234071528920338 before and after); false-positive area on crack-free
+material falls from 0.025278 to 0.023588 in the artifact's units, a 6.7% relative
+reduction (`.guard.verified.*`). On `b3_amb`, accepted area goes to exactly zero
+(`.guard.verified.detail[1]`).
 
 - **Partly a memorisation result.** The six crack-free specimens sit inside the training
   background labels (§6.2): 0.025278 → 0.023588 is measured on pixels the model was told
-  are background — an optimistic bound, the 6.7% reduction measured on the favourable
-  case. The held-out refit specified in `code/audit/heldout_crackfree_fp.py`, emitting
+  are background — an optimistic bound, the favourable case. The held-out
+  refit specified in `code/audit/heldout_crackfree_fp.py`, emitting
   `out/txm_heldout_crackfree_fp.json`, **does not yet exist**. **[TODO-AUTHOR]** Report
   the held-out figure beside the deployed one when it does; report both, do not replace.
 - **[TODO-AUTHOR]** The two crack-free figures are in inconsistent units — corpus value
@@ -479,36 +468,32 @@ zero (`.guard.verified.detail[1]`). Two caveats, neither optional.
 
 **The guard is a lower bound.** Component-level, it catches standalone artefacts only;
 two further artefacts, fused into 440k px and 228k px crack systems, ride through
-attached to real crack (`.guard.lower_bound`). A within-component straightness test would
-find them; none exists.
+attached to real crack (`.guard.lower_bound`). A within-component straightness test
+would find them; none exists.
 
 ### 3.7 Figures
 
-`results/blind_adjudication.png` (1250 × 2048) is the §3.3–3.4 panel: five classes as
-rendered fields with vote tallies and reasons, including `field_085` at its 1-yes / 2-no
-split; `UNLABELLED_AREA.md` cites it, the file exists.
-`results/small_component_adjudication.png` (1085 × 2164) is the §3.5 panel but renders
-the **superseded run 1** — 18/32 control against 11/32 test — and must not be printed.
+`results/blind_adjudication.png` (1250 × 2048), the §3.3–3.4 panel: five classes with
+vote tallies and reasons, including `field_085`; cited by `UNLABELLED_AREA.md`, present.
+`results/small_component_adjudication.png` (1085 × 2164), the §3.5 panel, renders the
+**superseded run 1**, 18/32 control against 11/32 test: not to be printed.
 **[TODO-AUTHOR]** (i) Regenerate it from `txm_small_component_adjudication_v2.json` at
 13/32 against 13/32, specimen-matched. No figure exists for (ii) the §3.1 per-group
-census, per-frame points on group bars (`txm_unlabelled_area_per_frame.json`), or
-(iii) the §3.2 IoU-ceiling curve, IoU vs trace width, 61 per-frame traces
+census, per-frame points on group bars (`txm_unlabelled_area_per_frame.json`), or (iii)
+the §3.2 IoU-ceiling curve, IoU vs trace width, 61 per-frame traces
 (`txm_iou_ceiling_per_frame.json`).
-
-
-```
 
 ## 4. Results: width, and what the annotations cannot adjudicate
 
-Width is the one mask property scorable against the image, not the brush. The instrument is standard metrology, not claimed as new (§2.9.1).
+The instrument is standard metrology, not claimed as new (§2.9.1).
 
-### 4.1 An image-side width reference, pre-registered as physical
+### 4.1 An image-side width reference
 
-Over 11,426 profiles on 61 frames the transverse FWHM has median 45.0 px, 10th–90th percentile 3–147 px (`txm_width_reference.json`, `.is_it_the_instrument`; estimator §2.9.2). A rule fixed before the corpus was read would have called the width instrument-limited only at pooled CV < 0.35 **and** |Spearman ρ| (FWHM vs peak contrast) < 0.3; measured CV = 0.9157, ρ = +0.6732, frame medians ρ = +0.7558, p = 1.914 × 10⁻¹² (same artifact). **Both thresholds were missed by a wide margin**: a fixed point-spread cannot produce a width that ranges 50× and rises with peak depth, so the width is the crack's. The median is 1,305 nm on the derived pixel size (`.fwhm_median_nm`; §2.2); all figures below are in pixels.
+11,426 profiles on 61 frames: transverse FWHM median 45.0 px, 10th–90th percentile 3–147 px (`txm_width_reference.json`, `.is_it_the_instrument`; estimator §2.9.2). Pre-registered: instrument-limited only at pooled CV < 0.35 **and** |ρ| (FWHM vs peak contrast) < 0.3. Measured CV = 0.9157, ρ = +0.6732, frame medians ρ = +0.7558, p = 1.914 × 10⁻¹² (same artifact) — **both thresholds missed by a wide margin**. No fixed point-spread produces a width ranging 50× that rises with peak depth: the width is the crack's. Median 1,305 nm (`.fwhm_median_nm`; §2.2); figures below in pixels.
 
-### 4.2 One instrument, one frame set, one set of sample points
+### 4.2 One instrument, one frame set
 
-A mask scored on its own skeleton is scored where it is thickest, and three estimators gave three "shipped width ratio" figures before that was noticed (§2.9.3). Every comparison below is one run: each variant scored with the same estimator, on the same frames, **at the same sample points** — the widest variant's skeleton (`txm_width_ratio_unified.json`, `.what`; `code/audit/measure_width_ratio.py`).
+Three estimators gave three "shipped width ratio" figures before the splice was caught (§2.9.3). Every comparison below is one run — same estimator, same frames, **same sample points**, the widest variant's skeleton — **comparative across masks, not absolute width estimates** (`txm_width_ratio_unified.json`, `.what`, `.rows.*`; `code/audit/measure_width_ratio.py`).
 
 | mask (n frames) | median mask width / image FWHM | IQR | frames wider than feature |
 |---|---|---|---|
@@ -517,11 +502,9 @@ A mask scored on its own skeleton is scored where it is thickest, and three esti
 | **shipped** (64) | **0.505** | 0.444–0.587 | **0** |
 | human brush label (61) | 0.529 | 0.431–0.770 | 11 |
 
-From `.rows.*`; the artifact's qualifier travels with it — at one shared skeleton **these are a fair comparison across masks, not absolute width estimates**.
+### 4.3 Detector and annotator widths
 
-### 4.3 Detector and annotator differ no more than two annotators would
-
-On the 61 frames carrying both, the shipped median ratio is 0.5061 against the annotator's 0.5289: paired median difference **−0.0113**, paired Wilcoxon **p = 0.0613** (`.shipped_vs_label`, verdict "indistinguishable"), an order of magnitude below either mask's frame-to-frame spread (IQRs 0.143 shipped, 0.338 label; *derived* from `.rows.*.iqr`). The detector is the *narrower*. Per group (*derived* medians of `.per_frame[].ratio_shipped`/`.ratio_label`; arms differ in n because exactly three frames carry a mask and no label, one B2 and two B3):
+On the 61 frames carrying both: shipped 0.5061, annotator 0.5289, paired median difference **−0.0113**, paired Wilcoxon **p = 0.0613** (`.shipped_vs_label`, verdict "indistinguishable"), an order of magnitude below either mask's spread (IQRs 0.143 shipped, 0.338 label; *derived* from `.rows.*.iqr`). Per group (*derived* medians of `.per_frame[].ratio_shipped`/`.ratio_label`; three frames carry a mask and no label, one B2, two B3):
 
 | group (n shipped / label) | shipped | label |
 |---|---|---|
@@ -530,44 +513,44 @@ On the 61 frames carrying both, the shipped median ratio is 0.5061 against the a
 | AM / HC_316L (24 / 24) | 0.5634 | 0.5819 |
 | Wrought (12 / 12) | 0.5064 | 0.7032 |
 
-**The two-annotator reading is an analogy, not a measurement, and this corpus cannot upgrade it**: there is no second annotator and no frame is known to have been labelled twice **[TODO-AUTHOR: state whether any frame was annotated independently more than once; if so, measure the between-annotator width difference and replace this analogy]**. **p = 0.0613 is a failure to reject, not equivalence**; no artifact in `out/` holds an equivalence test or CI on the paired difference **[TODO-AUTHOR: add a TOST or bootstrap CI on the −0.0113 paired difference to state what differences the data exclude]**. At n = 61 the honest claim is "no difference detectable at this n".
+**The two-annotator reading is an analogy, not a measurement**: no second annotator, no frame known to have been labelled twice **[TODO-AUTHOR: state whether any frame was annotated independently more than once; if so, measure the between-annotator width difference and replace this analogy]**. **p = 0.0613 is a failure to reject, not equivalence**; no artifact in `out/` holds an equivalence test or CI on the paired difference **[TODO-AUTHOR: add a TOST or bootstrap CI on the −0.0113 paired difference to state what differences the data exclude]**.
 
 ### 4.4 Both masks under-mark; the detector never over-marks
 
-Against a ratio of 1.0 both arms fail in the same direction: shipped p = 3.53 × 10⁻¹², label p = 1.06 × 10⁻⁶ (`.shipped_vs_one_p`, `.label_vs_one_p`). The shipped mask is wider than the feature on **0 of 64 frames**, largest ratio anywhere 0.966 (*derived*, max of `.per_frame[].ratio_shipped`); the brush on 11 of 61. This retires the over-marking framing: the detector does not over-mark this corpus, it under-marks it, by very nearly the factor the annotator does. The seven frames over-marking under the self-skeleton estimator (§2.9.3) are hairlines — `HC_316L_fatigue_600`, FWHM 7 px against a 36 px mask — by a documented mechanism: `MIN_BLOB_PX = 2000` filters components thinner than roughly 2000/length px, so the only hairlines exported are ones the model drew fat (`txm_width_prereg_and_failed_variants.md`).
+Against 1.0 both fail in the same direction: shipped p = 3.53 × 10⁻¹², label p = 1.06 × 10⁻⁶ (`.shipped_vs_one_p`, `.label_vs_one_p`). Shipped is wider than the feature on **0 of 64 frames**, largest anywhere 0.966 (*derived*, max of `.per_frame[].ratio_shipped`); the brush on 11 of 61. Seven frames over-mark under the self-skeleton estimator (§2.9.3), all hairlines — `HC_316L_fatigue_600`, FWHM 7 px against a 36 px mask: `MIN_BLOB_PX = 2000` filters components thinner than roughly 2000/length px, so only hairlines the model drew fat are exported (`txm_width_prereg_and_failed_variants.md`).
 
 ### 4.5 IoU charges the detector for exactly this agreement
 
-For a **correctly centred** mask, IoU here is very nearly a width ratio and almost nothing else: the §3.2 ceiling rungs (0.0498, 0.0822, 0.1754, 0.3140 at 3, 5, 11, 21 px against a 73.4 px median label width) are per pixel of marked width 0.0166, 0.0164, 0.0159, 0.0150 (*derived*) — flat to within 11% over a sevenfold width change. Such a mask scores, to first order, its own width divided by the brush's, so matching the feature is penalised in proportion. The qualifier is the artifact's own and load-bearing: a right-width mask in the wrong place is not rescued, and on a 73 px brush the label skeleton can sit far from the crack.
+For a **correctly centred** mask, IoU here is nearly a width ratio: the §3.2 ceiling rungs 0.0498, 0.0822, 0.1754, 0.3140 (3, 5, 11, 21 px against a 73.4 px median label width) are 0.0166, 0.0164, 0.0159, 0.0150 per pixel of marked width (*derived*) — flat to within 11% over a sevenfold change. Right width does not rescue a mis-centred mask, and on a 73 px brush the label skeleton can sit far from the crack.
 
-Clipping the mask to its measured width (one run, one frame set, paired) moved the corpus width ratio 0.610 → 0.558 and over-marking frames 10 → 1 (all ten came down; `HC_316L_fatigue_1250` marginally over at 1.06), and cost IoU 0.7334 → **0.6748**, clDice 0.8462 → **0.8234**, Tsens 0.7978 → **0.7605**, only Tprec rising, 0.9687 → 0.9703 (`txm_width_clip_final.json`): 5.9 IoU points for width fidelity.
+Clipping to measured width moved the corpus ratio 0.610 → 0.558, over-marking frames 10 → 1 (all ten down; `HC_316L_fatigue_1250` marginally over at 1.06), costing IoU 0.7334 → **0.6748**, clDice 0.8462 → **0.8234**, Tsens 0.7978 → **0.7605**, only Tprec rising, 0.9687 → 0.9703 (`txm_width_clip_final.json`): 5.9 IoU points for width fidelity.
 
-**Two of the four criteria fixed before the clip run failed, and the step ships on by default**: (a) allowed a Tsens drop of 0.02, observed 0.026, missing by 0.006; (b), median |ratio − 1| must fall, went 0.399 → 0.442, and is mis-specified besides (`docs/WIDTH_REFERENCE.md`). Five of the six worst Tsens losses are over-marking frames the step exists to fix; the sixth, `b3_385_63um_ZOOM` (Tsens 1.000 → 0.820 at ratio 0.40×), was already well under-marked — a genuine cost, not a metric artefact.
+**Two of the four pre-registered clip criteria failed; the step ships by default**: (a) Tsens drop allowed 0.02, observed 0.026, missing by 0.006; (b) median |ratio − 1| must fall, went 0.399 → 0.442, and is mis-specified besides (`docs/WIDTH_REFERENCE.md`). Five of the six worst Tsens losses are over-marking frames the step exists to fix; the sixth, `b3_385_63um_ZOOM` (Tsens 1.000 → 0.820, ratio 0.40×), was already well under-marked — a genuine cost, not a metric artefact.
 
-Two cross-artifact cautions: the ceiling artifact's "10.1× the ceiling" multiple rests on a superseded pre-clip mask and is quoted nowhere here (§3.2); and the 73.4 px label width and the 0.529 label ratio come from **different estimators and must not be divided into one another** — the ceiling's per-frame label width is a median 1.57× the profile estimator's on-skeleton width on the same 61 frames (*derived*, `txm_iou_ceiling_per_frame.json` `.label_width_px` vs `txm_width_reference.json` `.per_frame[].w_lab`); nothing in `out/` reconciles them.
+The ceiling artifact's "10.1×" rests on a superseded pre-clip mask and is quoted nowhere here (§3.2). The 73.4 px label width and the 0.529 label ratio come from **different estimators and must not be divided into one another**: the ceiling's per-frame label width is a median 1.57× the profile estimator's on the same 61 frames (*derived*, `txm_iou_ceiling_per_frame.json` `.label_width_px` vs `txm_width_reference.json` `.per_frame[].w_lab`); nothing in `out/` reconciles them.
 
-### 4.6 What neither the brush nor a half-maximum cut can adjudicate
+### 4.6 What the annotations cannot adjudicate
 
-A narrower mask is defensible only if what it removes is not crack; the test was pre-registered with a fixed rule before it ran (`txm_width_prereg_and_failed_variants.md`). Contrast of the label-centreline pixels the shipped mask covers and a FRAC 0.4 narrowing drops, against the kept centreline and a matrix reference (unlabelled, unmasked pixels, same frame), over the 57 frames with a real disagreement: matrix −0.0016, **dropped +0.0379 (1.63σ above matrix)**, kept +0.0969 (4.83σ), pre-registered midpoint +0.0502. Dropped fell below the midpoint on **33/57** frames, sign test **p = 0.145** against a required p < 0.05; a paired Wilcoxon gives p = 0.016, but the pre-registered sign test is the one that counts: the deleted material is dark, and narrowing further is not licensed.
+Pre-registered (`txm_width_prereg_and_failed_variants.md`): over 57 frames with a real disagreement, contrast of label-centreline pixels the shipped mask covers and a FRAC 0.4 narrowing drops, against kept centreline and matrix (unlabelled, unmasked, same frame) — matrix −0.0016, **dropped +0.0379 (1.63σ above matrix)**, kept +0.0969 (4.83σ), pre-registered midpoint +0.0502. Dropped fell below the midpoint on **33/57** frames, sign test **p = 0.145** against a required p < 0.05; a paired Wilcoxon gives p = 0.016, but the pre-registered test counts: the deleted material is dark, and narrowing further is not licensed.
 
-The substantive question stays open. The dropped halo sits at 39% of kept-centreline contrast (*derived*, 0.0379/0.0969; the source note asserts 42%, unreproducible from its own medians) and 1.63σ above background: not matrix, but faint crack, a partly closed flank, out-of-plane crack and the instrument's skirt are not separable from these images plus these annotations. The brush cannot adjudicate it — a stroke of 36 px mean width on AM to 126 px on B3, median 73.4 px (`txm_iou_ceiling.json`, `.per_specimen.*.label_width_px`), asserts a region, not a boundary — nor can a half-maximum cut, the halo being what it is asked about. **[TODO-AUTHOR: settle with a depth-axis modality or a higher-magnification repeat acquisition of one frame; state which if either is available.]**
+The dropped halo sits at 39% of kept-centreline contrast (*derived*, 0.0379/0.0969; the source note asserts 42%, unreproducible from its own medians), 1.63σ above background: not matrix, but faint crack, partly closed flank, out-of-plane crack and instrument skirt are not separable from these images and annotations. The brush asserts a region, not a boundary: 36 px mean stroke width on AM to 126 px on B3, median 73.4 px (`txm_iou_ceiling.json`, `.per_specimen.*.label_width_px`). Nor can a half-maximum cut adjudicate the halo it is asked about. **[TODO-AUTHOR: settle with a depth-axis modality or a higher-magnification repeat acquisition of one frame; state which if either is available.]**
 
-A second pre-registered variant failed and is reported as a failure: per-component FWHM at FRAC 0.5 took Tsens 0.798 → 0.261 and clDice 0.846 → 0.412, 23× the allowed drop; the only setting clearing the guard is FRAC 0.2, a 6% width reduction.
+A second pre-registered variant failed: per-component FWHM at FRAC 0.5 took Tsens 0.798 → 0.261 and clDice 0.846 → 0.412, 23× the allowed drop; only FRAC 0.2 clears the guard, a 6% width reduction.
 
 ### 4.7 A straight-line artefact class: the crack signature is also the artefact's
 
-The intuitive crack signature — long, thin, dark, high-contrast — is exactly the signature of a detector-column artefact. Elongation and contrast cannot tell them apart; wander about a straight-line fit can (census and guard effect §3.6; rule and threshold history §2.10).
+Elongation and contrast cannot separate them; centreline wander can (§3.6, §2.10).
 
-The five artefacts have elongations 134, 197, 175, 94 and 38 at 2,090–4,094 px — above the `MIN_BLOB_PX = 2000` floor, the smallest by only 90 px — with transverse-width sd 0.37–2.19 px against 6.39 px for the sixth, painted-crack component. Three are geometric evidence for their own origin: two in one frame at x = 6353 and 6359 and a third in a sibling frame of the same specimen at x = 6366, within 13 px of one image column across two frames; a fourth at x = 0, the fifth interior at x = 1,689 (`txm_small_component_adjudication.json`, `.straight_line_artefacts.census.components[].x`).
+Five artefacts: elongations 134, 197, 175, 94, 38 at 2,090–4,094 px, above the `MIN_BLOB_PX = 2000` floor, the smallest by 90 px, transverse-width sd 0.37–2.19 px against 6.39 px for the sixth, painted-crack component. Two in one frame at x = 6353 and 6359, a third in a sibling frame of the same specimen at x = 6366 — within 13 px of one column across two frames — a fourth at x = 0, the fifth interior at x = 1,689 (`txm_small_component_adjudication.json`, `.straight_line_artefacts.census.components[].x`).
 
-Two of the five reached the blind 3-panel adjudication as test fields and were called opposite ways: the elongation-134 component crack 2 of 3, the elongation-197 component not-crack 0 of 3 (*derived*, `.per_field` `site_007` and `site_083` matched to `.census.components` by frame id, pixel count and elongation). Those panels are language-model agents (§2.11), so the split illustrates the signature's behaviour, not an adjudication of these components.
+Two of the five reached the blind 3-panel adjudication and split: elongation-134 crack 2 of 3, elongation-197 not-crack 0 of 3 (*derived*, `.per_field` `site_007` and `site_083` matched to `.census.components` by frame id, pixel count and elongation). Those panels are language-model agents (§2.11): the split illustrates the signature, not an adjudication of these components.
 
-The separation claim rests on the two census medians and the five enumerated wander values; the "2.9–12.9 px" curved range in `docs/UNLABELLED_AREA.md` is in no artifact in `out/` and stays out of the paper (§2.10). The guard is a **lower bound**, being component-level: two artefacts fused into 440k and 228k px crack systems ride through attached to real crack, with no within-component test (`.guard.lower_bound`).
+The separation claim rests on two census medians and five enumerated wander values; the "2.9–12.9 px" curved range in `docs/UNLABELLED_AREA.md` is in no artifact in `out/` and stays out (§2.10). Component-level, the guard is a **lower bound**: two artefacts fused into 440k and 228k px crack systems ride through attached to real crack, no within-component test (`.guard.lower_bound`).
 
-### 4.8 Limitations of the width measurement
+### 4.8 Limitations
 
-- **Estimator dependence is the dominant uncertainty.** Three estimators of the shipped mask's width ratio give 0.505, 0.558 and 0.679, over-marking on 0 of 64, 1 of 63 and 7 of 61 frames (§2.9.3); every number above is the shared-skeleton one, and mixing them would change the qualitative conclusion about over-marking.
-- **Conditioned on measurable features.** A profile enters only if its peak clears 2 background σ, and on AM / HC_316L — 38% of the corpus (§2.5.3) — cracks are intensity-invisible, Cohen d = +0.09 against +1.10 to +2.91 on the other three groups, measured against each crack's own local ring (`am_label_separability.json`, `.CORRECTION_ring_control.result`; that file's top-level AM d = −0.31 is explicitly **withdrawn**, an artefact of using painted not-crack as reference). AM width figures therefore rest on the AM locations bright enough to profile and are not representative of AM crack as a whole; the two profile counts in `txm_width_reference.json` (11,426 instrument test, 15,397 ratio table, both over 61 frames) reflect different gating and are not interchangeable.
+- **Estimator dependence is the dominant uncertainty.** Three estimators of the shipped width ratio give 0.505, 0.558 and 0.679, over-marking on 0 of 64, 1 of 63 and 7 of 61 frames (§2.9.3); every number above is the shared-skeleton one, and mixing them would change the qualitative conclusion about over-marking.
+- **Conditioned on measurable features.** A profile enters only if its peak clears 2 background σ; on AM / HC_316L — 38% of the corpus (§2.5.3) — cracks are intensity-invisible, Cohen d = +0.09 against +1.10 to +2.91 on the other three groups, measured against each crack's own local ring (`am_label_separability.json`, `.CORRECTION_ring_control.result`; that file's top-level AM d = −0.31 is explicitly **withdrawn**, an artefact of using painted not-crack as reference). AM width figures therefore rest on AM locations bright enough to profile and do not represent AM crack as a whole; the two profile counts in `txm_width_reference.json` (11,426 instrument test, 15,397 ratio table, both over 61 frames) reflect different gating and are not interchangeable.
 - **No absolute width claim is made.** All ratios are mask width against image FWHM at shared sample points, and FWHM is a convention (ISO50), not a physical crack-opening displacement.
 - **No second annotator, and no repeat annotation** (§4.3).
 
@@ -668,6 +651,63 @@ Mask: `effective_mask` (`app/core/pipeline.py:885`); stages `clip_to_measured_wi
 **The panel votes are not reproducible here:** they require a blind multi-agent panel over the crops, are an artifact of a specific model and harness, and **ship as data, not regenerated** (`txm_small_component_adjudication_v2.json` `.generators.note`; `code/audit/README.md`). Preserved: crop keys with frame id and centre per field (`txm_unlabelled_adjudication_cropkey.json`, 88 fields; `txm_small_component_cropkey_v2.json`, 94 fields); the fixed native crop window, **700 × 700 px** large-region and **400 × 400 px** small-component, the latter sized so a 200 px clearance puts no painted crack in frame (`build_small_component_crops.py:35`); the shuffling seed (`:61`, `default_rng(20260921)`); leak-guard statistics, group-matching record, deterministic scorer. Crop PNGs are byte-reproducible from `images/` and the crop keys; every vote, its panel and each panel's free-text evidence ship in the `per_field` arrays of both adjudication artifacts.
 
 **Known gaps in the provenance chain.** Four load-bearing artifacts carry no `generator` key: `txm_iou_ceiling.json`, `txm_width_reference.json`, `txm_unlabelled_adjudication.json`, `txm_width_clip_final.json`. Three have no driver in `code/audit/` at all; for the fourth, `measure_iou_ceiling.py` was written afterwards, emits a new file rather than reproducing the old one, and has not been run, so the shipped `txm_iou_ceiling.json` remains an unreproduced output with a superseded model column (§5.2). `code/audit/README.md` also lists `measure_transverse_fwhm.py` as emitting `out/txm_transverse_fwhm.json`; **that file does not exist**, and the §6.4 numbers are read from `txm_width_reference.json` instead. **[TODO-AUTHOR]** re-emit these under named generators, or state in the final version that they are recorded outputs of scripts lost to a scratch directory — which is what they are.
+
+## Figures and tables
+
+All figures are generated by checked-in code and regenerate from the artifacts.
+
+| | content | source |
+|---|---|---|
+| Figure 1 | all 71 frames with identified crack, contact sheet | `results/all_overlays_contact_sheet.png`, `code/make_deployed_overlays.py` |
+| Figure 2 | blind adjudication: the five classes and the panels' verdicts | `results/blind_adjudication.png` |
+| Figure 3 | the four frames where over-marking was real, before and after width clipping | `results/width_clip_before_after.png` |
+| Figure 4 | small isolated indications against size- and specimen-matched controls | `results/small_component_adjudication.png` |
+
+**[TODO-AUTHOR]** Figures are currently referenced by name rather than by number in the body
+text; renumber to the target journal's convention at submission, and supply a micrograph of
+each specimen group if the venue expects one.
+
+## References
+
+Bibliographic details verified against the primary sources 2026-09-21/22. Works are cited in
+the text by the short forms used here.
+
+1. **Shit, S., Paetzold, J. C., Sekuboyina, A., Ezhov, I., Unger, A., Zhylka, A., Pluim,
+   J. P. W., Bauer, U., Menze, B. H.** clDice — a novel topology-preserving loss function for
+   tubular structure segmentation. *Proceedings of the IEEE/CVF Conference on Computer Vision
+   and Pattern Recognition (CVPR)*, 2021, pp. 16560–16569. arXiv:2003.07311.
+   — source of the centreline metric used throughout as the width-tolerant alternative to IoU.
+
+2. **Benz, C., Rodehorst, V.** OmniCrack30k: a benchmark for crack segmentation and the
+   reasonable effectiveness of transfer learning. *Proceedings of the IEEE/CVF Conference on
+   Computer Vision and Pattern Recognition Workshops (CVPRW)*, June 2024.
+   — 30k samples, ~9 billion pixels, 20+ datasets; its best nnU-Net reaches mean clIoU4px 64%,
+   the external comparator this paper's centreline figures are read against.
+
+3. **Kirillov, A., Mintun, E., Ravi, N., Mao, H., Rolland, C., Gustafson, L., Xiao, T.,
+   Whitehead, S., Berg, A. C., Lo, W.-Y., Dollár, P., Girshick, R.** Segment Anything.
+   *Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)*, 2023.
+   arXiv:2304.02643. — the frozen ViT-H encoder supplying the 256 embedding channels.
+
+4. **VDI/VDE 2630 Blatt 1.1.** Computed tomography in dimensional measurement: fundamentals
+   and definitions. Verein Deutscher Ingenieure / Verband der Elektrotechnik, 2009.
+   — codifies the surface-determination framework within which the ISO50 half-maximum rule
+   sits. See also Blatt 1.2 on influencing variables.
+
+5. **Lifton, J. J., Carmignato, S.** Simulating and estimating the measurement uncertainty due
+   to the ISO50 surface determination method for dimensional computed tomography.
+   *Precision Engineering*, 2019. doi:10.1016/j.precisioneng.2019.05.006.
+   — uncertainty treatment for the half-maximum criterion this paper's width instrument uses.
+
+6. **US Department of Defense.** MIL-HDBK-1823A: Nondestructive evaluation system reliability
+   assessment. 7 April 2009. — source of the ≤1% false-call yardstick the crack-free gate is
+   read against in §3 and the Addendum.
+
+**[TODO-AUTHOR]** Two citation slots the text needs and this repository cannot supply:
+a primary reference for Orthogonal Profile Extraction as a named crack-width algorithm (it is
+described in the review and applied literature but this repository holds no canonical
+citation; pick one from your own field's literature), and any prior TXM/XCT study of the same
+alloy or loading regime that the Introduction should position against.
 
 ## Addendum: the crack-free gate is contaminated
 
