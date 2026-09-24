@@ -46,7 +46,14 @@ def short(image_id):
 
 
 def main():
-    os.makedirs(OUT, exist_ok=True)
+    # THREE SUBFOLDERS, not 145 loose files. The first version of this wrote everything flat
+    # into one directory, which is unreadable in Finder and makes "show me the masks" a
+    # sorting exercise. overlay/ and mask/ hold one file per frame under the same name, so a
+    # frame's two views line up row-for-row in any file browser; figures/ holds the handful
+    # of cross-corpus plots that are not per-frame.
+    os.makedirs(os.path.join(OUT, "overlay"), exist_ok=True)
+    os.makedirs(os.path.join(OUT, "mask"), exist_ok=True)
+    os.makedirs(os.path.join(OUT, "figures"), exist_ok=True)
     rows = []
     for meta in S.list_images():
         iid = meta["id"]
@@ -66,9 +73,9 @@ def main():
         rgb[tight] = rgb[tight] * 0.35 + np.array([0.65, 0.0, 0.0], np.float32)
         name = f"{group_of(iid)}_{short(iid)}"
         Image.fromarray((rgb * 255).astype(np.uint8)).save(
-            os.path.join(OUT, name + "_overlay.png"))
+            os.path.join(OUT, "overlay", name + ".png"))
         Image.fromarray(np.where(tight, 0, 255).astype(np.uint8)).save(
-            os.path.join(OUT, name + "_mask.png"))
+            os.path.join(OUT, "mask", name + ".png"))
         from scipy.ndimage import label as cclabel
         n_ind = int(cclabel(tight)[1])
         rows.append(dict(group=group_of(iid), file=meta.get("filename") or iid,
@@ -76,7 +83,7 @@ def main():
                          area_pct_wide=round(100 * float(wide.mean()), 3),
                          area_pct_tight=round(100 * float(tight.mean()), 3),
                          shrink_x=round(float(wide.mean()) / max(float(tight.mean()), 1e-12), 2),
-                         indications=n_ind, overlay=name + "_overlay.png"))
+                         indications=n_ind, overlay=os.path.join("overlay", name + ".png")))
         print(f"{name:52s} {rows[-1]['area_pct_wide']:7.3f}% -> "
               f"{rows[-1]['area_pct_tight']:7.3f}%  ({rows[-1]['shrink_x']}x)  "
               f"{n_ind} indications", flush=True)
