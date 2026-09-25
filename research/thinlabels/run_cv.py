@@ -34,7 +34,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(P0, "research", "thinlabels")
 
 CRACK_CAP = 8000

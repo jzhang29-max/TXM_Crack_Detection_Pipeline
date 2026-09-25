@@ -6,7 +6,7 @@ the threshold on the CHEAP stride-16 features reaches 33 px at a smaller IoU cos
 """
 import os, sys
 import numpy as np
-PROJECT = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT, "app", "core"))
 sys.path.insert(0, os.path.join(PROJECT, "code"))
 sys.path.insert(0, os.path.join(PROJECT, "research", "logs"))

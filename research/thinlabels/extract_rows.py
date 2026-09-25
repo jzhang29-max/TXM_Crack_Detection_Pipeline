@@ -22,7 +22,7 @@ import warnings
 
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(P0, "app", "core"))
 sys.path.insert(0, os.path.join(P0, "code"))
 import store as S          # noqa: E402

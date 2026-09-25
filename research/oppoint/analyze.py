@@ -17,10 +17,11 @@ Metrics, and what each one can and cannot say:
   on-specimen above t is a false positive. The only axis that reads material the labelled
   distribution does not cover, and the one that caught two bad models before.
 """
+import os
 import sys, os, json, glob
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(P0, "research", "oppoint")
 CACHE = os.path.join(OUT, "cache")
 NB = 2000

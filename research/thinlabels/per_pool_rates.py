@@ -18,7 +18,7 @@ import sys
 import numpy as np
 import joblib
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(P0, "research", "thinlabels")
 sys.path.insert(0, OUT)
 from run_cv import ARMS, build, N17    # noqa: E402

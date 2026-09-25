@@ -11,10 +11,11 @@ ONE free parameter is chosen on training images and scored on held-out images.
   otsu+shift    Otsu plus a constant offset chosen on train images
   oracle        t_i maximising image i's own IoU -- NOT DEPLOYABLE, upper bound only
 """
+import os
 import sys, os, json
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(P0, "research", "oppoint"))
 os.chdir(P0)
 from analyze import (load, GRID, NB, CENTERS, above, idx, corr_metrics, gt_metrics,

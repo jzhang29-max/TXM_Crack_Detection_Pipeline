@@ -23,14 +23,24 @@ if [ ! -d "$VENV" ]; then
   python3 -m venv "$VENV"
 fi
 # shellcheck disable=SC1090
-source "$VENV/bin/activate"
+# NOT activated. bin/activate hardcodes VIRTUAL_ENV as an absolute path written when the
+# venv was created; move the checkout and sourcing it prepends a directory that no longer
+# exists, so a bare `python3` falls through to the next thing on PATH -- a conda install
+# here. The sibling app failed exactly this way on 2026-09-24: it served HTTP 200 while
+# running scikit-learn 1.7.2 against bundles pickled by 1.9.0, and every inference died.
+# $PY resolves from its own location and is correct even when bin/activate is stale.
+PY="$PWD/$VENV/bin/python3"
+if [ ! -x "$PY" ]; then
+  echo "==> no interpreter at $PY -- rebuild the venv:  rm -rf $VENV && ./run_app.sh"
+  exit 1
+fi
 
 # Only reinstall when requirements change -- a stamp file keeps startup fast.
 STAMP="$VENV/.req-stamp"
 if [ ! -f "$STAMP" ] || ! cmp -s requirements.txt "$STAMP"; then
   echo "==> installing dependencies (this takes a few minutes the first time)"
-  python3 -m pip install --quiet --upgrade pip
-  python3 -m pip install --quiet -r requirements.txt
+  "$PY" -m pip install --quiet --upgrade pip
+  "$PY" -m pip install --quiet -r requirements.txt
   cp requirements.txt "$STAMP"
 fi
 
@@ -43,7 +53,7 @@ mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
 # --skip-features on purpose: the 17-feature reference stacks are 2.1 GB and take
 # minutes to compute, and NOTHING except retraining reads them. Building them here
 # meant the first `./run_app.sh` sat silently for several minutes before serving.
-python3 code/unpack_package.py || echo "==> WARNING: unpack step failed; the shipped correction labels may be missing"
+"$PY" code/unpack_package.py || echo "==> WARNING: unpack step failed; the shipped correction labels may be missing"
 
 # SAM is optional, and as of this version that is TRUE rather than aspirational: if the
 # import fails or the weights cannot be fetched, ingest catches it, predicts with the
@@ -68,7 +78,12 @@ elif [ ! -d "$HFHUB" ] && ! python3 -c "import socket;socket.setdefaulttimeout(4
   echo "    ~/.cache/huggingface across, or set TXM_NO_SAM=1 to stop retrying."
 fi
 
-if [ ! -f models/hybrid_v3_20260822.joblib ] && [ ! -f models/f17_v3_20260822.joblib ]; then
+# Ask whether ANY model is present, not whether two specific 2026-08-22 filenames are.
+# Those two were superseded by the v5 pair on 2026-08-24, so this warning had been firing on
+# every start for a month while the app could predict perfectly well -- and, worse, it would
+# have stayed SILENT if the models had genuinely gone missing under any other name. A check
+# that is wrong in both directions is worse than no check.
+if ! ls models/*.joblib >/dev/null 2>&1; then
   echo "==> WARNING: no model found in models/."
   echo "    The app will start but cannot predict until one is present."
 fi
@@ -93,4 +108,4 @@ export PYTORCH_MPS_HIGH_WATERMARK_RATIO="${PYTORCH_MPS_HIGH_WATERMARK_RATIO:-0.0
 
 echo "==> serving on http://127.0.0.1:$PORT"
 echo "    drop images onto the window; press Ctrl-C to stop"
-exec python3 app/server.py
+exec "$PY" app/server.py
