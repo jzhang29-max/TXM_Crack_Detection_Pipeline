@@ -61,14 +61,14 @@ mkdir -p app_data/images app_data/models models dataset_cache paint/corrections
 # which model produced the mask. This message used to promise a fallback that did not
 # exist, and a machine behind a firewall got a red job error on every single image.
 HFHUB="${HF_HOME:-$HOME/.cache/huggingface}/hub/models--facebook--sam-vit-huge"
-if ! python3 -c "import torch" 2>/dev/null; then
+if ! "$PY" -c "import torch" 2>/dev/null; then
   echo "==> NOTE: PyTorch not installed, so SAM is unavailable."
   echo "    The app runs on the 17-feature model alone"
   echo "    (held-out mean IoU 0.744 vs 0.821 for the SAM ensemble)."
   echo "    To enable it:  pip install torch transformers"
 elif [ -n "${TXM_NO_SAM:-}" ]; then
   echo "==> TXM_NO_SAM is set: predicting with the 17-feature model only."
-elif [ ! -d "$HFHUB" ] && ! python3 -c "import socket;socket.setdefaulttimeout(4);socket.create_connection(('huggingface.co',443)).close()" 2>/dev/null; then
+elif [ ! -d "$HFHUB" ] && ! "$PY" -c "import socket;socket.setdefaulttimeout(4);socket.create_connection(('huggingface.co',443)).close()" 2>/dev/null; then
   # Weights absent AND the hub unreachable: say so NOW, not after the user drops in an
   # image and waits through a failing 2.4 GB download.
   echo "==> NOTE: SAM weights are not cached and huggingface.co is unreachable."
