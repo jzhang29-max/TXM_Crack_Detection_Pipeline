@@ -13,7 +13,7 @@ that wrong would blur the very thing being measured.
 """
 import os, sys
 import numpy as np
-PROJECT = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT, "app", "core"))
 sys.path.insert(0, os.path.join(PROJECT, "code"))
 import model as M, store as S, pipeline as P

@@ -9,10 +9,11 @@ their dark core (RECIPE thincore_v5), which could make ridge filters redundant O
 Run detached (`nohup ... &`). Every stage writes its JSON before the next begins, so a sleep or
 an interrupt costs one stage, not the run.
 """
+import os
 import json, os, sys, time
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (os.path.join(P0, "app", "core"), os.path.join(P0, "code"), HERE):
     sys.path.insert(0, p)

@@ -9,10 +9,11 @@ Two things the sweep exposed and could not explain:
   curve on the 4 densely-labelled frames tests that literally: of the pixels the model
   scores p, what fraction are actually crack?
 """
+import os
 import sys, os, json
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(P0, "research", "oppoint"))
 os.chdir(P0)
 from analyze import load, NB, CENTERS, above, idx

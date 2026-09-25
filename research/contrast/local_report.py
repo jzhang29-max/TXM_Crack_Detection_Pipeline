@@ -8,7 +8,7 @@ import json
 import os
 import sys
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(P0, "research", "contrast")
 
 

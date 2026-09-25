@@ -14,10 +14,11 @@ inert in that mode; this uses "gate" (the export/deliverable path) and "paste" (
 
 Read-only on app_data. Writes research/oppoint/endtoend.json.
 """
+import os
 import sys, os, json, time, glob
 import numpy as np
 
-P0 = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+P0 = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(P0, "app", "core"))
 sys.path.insert(0, os.path.join(P0, "code"))
 import store as S, pipeline as P

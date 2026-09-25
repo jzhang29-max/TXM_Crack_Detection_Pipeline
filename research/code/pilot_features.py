@@ -10,7 +10,7 @@ comparable to its stride-16 arm (IoU 0.1748, thickness 38.9 px).
 """
 import os, sys
 import numpy as np
-PROJECT = "/Users/jiamingzhang/Desktop/TXM_Crack_Detection_Pipeline"
+PROJECT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT, "app", "core"))
 sys.path.insert(0, os.path.join(PROJECT, "code"))
 sys.path.insert(0, os.path.join(PROJECT, "research", "logs"))
