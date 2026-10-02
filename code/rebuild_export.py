@@ -84,6 +84,16 @@ def main():
     ap.add_argument("--out", default=DEFAULT_OUT)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true")
+    # WHY THIS IS A FLAG AND WHY ITS DEFAULT IS UNCHANGED. This script exists to reproduce
+    # the deleted archive, so "gate" stays the default and nothing about that path moves.
+    # But "gate" means the operator's strokes lower the threshold to CORRECTION_FLOOR inside
+    # a crack stroke and erase is absolute, so the archive is a HUMAN-GATED mask -- the TXM
+    # analogue of the SEM repo's gated_masks. There was no TXM analogue of machine_masks
+    # anywhere, so "what does the model alone say" could not be asked of this corpus from
+    # outside the app. --corrections none answers it, at the same threshold, pruning,
+    # hole-filling and tightening, so the ONLY difference from the archive is the human.
+    ap.add_argument("--corrections", choices=["gate", "paste", "none"], default="gate",
+                    help="gate (default, reproduces the archive) | paste | none (model only)")
     a = ap.parse_args()
 
     imgs = [m for m in S.list_images() if m.get("has_prob")]
@@ -95,7 +105,8 @@ def main():
     label, created, fp = model_fingerprint()
     print(f"  model: {label}  created {created}  fingerprint {fp}")
     print(f"  images with a prediction: {len(imgs)}")
-    print(f"  threshold {P.DEFAULT_THRESHOLD}  corrections=gate  tight=True  postprocess=False")
+    print(f"  threshold {P.DEFAULT_THRESHOLD}  corrections={a.corrections}  tight=True  "
+          f"postprocess=False")
     print(f"  out: {a.out}")
     if a.dry_run:
         for m in imgs[:5]:
@@ -115,7 +126,7 @@ def main():
         stem = os.path.splitext(m.get("filename") or iid)[0]
         try:
             mask = P.effective_mask(iid, threshold=P.DEFAULT_THRESHOLD, postprocess=False,
-                                    corrections="gate", tight=True)
+                                    corrections=a.corrections, tight=True)
             if mask is None:
                 failed.append((stem, "effective_mask returned None"))
                 continue
@@ -137,31 +148,48 @@ def main():
 
     with open(os.path.join(a.out, "summary.csv"), "w") as fh:
         fh.write(summary.getvalue())
-    with open(os.path.join(a.out, "PROVENANCE.txt"), "w") as fh:
-        fh.write(
-            "REBUILT, NOT RESTORED\n"
+    archive = a.corrections == "gate"
+    head = ("REBUILT, NOT RESTORED\n"
             "=====================\n\n"
             "The original ~/Desktop/txm_crack_export was deleted on 2026-09-24 during an\n"
             "unrelated Desktop reorganisation, with no backup. These masks were recomputed on\n"
             f"{time.strftime('%Y-%m-%d %H:%M %Z')} by code/rebuild_export.py in\n"
             "TXM_Crack_Detection_Pipeline, reproducing the parameters of the app's own\n"
-            "api_export_all rather than choosing new ones.\n\n"
-            f"  model label       {label}\n"
-            f"  model created     {created}\n"
-            f"  model fingerprint {fp}\n"
-            f"  threshold         {P.DEFAULT_THRESHOLD}\n"
-            f"  corrections       gate (CORRECTION_FLOOR {P.CORRECTION_FLOOR})\n"
-            "  postprocess       False\n"
-            "  tight             True\n"
-            "  convention        crack = BLACK (0) on white (255)\n\n"
-            f"  images written    {ok}\n"
-            f"  failed            {len(failed)}\n\n"
-            "WHAT THIS MEANS FOR PUBLISHED NUMBERS. If the original archive was produced by an\n"
+            "api_export_all rather than choosing new ones.\n\n") if archive else (
+           "MODEL OUTPUT ONLY -- THIS IS NOT THE ARCHIVE\n"
+           "============================================\n\n"
+           f"Written {time.strftime('%Y-%m-%d %H:%M %Z')} by code/rebuild_export.py\n"
+           f"--corrections {a.corrections}. Every other parameter matches the gated archive, so\n"
+           "the ONLY difference is that the operator's strokes are not applied: no threshold\n"
+           "drop inside a crack stroke, and no absolute erase. Use this to ask what the model\n"
+           "alone says; do NOT compare its numbers against a figure computed on the gated\n"
+           "archive without naming which arm each came from.\n\n")
+    corr_line = (f"  corrections       gate (CORRECTION_FLOOR {P.CORRECTION_FLOOR})\n" if archive
+                 else "  corrections       none -- the model's own output, no human input\n")
+    tail = ("WHAT THIS MEANS FOR PUBLISHED NUMBERS. If the original archive was produced by an\n"
             "earlier model, these bytes differ from it. Any figure or statistic computed against\n"
             "the original export is NOT reproducible from this directory, and must either be\n"
             "recomputed against it or reported against the original with the discrepancy stated.\n"
             "The sibling crack-depth-3d repo records the original as holding 64 readable masks of\n"
-            "71 frames; a different readable count here is evidence that the two differ.\n")
+            "71 frames; a different readable count here is evidence that the two differ.\n"
+            ) if archive else (
+            "WHAT THIS IS FOR. The gated archive and this directory are two ARMS of one corpus,\n"
+            "in the sense the SEM repo already uses: gated_masks against machine_masks. Measured\n"
+            "side by side they say how much of the reported crack is the operator's assertion.\n"
+            "They must never be pooled, and neither is a correction of the other.\n")
+    with open(os.path.join(a.out, "PROVENANCE.txt"), "w") as fh:
+        fh.write(head
+                 + f"  model label       {label}\n"
+                 + f"  model created     {created}\n"
+                 + f"  model fingerprint {fp}\n"
+                 + f"  threshold         {P.DEFAULT_THRESHOLD}\n"
+                 + corr_line
+                 + "  postprocess       False\n"
+                 + "  tight             True\n"
+                 + "  convention        crack = BLACK (0) on white (255)\n\n"
+                 + f"  images written    {ok}\n"
+                 + f"  failed            {len(failed)}\n\n"
+                 + tail)
         if failed:
             fh.write("\nFAILED\n")
             for s, why in failed:
