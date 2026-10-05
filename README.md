@@ -1,5 +1,16 @@
 # TXM Crack Detection
 
+> ## Archived — read-only
+>
+> This repository is no longer developed. The maintained project is
+> **[crack-fractography](https://github.com/jzhang29-max/crack-fractography)**, which is
+> standalone: it needs no checkout of this repository to install, run or measure.
+>
+> This repository stays public as the **source of record**. It holds the TXM detection pipeline, its labelled mosaics and model
+> bundles, and the TXM audit artifacts the paper cites.
+> Every path cited into it from the paper still resolves, and the contents are unchanged by
+> archiving — only new commits, issues and pull requests are closed off.
+
 [![linux](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml/badge.svg)](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/linux.yml)
 [![macos](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/macos.yml/badge.svg)](https://github.com/jzhang29-max/TXM_Crack_Detection_Pipeline/actions/workflows/macos.yml)
 
